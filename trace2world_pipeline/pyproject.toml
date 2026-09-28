@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trace2world-pipeline"
+version = "0.1.0"
+description = "Trace2World environment constructor: Restore, Reconcile, Compile, Verify"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# Required by the construction path the paper describes.
+dependencies = [
+    "aiohttp>=3.9",
+    "beautifulsoup4>=4.12",
+    "certifi>=2024.2.2",
+    "httpx>=0.27",
+    "imagehash>=4.3",
+    "numpy>=1.26",
+    "openai>=1.40",
+    "pillow>=10.0",
+    "playwright>=1.40",
+    "requests>=2.31",
+    "tiktoken>=0.7",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+# Imported lazily inside fallback branches only; the published run never needs them.
+semantic = [
+    "scikit-learn>=1.4",
+    "sentence-transformers>=3.0",
+]
+
+[project.scripts]
+# Automatic construction path: Restore -> Reconcile -> Factorize -> Supported -> page realization.
+t2w-construct = "trace2world_pipeline.orchestrator:main"
+# Verify (Alg. 2 Probe): instrumentation, evaluator compilation, negative probes.
+t2w-verify = "trace2world_pipeline.verification.run_verification:main"
+# Project_p: state-dependent action effects and action hosts.
+t2w-compile-action-hosts = "trace2world_pipeline.page_realizer.drivers.materialize_action_hosts:main"
+# Compile / environment export: the stage that produced this release's 20 environments.
+t2w-export-environment = "trace2world_pipeline.compiler.export.environment_package:main"
+# Runtime state ownership.
+t2w-state-kernel = "trace2world_pipeline.state_kernel.drivers.materialize_kernel:main"
+t2w-state-runtime = "trace2world_pipeline.state_kernel.drivers.materialize_runtime:main"
+# Alg. 2 environment validation and repair: bounded closure over one result's slices.
+t2w-close = "trace2world_pipeline.closure.drivers.run_closure:main"
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+trace2world_pipeline = ["**/*.json", "**/*.md", "**/*.txt", "**/*.j2", "templates/**/*.js"]

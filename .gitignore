@@ -1,0 +1,31 @@
+# Downloaded release data (environments, reference traces)
+data/
+
+# Runtime state written by t2w-serve / rollouts
+state/
+*.trajectory.json
+host-smoke.json
+trajectory.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.eggs/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Project web page: kept local, not published in this repository
+docs/
+scripts/build_cross_app_case.py
+scripts/build_project_cases.py
+scripts/build_project_montage.py
+scripts/check_project_page.py
+scripts/polish_case_panel.py

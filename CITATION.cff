@@ -1,0 +1,45 @@
+cff-version: 1.2.0
+message: "If you use Trace2World, please cite the paper below."
+title: "Trace2World: Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training"
+authors:
+- family-names: Wang
+  given-names: Zezhou
+- family-names: Zhou
+  given-names: Hanzhang
+- family-names: Tong
+  given-names: Panrong
+- family-names: Kong
+  given-names: Quyu
+- family-names: Li
+  given-names: Pengxiang
+- family-names: Hoi
+  given-names: Steven
+- family-names: Qian
+  given-names: Zhuzhong
+- family-names: Wang
+  given-names: Yue
+year: 2026
+repository-code: "https://github.com/LEON-gittech/Trace2World"
+preferred-citation:
+  type: article
+  title: "Trace2World: Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training"
+  authors:
+  - family-names: Wang
+    given-names: Zezhou
+  - family-names: Zhou
+    given-names: Hanzhang
+  - family-names: Tong
+    given-names: Panrong
+  - family-names: Kong
+    given-names: Quyu
+  - family-names: Li
+    given-names: Pengxiang
+  - family-names: Hoi
+    given-names: Steven
+  - family-names: Qian
+    given-names: Zhuzhong
+  - family-names: Wang
+    given-names: Yue
+  year: 2026
+  journal: "arXiv preprint"
+  notes: "arXiv identifier to be added once the preprint is public."
