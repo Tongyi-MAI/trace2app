@@ -1,17 +1,13 @@
 <div align="center">
 
-# Trace2World
+<img src="assets/trace2world-banner.png" width="100%" alt="Trace2World: interaction traces converge into one source-validated app world that yields an executable app and learner-adaptive tasks">
 
-### Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training
+<br>
 
 [![arXiv](https://img.shields.io/badge/arXiv-coming%20soon-b31b1b.svg)](#citation)
 [![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Environments%20%2B%20Source%20Traces-yellow)](https://huggingface.co/datasets/LEONW24/Trace2World)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](trace2world_env/pyproject.toml)
-
-<img src="assets/teaser.png" width="92%" alt="Faithful app worlds, learner-adaptive experience at scale">
-
-<sub><b>Faithful app worlds, learner-adaptive experience at scale.</b> (a) Left: baseline environments constructed from the same source traces. Right: 50 reconstructed apps across ten domains. (b) Learner-adaptive tasks recombine source-supported behavior with state reasoning, derived instances, and order verification.</sub>
 
 </div>
 
@@ -38,6 +34,12 @@ support learner-adaptive task and environment augmentation within source-support
   from 56.9% to **61.1%**; training in Trace2World improves the model by **20.2 points** on
   Trace2World-Bench, **5.4–16.2 points** across four external GUI benchmarks, and **16.3 points** on
   100 real-device tasks.
+
+<div align="center">
+<img src="assets/teaser.png" width="92%" alt="Faithful app worlds, learner-adaptive experience at scale">
+
+<sub><b>Faithful app worlds, learner-adaptive experience at scale.</b> (a) Left: baseline environments constructed from the same source traces. Right: 50 reconstructed apps across ten domains. (b) Learner-adaptive tasks recombine source-supported behavior with state reasoning, derived instances, and order verification.</sub>
+</div>
 
 This repository is the **code** half of the release: the environment host / evaluators / bundled agent
 ([`trace2world_env/`](trace2world_env)) and the environment constructor
