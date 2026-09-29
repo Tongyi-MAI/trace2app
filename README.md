@@ -2,7 +2,7 @@
 
 <img src="assets/trace2world-banner.png" width="100%" alt="Trace2World: interaction traces converge into one source-validated app world that yields an executable app and learner-adaptive tasks">
 
-<br>
+# Trace2World: Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training
 
 [![arXiv](https://img.shields.io/badge/arXiv-coming%20soon-b31b1b.svg)](#citation)
 [![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Environments%20%2B%20Source%20Traces-yellow)](https://huggingface.co/datasets/LEONW24/Trace2World)
