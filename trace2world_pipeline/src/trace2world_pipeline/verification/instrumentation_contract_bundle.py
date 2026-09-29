@@ -524,7 +524,7 @@ def _outcome_checkpoint(
     if boundary_source_action_id:
         payload_required["action_id"] = boundary_source_action_id
     runtime_assertions.append({
-        "event": f"ghostweb:checkpoint:{checkpoint_id}",
+        "event": f"sim:checkpoint:{checkpoint_id}",
         "payload_required": payload_required,
     })
     return {

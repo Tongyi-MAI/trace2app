@@ -829,7 +829,7 @@ def evaluate_spec_executability(
                         "expected_page_id": navigation_target_filename,
                     },
                     "mode": _return_operation_mode(transition),
-                    "stack_owner": "GhostwebRouteExecution",
+                    "stack_owner": "SimRouteExecution",
                     "monotonicity": {
                         "decreases": _return_operation_mode(transition).split("_")[0],
                         "does_not_push": True,
@@ -1037,7 +1037,7 @@ def evaluate_spec_executability(
                     "kind": "return_operation",
                     "source_page_id": page_filename,
                     "mode": "cold_start_fallback",
-                    "stack_owner": "GhostwebRouteExecution",
+                    "stack_owner": "SimRouteExecution",
                     "target_resolution": {
                         "type": "fallback",
                         "expected_page_id": target_fn,
@@ -1792,11 +1792,11 @@ def build_pagegen_execution_view_by_page(
                 "state_store_slice": {},
                 "post_action_oracles": [],
                 "allowed_sdk_interfaces": [
-                    "GhostwebRouteExecution.navigate",
-                    "GhostwebRouteExecution.returnBack",
-                    "GhostwebRouteExecution.step",
-                    "GhostwebRouteExecution.inspectNavigationStack",
-                    "GhostwebRouteExecution.inspectState",
+                    "SimRouteExecution.navigate",
+                    "SimRouteExecution.returnBack",
+                    "SimRouteExecution.step",
+                    "SimRouteExecution.inspectNavigationStack",
+                    "SimRouteExecution.inspectState",
                 ],
                 "provenance_refs": [],
             },
@@ -2665,7 +2665,7 @@ def build_returnability_eval(spec_executability_eval: Mapping[str, Any]) -> Dict
 
         for aid in return_action_ids:
             op = return_ops[aid]
-            if _text(op.get("stack_owner")) != "GhostwebRouteExecution":
+            if _text(op.get("stack_owner")) != "SimRouteExecution":
                 issues.append({
                     "code": "return_operation_without_stack_owner",
                     "severity": BLOCKING,

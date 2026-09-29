@@ -1,11 +1,11 @@
 (function () {
-  if (window.GhostwebMobileDragScroll && window.GhostwebMobileDragScroll.installed) return;
+  if (window.SimMobileDragScroll && window.SimMobileDragScroll.installed) return;
 
-  const STYLE_ID = 'ghostweb-mobile-drag-scroll-style';
+  const STYLE_ID = 'sim-mobile-drag-scroll-style';
   const SCROLLABLE_OVERFLOW = /^(auto|scroll|overlay)$/;
   const DRAG_THRESHOLD_PX = 6;
   const CLICK_SUPPRESS_MS = 350;
-  const SNAP_DISABLED_CLASS = 'ghostweb-drag-scroll-snap-disabled';
+  const SNAP_DISABLED_CLASS = 'sim-drag-scroll-snap-disabled';
 
   function installStyle() {
     if (document.getElementById(STYLE_ID)) return;
@@ -17,7 +17,7 @@ html, body, .app-shell, .app-shell main {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
-[data-ghostweb-horizontal-scroll], .overflow-x-auto {
+[data-sim-horizontal-scroll], .overflow-x-auto {
   touch-action: pan-x pan-y;
   overscroll-behavior-inline: contain;
 }
@@ -33,7 +33,7 @@ input, textarea, select, option, [contenteditable="true"], [contenteditable=true
   user-select: text;
   -webkit-touch-callout: default;
 }
-body.ghostweb-drag-scrolling, body.ghostweb-drag-scrolling * {
+body.sim-drag-scrolling, body.sim-drag-scrolling * {
   cursor: grabbing !important;
 }
 .${SNAP_DISABLED_CLASS} {
@@ -86,8 +86,8 @@ body.ghostweb-drag-scrolling, body.ghostweb-drag-scrolling * {
 
   function executionContext() {
     try {
-      return window.__ghostwebExecutionContext ||
-        JSON.parse(window.localStorage.getItem('ghostweb.execution_context') || '{}') || {};
+      return window.__simExecutionContext ||
+        JSON.parse(window.localStorage.getItem('sim.execution_context') || '{}') || {};
     } catch (error) {
       return {};
     }
@@ -134,8 +134,8 @@ body.ghostweb-drag-scrolling, body.ghostweb-drag-scrolling * {
     const host = contextualGestureHost(event && event.target, axis);
     if (!host) return null;
     const selectors = axis === 'x'
-      ? ['[data-ghostweb-horizontal-scroll]', '.overflow-x-auto']
-      : ['[data-ghostweb-vertical-scroll]', '.overflow-y-auto'];
+      ? ['[data-sim-horizontal-scroll]', '.overflow-x-auto']
+      : ['[data-sim-vertical-scroll]', '.overflow-y-auto'];
     for (const selector of selectors) {
       if (host.matches && host.matches(selector) && canScroll(host, axis)) return host;
       const descendant = Array.from(host.querySelectorAll(selector)).find(function (node) {
@@ -149,7 +149,7 @@ body.ghostweb-drag-scrolling, body.ghostweb-drag-scrolling * {
   function declaredWindowStep(scroller, rawDelta) {
     const magnitude = Math.abs(Number(rawDelta) || 0);
     const configured = Number(scroller && scroller.getAttribute
-      ? scroller.getAttribute('data-ghostweb-wheel-step')
+      ? scroller.getAttribute('data-sim-wheel-step')
       : 0);
     if (Number.isFinite(configured) && configured > 0) return Math.max(magnitude, configured);
     const viewportStep = scroller ? Math.min(96, Math.max(32, scroller.clientWidth * 0.25)) : 32;
@@ -168,7 +168,7 @@ body.ghostweb-drag-scrolling, body.ghostweb-drag-scrolling * {
 
   function capDragStep(scroller, delta) {
     if (!scroller || !scroller.getAttribute) return delta;
-    const configured = Number(scroller.getAttribute('data-ghostweb-max-drag-step'));
+    const configured = Number(scroller.getAttribute('data-sim-max-drag-step'));
     if (!Number.isFinite(configured) || configured <= 0) return delta;
     return clamp(delta, -configured, configured);
   }
@@ -223,7 +223,7 @@ body.ghostweb-drag-scrolling, body.ghostweb-drag-scrolling * {
       });
     }
     state = null;
-    document.body && document.body.classList.remove('ghostweb-drag-scrolling');
+    document.body && document.body.classList.remove('sim-drag-scrolling');
   }
 
   function getAxisState(axis, scroller) {
@@ -298,7 +298,7 @@ body.ghostweb-drag-scrolling, body.ghostweb-drag-scrolling * {
 
     state.active = true;
     event.preventDefault();
-    document.body && document.body.classList.add('ghostweb-drag-scrolling');
+    document.body && document.body.classList.add('sim-drag-scrolling');
     const axisState = getAxisState(axis, scroller);
     axisState.lastScrollDelta = totalScrollDelta;
     disableSnapForDrag(scroller);
@@ -424,7 +424,7 @@ body.ghostweb-drag-scrolling, body.ghostweb-drag-scrolling * {
   }, { capture: true, passive: false });
   window.addEventListener('click', onClick, true);
 
-  window.GhostwebMobileDragScroll = {
+  window.SimMobileDragScroll = {
     installed: true,
     nearestScroller,
     canScroll

@@ -60,7 +60,7 @@ def cleanup_plan_for_changed_phase(changed_phase: str) -> dict[str, Any]:
         patterns.extend(PHASE_ARTIFACTS.get(phase, ()))
     patterns.append("artifact_index.json")
     return {
-        "format": "ghostweb_phase_dependency_cleanup_plan",
+        "format": "sim_phase_dependency_cleanup_plan",
         "changed_phase": changed_phase,
         "earliest_stale_phase": earliest,
         "stale_phases": stale_phases,

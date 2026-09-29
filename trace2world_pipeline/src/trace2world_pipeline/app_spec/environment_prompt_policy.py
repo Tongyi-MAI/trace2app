@@ -8,7 +8,7 @@ from typing import Any, Dict, Mapping
 from .environment_profile import normalize_environment_profile
 
 
-POLICY_FORMAT = "ghostweb_environment_prompt_policy"
+POLICY_FORMAT = "sim_environment_prompt_policy"
 POLICY_REVISION = "environment_prompt_policy_v1"
 PROMPT_FAMILIES = (
     "pagegen_generation",

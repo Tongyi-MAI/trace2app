@@ -214,7 +214,7 @@ def _temporary_pagegen_server(output_dir: Path) -> Iterator[str]:
     if not pagegen_dir.exists():
         raise FileNotFoundError(f"phase_pagegen directory not found: {pagegen_dir}")
 
-    class GhostwebResultHandler(SimpleHTTPRequestHandler):
+    class SimResultHandler(SimpleHTTPRequestHandler):
         def translate_path(self, path: str) -> str:
             parsed_path = unquote(urlparse(path).path)
             if parsed_path.startswith("/pages/") or parsed_path.startswith("/images/"):
@@ -226,7 +226,7 @@ def _temporary_pagegen_server(output_dir: Path) -> Iterator[str]:
             parts = [part for part in rel_path.split("/") if part and part not in {".", ".."}]
             return str(root.joinpath(*parts))
 
-    handler = GhostwebResultHandler
+    handler = SimResultHandler
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()

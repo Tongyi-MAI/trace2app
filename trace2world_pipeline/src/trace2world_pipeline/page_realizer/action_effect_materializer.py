@@ -38,7 +38,7 @@ _ACTION_ID_RE = re.compile(r"task_[A-Za-z0-9_]+:step\d+")
 
 _OPAQUE_ACTION_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.:-]*")
 _NONINTERACTIVE_RE = re.compile(
-    r"""\s+data-ghostweb-click-contract-kind\s*=\s*(['"])noninteractive\1""",
+    r"""\s+data-sim-click-contract-kind\s*=\s*(['"])noninteractive\1""",
     re.IGNORECASE,
 )
 _COMPLETION_LABELS = ("确认", "确定", "完成", "保存", "提交", "confirm", "done", "save", "submit")
@@ -231,7 +231,7 @@ def _sync_component_ref_attrs(attrs: str, binding: Mapping[str, Any]) -> str:
 
 
 def _read_target_map(attrs: str) -> Dict[str, str]:
-    raw = _attr_value(attrs, "data-ghostweb-target-map")
+    raw = _attr_value(attrs, "data-sim-target-map")
     if not raw:
         return {}
     try:
@@ -254,16 +254,16 @@ def _write_target_map(attrs: str, target_map: Mapping[str, str]) -> str:
         if str(key or "").strip() and str(value or "").strip()
     }
     if not clean:
-        return _remove_attr(attrs, "data-ghostweb-target-map")
+        return _remove_attr(attrs, "data-sim-target-map")
     return _set_attr(
         attrs,
-        "data-ghostweb-target-map",
+        "data-sim-target-map",
         json.dumps(clean, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
     )
 
 
 def _read_visibility_precondition_map(attrs: str) -> Dict[str, Dict[str, str]]:
-    raw = _attr_value(attrs, "data-ghostweb-visibility-precondition-map")
+    raw = _attr_value(attrs, "data-sim-visibility-precondition-map")
     if not raw:
         return {}
     try:
@@ -298,10 +298,10 @@ def _write_visibility_precondition_map(
         if str(action_id or "").strip() and str(row.get("producer_action_id") or "").strip()
     }
     if not clean:
-        return _remove_attr(attrs, "data-ghostweb-visibility-precondition-map")
+        return _remove_attr(attrs, "data-sim-visibility-precondition-map")
     return _set_attr(
         attrs,
-        "data-ghostweb-visibility-precondition-map",
+        "data-sim-visibility-precondition-map",
         json.dumps(clean, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
     )
 
@@ -342,14 +342,14 @@ def _protect_script_blocks(html_text: str) -> Tuple[str, List[str]]:
 
     def repl(match: re.Match[str]) -> str:
         blocks.append(match.group(0))
-        return f"__GHOSTWEB_SCRIPT_BLOCK_{len(blocks) - 1}__"
+        return f"__SIM_SCRIPT_BLOCK_{len(blocks) - 1}__"
 
     return _SCRIPT_BLOCK_RE.sub(repl, html_text), blocks
 
 
 def _restore_script_blocks(html_text: str, blocks: List[str]) -> str:
     for index, block in enumerate(blocks):
-        html_text = html_text.replace(f"__GHOSTWEB_SCRIPT_BLOCK_{index}__", block)
+        html_text = html_text.replace(f"__SIM_SCRIPT_BLOCK_{index}__", block)
     return html_text
 
 
@@ -393,12 +393,12 @@ def _strip_action_id_from_other_hosts(html_text: str, action_id: str, keep_start
         if action_id not in attrs:
             return match.group(0)
         if _attr_value(attrs, "data-action-id") == action_id:
-            attrs = _remove_attr(attrs, "data-ghostweb-action")
-            attrs = _remove_attr(attrs, "data-ghostweb-target")
+            attrs = _remove_attr(attrs, "data-sim-action")
+            attrs = _remove_attr(attrs, "data-sim-target")
             attrs = _remove_attr(attrs, "data-action-id")
-            attrs = _remove_attr(attrs, "data-ghostweb-effect-kind")
-            attrs = _remove_attr(attrs, "data-ghostweb-transaction-id")
-            attrs = _remove_attr(attrs, "data-ghostweb-dom-binding-id")
+            attrs = _remove_attr(attrs, "data-sim-effect-kind")
+            attrs = _remove_attr(attrs, "data-sim-transaction-id")
+            attrs = _remove_attr(attrs, "data-sim-dom-binding-id")
         attrs = _remove_action_id_from_attr(attrs, "data-action-aliases", action_id)
         attrs = _remove_action_id_from_attr(attrs, "data-element-id", action_id, remove_embedded=False)
         attrs = _remove_action_id_from_attr(attrs, "data-element-aliases", action_id, remove_embedded=False)
@@ -479,9 +479,9 @@ def _component_ref_match_is_eligible(
         )
     ):
         return False
-    if _attr_value(attrs, "data-ghostweb-initial-visibility") == "hidden_until_transition":
+    if _attr_value(attrs, "data-sim-initial-visibility") == "hidden_until_transition":
         return False
-    if "retired" in _attr_value(attrs, "data-ghostweb-action-host").lower():
+    if "retired" in _attr_value(attrs, "data-sim-action-host").lower():
         return False
     if "noninteractive" in attrs_lower:
         return False
@@ -491,8 +491,8 @@ def _component_ref_match_is_eligible(
         existing_gesture_host = bool(_attr_value(attrs, "data-gesture-host"))
         existing_route_host = bool(
             _attr_value(attrs, "href")
-            or _attr_value(attrs, "data-ghostweb-target")
-            or _attr_value(attrs, "data-ghostweb-action") == "navigate"
+            or _attr_value(attrs, "data-sim-target")
+            or _attr_value(attrs, "data-sim-action") == "navigate"
             or re.search(
                 r"(?:navigate|location\s*=|location\.href)",
                 _attr_value(attrs, "onclick"),
@@ -536,7 +536,7 @@ def _set_canonical_action_id(attrs: str, action_id: str) -> str:
     if primary not in action_ids:
         primary = action_id or (action_ids[0] if action_ids else "")
     aliases = [candidate for candidate in action_ids if candidate and candidate != primary]
-    attrs = _remove_attr(attrs, "data-ghostweb-action-id")
+    attrs = _remove_attr(attrs, "data-sim-action-id")
     attrs = _set_attr(attrs, "data-action-id", primary)
     if aliases:
         attrs = _set_attr(attrs, "data-action-aliases", " ".join(aliases))
@@ -698,12 +698,12 @@ def _hidden_ancestors_are_page_owned_transition_layers(
     if not hidden_ancestors:
         return False
     return all(
-        _attr_value(attrs, "data-ghostweb-initial-visibility")
+        _attr_value(attrs, "data-sim-initial-visibility")
         == "hidden_until_transition"
         and (
             _attr_value(attrs, "role").lower() == "dialog"
             or _attr_value(attrs, "aria-modal").lower() == "true"
-            or bool(_attr_value(attrs, "data-ghostweb-overlay-layer-role"))
+            or bool(_attr_value(attrs, "data-sim-overlay-layer-role"))
         )
         for attrs in hidden_ancestors
     )
@@ -1178,9 +1178,9 @@ def _is_click_host_candidate(tag: str, attrs: str) -> bool:
             "role='button'",
             'role="tab"',
             "role='tab'",
-            "data-ghostweb-action",
-            "data-ghostweb-target",
-            "data-ghostweb-route",
+            "data-sim-action",
+            "data-sim-target",
+            "data-sim-route",
             "cursor-pointer",
         )
     )
@@ -1558,9 +1558,9 @@ def _materialize_query_binding(html_text: str, binding: Mapping[str, Any]) -> Tu
         attrs = _make_fill_input_visible(attrs)
         attrs = _set_canonical_action_id(attrs, action_id)
         attrs = _set_attr(attrs, "role", "searchbox")
-        attrs = _set_attr(attrs, "data-ghostweb-query-input", "true")
-        attrs = _set_attr(attrs, "data-ghostweb-effect-kind", "query_projection")
-        attrs = _set_attr(attrs, "data-ghostweb-dom-binding-id", _text(binding.get("dom_binding_id")))
+        attrs = _set_attr(attrs, "data-sim-query-input", "true")
+        attrs = _set_attr(attrs, "data-sim-effect-kind", "query_projection")
+        attrs = _set_attr(attrs, "data-sim-dom-binding-id", _text(binding.get("dom_binding_id")))
         if tag.lower() == "input" and not _attr_value(attrs, "type"):
             attrs = _set_attr(attrs, "type", "search")
         matched = True
@@ -1616,9 +1616,9 @@ def _materialize_query_binding(html_text: str, binding: Mapping[str, Any]) -> Tu
         attrs = _make_fill_input_visible(attrs)
         attrs = _set_canonical_action_id(attrs, action_id)
         attrs = _set_attr(attrs, "role", "searchbox")
-        attrs = _set_attr(attrs, "data-ghostweb-query-input", "true")
-        attrs = _set_attr(attrs, "data-ghostweb-effect-kind", "query_projection")
-        attrs = _set_attr(attrs, "data-ghostweb-dom-binding-id", _text(binding.get("dom_binding_id")))
+        attrs = _set_attr(attrs, "data-sim-query-input", "true")
+        attrs = _set_attr(attrs, "data-sim-effect-kind", "query_projection")
+        attrs = _set_attr(attrs, "data-sim-dom-binding-id", _text(binding.get("dom_binding_id")))
         if tag.lower() == "input" and not _attr_value(attrs, "type"):
             attrs = _set_attr(attrs, "type", "search")
         html_text = html_text[:start] + f"<{tag}{attrs}>" + html_text[end:]
@@ -1638,7 +1638,7 @@ def _action_attrs(attrs: str, binding: Mapping[str, Any]) -> str:
     source = _text(binding.get("source_filename"))
     same_page_mutation = effect_kind == "same_page_mutation" and bool(source and target and source == target)
     same_page_route = effect_kind in {"route", "navigation"} and bool(source and target and source == target)
-    existing_target = _attr_value(attrs, "data-ghostweb-target") or _attr_value(attrs, "href")
+    existing_target = _attr_value(attrs, "data-sim-target") or _attr_value(attrs, "href")
     target_for_action = _target_for_binding_host(attrs, binding)
     requires_route_navigation = _binding_requires_route_navigation(binding)
     existing_action_ids = _action_tokens_from_attrs(attrs)
@@ -1650,7 +1650,7 @@ def _action_attrs(attrs: str, binding: Mapping[str, Any]) -> str:
         target_map[action_id] = target_for_action
     attrs = _remove_noninteractive(attrs)
     attrs = _make_action_host_visible(attrs)
-    if not _is_stateful_gesture_binding(binding) and _attr_value(attrs, "data-ghostweb-materialized") == "action-effect-host":
+    if not _is_stateful_gesture_binding(binding) and _attr_value(attrs, "data-sim-materialized") == "action-effect-host":
         if _attr_value(attrs, "role") == "group":
             attrs = _remove_attr(attrs, "role")
     attrs = _set_canonical_action_id(attrs, action_id)
@@ -1663,30 +1663,30 @@ def _action_attrs(attrs: str, binding: Mapping[str, Any]) -> str:
             attrs = _write_target_map(attrs, target_map)
         return _apply_visibility_precondition_attrs(attrs, binding)
     if target_for_action and requires_route_navigation:
-        attrs = _set_attr(attrs, "data-ghostweb-action", "navigate")
-        attrs = _set_attr(attrs, "data-ghostweb-target", target_for_action)
+        attrs = _set_attr(attrs, "data-sim-action", "navigate")
+        attrs = _set_attr(attrs, "data-sim-target", target_for_action)
         if _attr_value(attrs, "href"):
             attrs = _set_attr(attrs, "href", target_for_action)
         if _attr_value(attrs, "onclick") and _attr_value(attrs, "onpointerdown"):
             attrs = _remove_attr(attrs, "onclick")
         attrs = _write_target_map(attrs, target_map)
     elif not requires_route_navigation:
-        attrs = _remove_attr(attrs, "data-ghostweb-action")
-        attrs = _remove_attr(attrs, "data-ghostweb-target")
+        attrs = _remove_attr(attrs, "data-sim-action")
+        attrs = _remove_attr(attrs, "data-sim-target")
         if target_map:
             attrs = _write_target_map(attrs, target_map)
     attrs = _semantic_option_attrs(attrs, binding)
     attrs = _merge_context_into_accessible_label(attrs, binding)
-    attrs = _set_attr(attrs, "data-ghostweb-effect-kind", effect_kind)
-    attrs = _set_attr(attrs, "data-ghostweb-transaction-id", _text(payload.get("transaction_id")))
-    attrs = _set_attr(attrs, "data-ghostweb-dom-binding-id", _text(binding.get("dom_binding_id")))
+    attrs = _set_attr(attrs, "data-sim-effect-kind", effect_kind)
+    attrs = _set_attr(attrs, "data-sim-transaction-id", _text(payload.get("transaction_id")))
+    attrs = _set_attr(attrs, "data-sim-dom-binding-id", _text(binding.get("dom_binding_id")))
     if _is_stateful_gesture_binding(binding):
         state_refs = _binding_state_refs(binding)
         attrs = _set_attr(attrs, "data-gesture-host", _text(payload.get("gesture_scope")) or "component_gesture")
         attrs = _set_attr(attrs, "data-gesture-axis", _text(payload.get("gesture_axis")) or "horizontal")
         attrs = _set_attr(attrs, "data-gesture-direction", _text(payload.get("gesture_direction")) or "forward")
         attrs = _set_attr(attrs, "data-state-ref", state_refs[0] if state_refs else "")
-        attrs = _set_attr(attrs, "data-ghostweb-gesture-action", _binding_event(binding) or "swipe")
+        attrs = _set_attr(attrs, "data-sim-gesture-action", _binding_event(binding) or "swipe")
         attrs = _set_attr(attrs, "tabindex", _attr_value(attrs, "tabindex") or "0")
         style = _attr_value(attrs, "style")
         if "touch-action" not in style:
@@ -1755,12 +1755,12 @@ def _neutralize_same_page_action_host(
             return match.group(0)
         attrs = _remove_noninteractive(attrs)
         attrs = _make_action_host_visible(attrs)
-        attrs = _remove_attr(attrs, "data-ghostweb-action")
-        attrs = _remove_attr(attrs, "data-ghostweb-target")
-        attrs = _remove_attr(attrs, "data-ghostweb-target-map")
-        attrs = _set_attr(attrs, "data-ghostweb-effect-kind", "same_page_mutation")
-        attrs = _set_attr(attrs, "data-ghostweb-transaction-id", _text(_binding_payload(binding).get("transaction_id")))
-        attrs = _set_attr(attrs, "data-ghostweb-dom-binding-id", _text(binding.get("dom_binding_id")))
+        attrs = _remove_attr(attrs, "data-sim-action")
+        attrs = _remove_attr(attrs, "data-sim-target")
+        attrs = _remove_attr(attrs, "data-sim-target-map")
+        attrs = _set_attr(attrs, "data-sim-effect-kind", "same_page_mutation")
+        attrs = _set_attr(attrs, "data-sim-transaction-id", _text(_binding_payload(binding).get("transaction_id")))
+        attrs = _set_attr(attrs, "data-sim-dom-binding-id", _text(binding.get("dom_binding_id")))
         matched = True
         return f"<{tag}{attrs}>"
 
@@ -1774,7 +1774,7 @@ def _neutralize_same_page_action_host(
 def _remove_existing_materialized_action_host(html_text: str, action_id: str = "") -> str:
     def repl(match: re.Match[str]) -> str:
         attrs = match.group("attrs")
-        if _attr_value(attrs, "data-ghostweb-materialized") != "action-effect-host":
+        if _attr_value(attrs, "data-sim-materialized") != "action-effect-host":
             return match.group(0)
         return ""
 
@@ -1784,7 +1784,7 @@ def _remove_existing_materialized_action_host(html_text: str, action_id: str = "
 def _remove_existing_materialized_query_input(html_text: str) -> str:
     def repl(match: re.Match[str]) -> str:
         attrs = match.group("attrs")
-        if _attr_value(attrs, "data-ghostweb-materialized") != "query-input-host":
+        if _attr_value(attrs, "data-sim-materialized") != "query-input-host":
             return match.group(0)
         return ""
 
@@ -1795,7 +1795,7 @@ def _target_for_binding_host(attrs: str, binding: Mapping[str, Any]) -> str:
     target = _binding_target(binding)
     effect_kind = _binding_effect(binding)
     source = _text(binding.get("source_filename"))
-    dom_target = _attr_value(attrs, "data-ghostweb-target")
+    dom_target = _attr_value(attrs, "data-sim-target")
     href_target = _attr_value(attrs, "href")
     if effect_kind in {"route", "navigation"} and source and target and target == source and not (dom_target or href_target):
         return ""
@@ -1811,7 +1811,7 @@ def _target_for_binding_host(attrs: str, binding: Mapping[str, Any]) -> str:
 
 
 def _add_hidden_until_transition_attrs(attrs: str) -> str:
-    attrs = _set_attr(attrs, "data-ghostweb-initial-visibility", "hidden_until_transition")
+    attrs = _set_attr(attrs, "data-sim-initial-visibility", "hidden_until_transition")
     attrs = _set_attr(attrs, "aria-hidden", "true")
     style = _attr_value(attrs, "style")
     declarations = [part.strip() for part in style.split(";") if part.strip()]
@@ -1844,12 +1844,12 @@ def _apply_visibility_precondition_attrs(attrs: str, binding: Mapping[str, Any])
 
 
     primary_action_id = _attr_value(attrs, "data-action-id")
-    if not _attr_value(attrs, "data-ghostweb-visibility-producer-action-id") or primary_action_id == action_id:
-        attrs = _set_attr(attrs, "data-ghostweb-visibility-producer-action-id", producer_action_id)
+    if not _attr_value(attrs, "data-sim-visibility-producer-action-id") or primary_action_id == action_id:
+        attrs = _set_attr(attrs, "data-sim-visibility-producer-action-id", producer_action_id)
         if state_ref:
-            attrs = _set_attr(attrs, "data-ghostweb-visibility-state-ref", state_ref)
+            attrs = _set_attr(attrs, "data-sim-visibility-state-ref", state_ref)
         if required_value:
-            attrs = _set_attr(attrs, "data-ghostweb-required-visible-value", required_value)
+            attrs = _set_attr(attrs, "data-sim-required-visible-value", required_value)
     return _add_hidden_until_transition_attrs(attrs)
 
 
@@ -1858,7 +1858,7 @@ def _cleanup_orphan_visibility_preconditions(html_text: str) -> str:
     def repl(match: re.Match[str]) -> str:
         tag = match.group("tag")
         attrs = match.group("attrs")
-        if _attr_value(attrs, "data-ghostweb-initial-visibility") != "hidden_until_transition":
+        if _attr_value(attrs, "data-sim-initial-visibility") != "hidden_until_transition":
             return match.group(0)
         if _action_tokens_from_attrs(attrs):
             return match.group(0)
@@ -1867,18 +1867,18 @@ def _cleanup_orphan_visibility_preconditions(html_text: str) -> str:
         if (
             _attr_value(attrs, "role").lower() == "dialog"
             or _attr_value(attrs, "aria-modal").lower() == "true"
-            or bool(_attr_value(attrs, "data-ghostweb-overlay-layer-role"))
+            or bool(_attr_value(attrs, "data-sim-overlay-layer-role"))
         ):
             return match.group(0)
-        if _attr_value(attrs, "data-ghostweb-materialized") == "initial-hidden-state-container":
+        if _attr_value(attrs, "data-sim-materialized") == "initial-hidden-state-container":
             return match.group(0)
         for name in (
-            "data-ghostweb-initial-visibility",
-            "data-ghostweb-visibility-producer-action-id",
-            "data-ghostweb-visibility-state-ref",
-            "data-ghostweb-required-visible-value",
-            "data-ghostweb-visibility-precondition-map",
-            "data-ghostweb-precondition-satisfied",
+            "data-sim-initial-visibility",
+            "data-sim-visibility-producer-action-id",
+            "data-sim-visibility-state-ref",
+            "data-sim-required-visible-value",
+            "data-sim-visibility-precondition-map",
+            "data-sim-precondition-satisfied",
             "aria-hidden",
         ):
             attrs = _remove_attr(attrs, name)
@@ -1944,7 +1944,7 @@ def reconcile_static_route_target_aliases(
     def repl(match: re.Match[str]) -> str:
         tag = match.group("tag")
         attrs = match.group("attrs")
-        static_target = _attr_value(attrs, "data-ghostweb-target") or _attr_value(attrs, "href")
+        static_target = _attr_value(attrs, "data-sim-target") or _attr_value(attrs, "href")
         static_filename = target_filename(static_target)
         if not static_filename:
             return match.group(0)
@@ -1975,17 +1975,17 @@ def _gesture_host_score(binding: Mapping[str, Any], attrs: str, body: str) -> in
     text = _visible_text(body)
     haystack = (text + " " + attrs).lower()
     score = 0
-    if _attr_value(attrs, "data-ghostweb-materialized") == "action-effect-host":
+    if _attr_value(attrs, "data-sim-materialized") == "action-effect-host":
         return 0
-    if _attr_value(attrs, "data-ghostweb-initial-visibility") == "hidden_until_transition":
+    if _attr_value(attrs, "data-sim-initial-visibility") == "hidden_until_transition":
         return 0
-    if _attr_value(attrs, "data-ghostweb-visibility-producer-action-id"):
+    if _attr_value(attrs, "data-sim-visibility-producer-action-id"):
         return 0
     existing_gesture_host = bool(_attr_value(attrs, "data-gesture-host"))
     existing_route_host = bool(
         _attr_value(attrs, "href")
-        or _attr_value(attrs, "data-ghostweb-target")
-        or _attr_value(attrs, "data-ghostweb-action") == "navigate"
+        or _attr_value(attrs, "data-sim-target")
+        or _attr_value(attrs, "data-sim-action") == "navigate"
         or re.search(r"(?:navigate|location\s*=|location\.href)", _attr_value(attrs, "onclick"), re.IGNORECASE)
     )
     if existing_route_host and not existing_gesture_host:
@@ -2032,8 +2032,8 @@ def _materialize_gesture_binding(html_text: str, binding: Mapping[str, Any]) -> 
         match
         for match in _OPEN_TAG_RE.finditer(html_text)
         if _component_identity_host_matches(match.group("attrs"), action_id)
-        and _attr_value(match.group("attrs"), "data-ghostweb-initial-visibility") != "hidden_until_transition"
-        and not _attr_value(match.group("attrs"), "data-ghostweb-visibility-producer-action-id")
+        and _attr_value(match.group("attrs"), "data-sim-initial-visibility") != "hidden_until_transition"
+        and not _attr_value(match.group("attrs"), "data-sim-visibility-producer-action-id")
     ]
     if len(component_matches) == 1:
         html_text = _strip_action_id_from_other_hosts(
@@ -2440,15 +2440,15 @@ def _remove_alias_from_list(match: re.Match, action_id: str) -> str:
 
 
 _MATERIALIZER_RUNTIME = """\
-<script data-ghostweb-runtime="action-effect-materializer">
+<script data-sim-runtime="action-effect-materializer">
 (function() {
-  if (window.__ghostwebActionEffectMaterializerReady) return;
-  window.__ghostwebActionEffectMaterializerReady = true;
+  if (window.__simActionEffectMaterializerReady) return;
+  window.__simActionEffectMaterializerReady = true;
   // The DOM-binding bridge keeps its contract table inside its own closure.
   // Route fallback also needs that table when a task-context-selected action
   // bubbles through a same-page gesture host; use the explicit page-owned
   // bridge export instead of relying on an out-of-scope local ``ACTIONS``.
-  var ACTIONS = window.__GHOSTWEB_DOM_BINDING_ACTIONS || {};
+  var ACTIONS = window.__SIM_DOM_BINDING_ACTIONS || {};
   function pushActionIds(ids, value) {
     String(value || '').split(/\\s+/).forEach(function(match) {
       match = String(match || '').trim();
@@ -2460,16 +2460,16 @@ _MATERIALIZER_RUNTIME = """\
     pushActionIds(ids, host.getAttribute('data-action-id'));
     pushActionIds(ids, host.getAttribute('data-action-aliases'));
     try {
-      var map = JSON.parse(host.getAttribute('data-ghostweb-target-map') || '{}') || {};
+      var map = JSON.parse(host.getAttribute('data-sim-target-map') || '{}') || {};
       Object.keys(map).forEach(function(id) { pushActionIds(ids, id); });
     } catch (error) {}
     return ids;
   }
   function contextTraceIds() {
     var context = null;
-    try { context = window.__ghostwebExecutionContext || null; } catch (error) {}
+    try { context = window.__simExecutionContext || null; } catch (error) {}
     if (!context) {
-      try { context = JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{}'); } catch (error) {}
+      try { context = JSON.parse(localStorage.getItem('sim.execution_context') || '{}'); } catch (error) {}
     }
     var ids = [];
     [context && context.task_owner_id, context && context.augmented_task_id,
@@ -2482,7 +2482,7 @@ _MATERIALIZER_RUNTIME = """\
     return ids;
   }
   function actionMatchesStaticHostTarget(host, actionId) {
-    var directTarget = host.getAttribute('data-ghostweb-target') || host.getAttribute('href') || '';
+    var directTarget = host.getAttribute('data-sim-target') || host.getAttribute('href') || '';
     var hostTarget = directTarget;
     // A shared visible route host may carry a primary target for its default
     // action and per-action targets for context-selected aliases.  The
@@ -2490,7 +2490,7 @@ _MATERIALIZER_RUNTIME = """\
     // this candidate.  Falling back to the primary target first would reject
     // a valid alias solely because another action owns the default route.
     try {
-      var targetMap = JSON.parse(host.getAttribute('data-ghostweb-target-map') || '{}') || {};
+      var targetMap = JSON.parse(host.getAttribute('data-sim-target-map') || '{}') || {};
       if (Object.prototype.hasOwnProperty.call(targetMap, actionId)) {
         hostTarget = String(targetMap[actionId] || '');
       }
@@ -2518,9 +2518,9 @@ _MATERIALIZER_RUNTIME = """\
   }
   function contextActionId(host) {
     var context = null;
-    try { context = window.__ghostwebExecutionContext || null; } catch (error) {}
+    try { context = window.__simExecutionContext || null; } catch (error) {}
     if (!context) {
-      try { context = JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{}'); } catch (error) {}
+      try { context = JSON.parse(localStorage.getItem('sim.execution_context') || '{}'); } catch (error) {}
     }
     var actionId = context && context.action_id ? String(context.action_id) : '';
     if (!actionId) return '';
@@ -2542,8 +2542,8 @@ _MATERIALIZER_RUNTIME = """\
     return '';
   }
   function resolveActionTarget(host) {
-    var directTarget = host.getAttribute('data-ghostweb-target') || '';
-    var rawMap = host.getAttribute('data-ghostweb-target-map') || '';
+    var directTarget = host.getAttribute('data-sim-target') || '';
+    var rawMap = host.getAttribute('data-sim-target-map') || '';
     var actionId = activeActionId(host) || host.getAttribute('data-action-id') || '';
     if (!actionId) {
       console.error('[T2WActionEffectMaterializer] missing data-action-id on route host');
@@ -2559,11 +2559,11 @@ _MATERIALIZER_RUNTIME = """\
         return String(map[actionId] || '');
       }
     } catch (error) {
-      console.error('[T2WActionEffectMaterializer] invalid data-ghostweb-target-map', error);
+      console.error('[T2WActionEffectMaterializer] invalid data-sim-target-map', error);
       return '';
     }
     if (!directTarget) {
-      console.error('[T2WActionEffectMaterializer] missing data-ghostweb-target for ' + actionId);
+      console.error('[T2WActionEffectMaterializer] missing data-sim-target for ' + actionId);
       return '';
     }
     return directTarget;
@@ -2573,18 +2573,18 @@ _MATERIALIZER_RUNTIME = """\
     // static route alias after the page-local dynamic bridge has lost that
     // row.  It is safe only when no dynamic row was selected at all: an
     // existing same-page row remains authoritative over any old static map.
-    if (!actionId || !host.matches('a[href], [data-ghostweb-action="navigate"][data-ghostweb-target]')) return '';
+    if (!actionId || !host.matches('a[href], [data-sim-action="navigate"][data-sim-target]')) return '';
     try {
-      var map = JSON.parse(host.getAttribute('data-ghostweb-target-map') || '{}') || {};
+      var map = JSON.parse(host.getAttribute('data-sim-target-map') || '{}') || {};
       if (!Object.prototype.hasOwnProperty.call(map, actionId)) return '';
       return String(map[actionId] || '');
     } catch (error) {
-      console.error('[T2WActionEffectMaterializer] invalid data-ghostweb-target-map', error);
+      console.error('[T2WActionEffectMaterializer] invalid data-sim-target-map', error);
       return '';
     }
   }
   function emitCheckpointFromHost(host) {
-    if (!host || !window.GhostwebCheckpointActionMap || !window.GhostwebCheckpointActionMap.emitForAction) return;
+    if (!host || !window.SimCheckpointActionMap || !window.SimCheckpointActionMap.emitForAction) return;
     var ids = [];
     var active = activeActionId(host);
     if (active) ids.push(active);
@@ -2593,7 +2593,7 @@ _MATERIALIZER_RUNTIME = """\
       if (primary) ids.push(primary);
     }
     ids.forEach(function(id) {
-      try { window.GhostwebCheckpointActionMap.emitForAction(id, 'click'); } catch (error) {}
+      try { window.SimCheckpointActionMap.emitForAction(id, 'click'); } catch (error) {}
     });
   }
   function baseFilename(value) {
@@ -2615,9 +2615,9 @@ _MATERIALIZER_RUNTIME = """\
     var stepIndex = stepIndexFromActionId(actionId);
     if (traceId && contextTraceIds().indexOf(traceId) === -1) return false;
     var context = null;
-    try { context = window.__ghostwebExecutionContext || null; } catch (error) {}
+    try { context = window.__simExecutionContext || null; } catch (error) {}
     if (!context || typeof context !== 'object') {
-      try { context = JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{}'); } catch (error) { context = {}; }
+      try { context = JSON.parse(localStorage.getItem('sim.execution_context') || '{}'); } catch (error) { context = {}; }
     }
     context = Object.assign({}, context || {}, { action_id: actionId });
     if (stepIndex !== null) {
@@ -2625,17 +2625,17 @@ _MATERIALIZER_RUNTIME = """\
       context.raw_step_index = stepIndex;
     }
     var serialized = JSON.stringify(context);
-    window.__ghostwebExecutionContext = context;
-    window.GhostwebActiveActionId = actionId;
-    window.__ghostwebActiveActionId = actionId;
+    window.__simExecutionContext = context;
+    window.SimActiveActionId = actionId;
+    window.__simActiveActionId = actionId;
     if (traceId) {
-      window.GhostwebActiveTraceId = traceId;
-      window.__ghostwebActiveTraceId = traceId;
+      window.SimActiveTraceId = traceId;
+      window.__simActiveTraceId = traceId;
     }
-    try { window.localStorage.setItem('ghostweb.execution_context', serialized); } catch (error) {}
-    try { window.sessionStorage.setItem('ghostweb.execution_context', serialized); } catch (error) {}
+    try { window.localStorage.setItem('sim.execution_context', serialized); } catch (error) {}
+    try { window.sessionStorage.setItem('sim.execution_context', serialized); } catch (error) {}
     try {
-      window.dispatchEvent(new CustomEvent('ghostweb:context-action-resolved', {
+      window.dispatchEvent(new CustomEvent('sim:context-action-resolved', {
         detail: { action_id: actionId, step_index: stepIndex, context: context }
       }));
     } catch (error) {}
@@ -2643,13 +2643,13 @@ _MATERIALIZER_RUNTIME = """\
   }
   function persistTargetEntryProjection(host, target) {
     if (!host || !target) return;
-    var surface = String(host.getAttribute('data-ghostweb-target-entry-surface') || '').trim();
+    var surface = String(host.getAttribute('data-sim-target-entry-surface') || '').trim();
     if (!surface) return;
     var actionId = activeActionId(host) || host.getAttribute('data-action-id') || '';
     if (!actionId) return;
     var context = {};
     try {
-      context = window.__ghostwebExecutionContext || JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{}') || {};
+      context = window.__simExecutionContext || JSON.parse(localStorage.getItem('sim.execution_context') || '{}') || {};
     } catch (error) {}
     var projection = {
       surface: surface,
@@ -2663,15 +2663,15 @@ _MATERIALIZER_RUNTIME = """\
       written_at: Date.now()
     };
     var serialized = JSON.stringify(projection);
-    try { window.sessionStorage.setItem('ghostweb.route.target_entry_projection', serialized); } catch (error) {}
-    try { window.localStorage.setItem('ghostweb.route.target_entry_projection', serialized); } catch (error) {}
+    try { window.sessionStorage.setItem('sim.route.target_entry_projection', serialized); } catch (error) {}
+    try { window.localStorage.setItem('sim.route.target_entry_projection', serialized); } catch (error) {}
   }
   function intrinsicBackOwner(target) {
     if (!target || !target.closest) return null;
     return target.closest(
-      '[data-ghostweb-action="returnBack"], ' +
-      '[data-ghostweb-action="history_back"], ' +
-      '[data-ghostweb-route-action="default_back"]'
+      '[data-sim-action="returnBack"], ' +
+      '[data-sim-action="history_back"], ' +
+      '[data-sim-route-action="default_back"]'
     );
   }
   document.addEventListener('click', function(event) {
@@ -2684,10 +2684,10 @@ _MATERIALIZER_RUNTIME = """\
     // the host's static primary attributes. A shared visible control may own
     // a same-page primary action and a route alias for another current task.
     var host = event.target && event.target.closest && event.target.closest(
-      '[data-action-id], [data-action-aliases], [data-ghostweb-action="navigate"], [data-ghostweb-target-map]'
+      '[data-action-id], [data-action-aliases], [data-sim-action="navigate"], [data-sim-target-map]'
     );
     if (!host) return;
-    if (host.closest('[data-ghostweb-noninteractive-notice]')) return;
+    if (host.closest('[data-sim-noninteractive-notice]')) return;
     var selectedActionId = activeActionId(host) || host.getAttribute('data-action-id') || '';
     synchronizeExecutionContextAction(selectedActionId);
     var selectedRow = selectedActionId ? ACTIONS[selectedActionId] : null;
@@ -2696,7 +2696,7 @@ _MATERIALIZER_RUNTIME = """\
       && selectedRow.route_navigation === true
       && selectedRow.target
     );
-    var hasStaticNavigation = host.matches('a[href], [data-ghostweb-action="navigate"][data-ghostweb-target]');
+    var hasStaticNavigation = host.matches('a[href], [data-sim-action="navigate"][data-sim-target]');
     var staticRouteTarget = !selectedRow
       ? staticRouteTargetForMissingDynamicRow(host, selectedActionId)
       : '';
@@ -2727,9 +2727,9 @@ _MATERIALIZER_RUNTIME = """\
     // Event's native propagation methods with an own property. The wrapper
     // calls the native method first, then schedules one post-dispatch route.
     var sourceAtClick = baseFilename(window.location.pathname);
-    var navigationEpochAtClick = Number(window.__ghostwebRouteNavigationEpoch || 0);
+    var navigationEpochAtClick = Number(window.__simRouteNavigationEpoch || 0);
     var routeScheduled = false;
-    host.setAttribute('data-ghostweb-route-fallback-owner', 'action-effect-materializer');
+    host.setAttribute('data-sim-route-fallback-owner', 'action-effect-materializer');
     var deferRoute = typeof window.queueMicrotask === 'function'
       ? window.queueMicrotask.bind(window)
       : function(callback) { Promise.resolve().then(callback); };
@@ -2737,8 +2737,8 @@ _MATERIALIZER_RUNTIME = """\
       // A page-owned inline route can win during the same click turn. The
       // epoch/source checks make that owner authoritative and suppress only
       // this fallback, not the page-owned transition.
-      if (host.getAttribute('data-ghostweb-route-fallback-cancelled') === 'true') return false;
-      if (Number(window.__ghostwebRouteNavigationEpoch || 0) !== navigationEpochAtClick) return false;
+      if (host.getAttribute('data-sim-route-fallback-cancelled') === 'true') return false;
+      if (Number(window.__simRouteNavigationEpoch || 0) !== navigationEpochAtClick) return false;
       if (baseFilename(window.location.pathname) !== sourceAtClick) return false;
       if (baseFilename(target) === baseFilename(window.location.pathname)) return false;
       return true;
@@ -2749,11 +2749,11 @@ _MATERIALIZER_RUNTIME = """\
       deferRoute(function() {
         routeScheduled = false;
         if (!routeStillOwned()) return;
-        if (window.GhostwebRouteExecution && window.GhostwebRouteExecution.navigate) {
-          window.GhostwebRouteExecution.navigate(target, { mode: host.getAttribute('data-ghostweb-history-mode') || 'push' });
+        if (window.SimRouteExecution && window.SimRouteExecution.navigate) {
+          window.SimRouteExecution.navigate(target, { mode: host.getAttribute('data-sim-history-mode') || 'push' });
           return;
         }
-        console.error('[T2WActionEffectMaterializer] GhostwebRouteExecution.navigate is required');
+        console.error('[T2WActionEffectMaterializer] SimRouteExecution.navigate is required');
       });
     }
     function wrapPropagationMethod(event, methodName) {
@@ -2824,10 +2824,10 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
         return ""
     payload = json.dumps(rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return f"""\
-<script data-ghostweb-runtime="dom-binding-action-host-bridge">
+<script data-sim-runtime="dom-binding-action-host-bridge">
 (function() {{
-  window.__GHOSTWEB_DOM_BINDING_ACTIONS = {payload};
-  const ACTIONS = window.__GHOSTWEB_DOM_BINDING_ACTIONS || {{}};
+  window.__SIM_DOM_BINDING_ACTIONS = {payload};
+  const ACTIONS = window.__SIM_DOM_BINDING_ACTIONS || {{}};
   const COMPONENT_ACTIONS = {{}};
   Object.keys(ACTIONS).forEach(function(actionId) {{
     const componentRef = String((ACTIONS[actionId] || {{}}).component_ref || '').trim();
@@ -2875,7 +2875,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
         if (ids.indexOf(id) === -1) ids.push(id);
       }});
     }});
-    ['data-element-id', 'data-element-aliases', 'data-ghostweb-dom-binding-id'].forEach(function(name) {{
+    ['data-element-id', 'data-element-aliases', 'data-sim-dom-binding-id'].forEach(function(name) {{
       idsFrom(el.getAttribute(name)).forEach(function(id) {{
         if (ids.indexOf(id) === -1) ids.push(id);
       }});
@@ -2892,14 +2892,14 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     return ids;
   }}
   function readMap(el) {{
-    try {{ return JSON.parse(el.getAttribute('data-ghostweb-target-map') || '{{}}') || {{}}; }}
+    try {{ return JSON.parse(el.getAttribute('data-sim-target-map') || '{{}}') || {{}}; }}
     catch (error) {{ return {{}}; }}
   }}
   function contextTraceIds() {{
     let context = null;
-    try {{ context = window.__ghostwebExecutionContext || null; }} catch (error) {{}}
+    try {{ context = window.__simExecutionContext || null; }} catch (error) {{}}
     if (!context) {{
-      try {{ context = JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{{}}'); }} catch (error) {{}}
+      try {{ context = JSON.parse(localStorage.getItem('sim.execution_context') || '{{}}'); }} catch (error) {{}}
     }}
     const ids = [];
     [context && context.task_owner_id, context && context.augmented_task_id,
@@ -2915,14 +2915,14 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     return String(value || '').split(/[?#]/, 1)[0].split('/').pop() || '';
   }}
   function actionMatchesStaticHostTarget(host, actionId) {{
-    const directTarget = host.getAttribute('data-ghostweb-target') || host.getAttribute('href') || '';
+    const directTarget = host.getAttribute('data-sim-target') || host.getAttribute('href') || '';
     let hostTarget = directTarget;
     // A shared visible route host may carry a primary target for its default
     // action and per-action targets for context-selected aliases.  Resolve
     // this candidate through its action-keyed map before comparing it with
     // the formal binding; otherwise the primary route masks a valid alias.
     try {{
-      const targetMap = JSON.parse(host.getAttribute('data-ghostweb-target-map') || '{{}}') || {{}};
+      const targetMap = JSON.parse(host.getAttribute('data-sim-target-map') || '{{}}') || {{}};
       if (Object.prototype.hasOwnProperty.call(targetMap, actionId)) {{
         hostTarget = String(targetMap[actionId] || '');
       }}
@@ -2949,9 +2949,9 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
   }}
   function contextActionId(host) {{
     let context = null;
-    try {{ context = window.__ghostwebExecutionContext || null; }} catch (error) {{}}
+    try {{ context = window.__simExecutionContext || null; }} catch (error) {{}}
     if (!context) {{
-      try {{ context = JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{{}}'); }} catch (error) {{}}
+      try {{ context = JSON.parse(localStorage.getItem('sim.execution_context') || '{{}}'); }} catch (error) {{}}
     }}
     const actionId = context && context.action_id ? String(context.action_id) : '';
     if (!actionId) return '';
@@ -2983,7 +2983,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     Object.keys(map).sort().forEach(function(key) {{
       if (key && map[key]) clean[key] = String(map[key]);
     }});
-    if (Object.keys(clean).length) setObservedAttr(el, 'data-ghostweb-target-map', JSON.stringify(clean));
+    if (Object.keys(clean).length) setObservedAttr(el, 'data-sim-target-map', JSON.stringify(clean));
   }}
   function setObservedAttr(el, name, value) {{
     value = String(value || '');
@@ -3004,9 +3004,9 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     const stepIndex = stepIndexFromActionId(actionId);
     if (traceId && contextTraceIds().indexOf(traceId) === -1) return false;
     let context = null;
-    try {{ context = window.__ghostwebExecutionContext || null; }} catch (error) {{}}
+    try {{ context = window.__simExecutionContext || null; }} catch (error) {{}}
     if (!context || typeof context !== 'object') {{
-      try {{ context = JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{{}}'); }} catch (error) {{ context = {{}}; }}
+      try {{ context = JSON.parse(localStorage.getItem('sim.execution_context') || '{{}}'); }} catch (error) {{ context = {{}}; }}
     }}
     context = Object.assign({{}}, context || {{}}, {{ action_id: actionId }});
     if (stepIndex !== null) {{
@@ -3014,17 +3014,17 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
       context.raw_step_index = stepIndex;
     }}
     const serialized = JSON.stringify(context);
-    window.__ghostwebExecutionContext = context;
-    window.GhostwebActiveActionId = actionId;
-    window.__ghostwebActiveActionId = actionId;
+    window.__simExecutionContext = context;
+    window.SimActiveActionId = actionId;
+    window.__simActiveActionId = actionId;
     if (traceId) {{
-      window.GhostwebActiveTraceId = traceId;
-      window.__ghostwebActiveTraceId = traceId;
+      window.SimActiveTraceId = traceId;
+      window.__simActiveTraceId = traceId;
     }}
-    try {{ window.localStorage.setItem('ghostweb.execution_context', serialized); }} catch (error) {{}}
-    try {{ window.sessionStorage.setItem('ghostweb.execution_context', serialized); }} catch (error) {{}}
+    try {{ window.localStorage.setItem('sim.execution_context', serialized); }} catch (error) {{}}
+    try {{ window.sessionStorage.setItem('sim.execution_context', serialized); }} catch (error) {{}}
     try {{
-      window.dispatchEvent(new CustomEvent('ghostweb:context-action-resolved', {{
+      window.dispatchEvent(new CustomEvent('sim:context-action-resolved', {{
         detail: {{ action_id: actionId, step_index: stepIndex, context: context }}
       }}));
     }} catch (error) {{}}
@@ -3036,7 +3036,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     return String(value == null ? '' : value).trim();
   }}
   function isInitialHiddenStateContainer(el) {{
-    return !!el && el.getAttribute('data-ghostweb-materialized') === 'initial-hidden-state-container';
+    return !!el && el.getAttribute('data-sim-materialized') === 'initial-hidden-state-container';
   }}
   function forceHideInitialHiddenStateContainer(el) {{
     if (!isInitialHiddenStateContainer(el)) return false;
@@ -3051,12 +3051,12 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
   }}
   function isNaturalScrollViewportHost(el) {{
     if (!el || !el.closest) return false;
-    const scroller = el.closest('[data-ghostweb-horizontal-scroll]');
+    const scroller = el.closest('[data-sim-horizontal-scroll]');
     if (!scroller) return false;
-    const scalarRef = String(el.getAttribute('data-ghostweb-visibility-state-ref') || '');
+    const scalarRef = String(el.getAttribute('data-sim-visibility-state-ref') || '');
     let mappedRefs = [];
     try {{
-      const mapped = JSON.parse(el.getAttribute('data-ghostweb-visibility-precondition-map') || '{{}}');
+      const mapped = JSON.parse(el.getAttribute('data-sim-visibility-precondition-map') || '{{}}');
       mappedRefs = Object.keys(mapped || {{}}).map(function(actionId) {{
         return String((mapped[actionId] || {{}}).state_ref || '');
       }});
@@ -3068,7 +3068,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
   }}
   function restoreNaturalScrollViewportHost(el) {{
     if (!isNaturalScrollViewportHost(el) || !el.style) return false;
-    el.setAttribute('data-ghostweb-precondition-satisfied', 'natural_scroll_viewport');
+    el.setAttribute('data-sim-precondition-satisfied', 'natural_scroll_viewport');
     el.setAttribute('aria-hidden', 'false');
     el.style.display = '';
     el.style.visibility = '';
@@ -3077,7 +3077,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     return true;
   }}
   function hidePendingPreconditionHost(el) {{
-    if (!el || !(el.getAttribute('data-ghostweb-visibility-producer-action-id') || el.getAttribute('data-ghostweb-visibility-precondition-map'))) return;
+    if (!el || !(el.getAttribute('data-sim-visibility-producer-action-id') || el.getAttribute('data-sim-visibility-precondition-map'))) return;
     if (forceHideInitialHiddenStateContainer(el)) return;
     /* A real horizontal visible-window rail owns visibility through viewport
        clipping and scroll position. Removing a child with display:none makes
@@ -3085,7 +3085,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
        context to reveal it. Keep such children in layout so pointer/touch/
        wheel scrolling can expose them without injected trace authority. */
     if (restoreNaturalScrollViewportHost(el)) return;
-    if (el.getAttribute('data-ghostweb-precondition-satisfied') === 'true') return;
+    if (el.getAttribute('data-sim-precondition-satisfied') === 'true') return;
     el.setAttribute('aria-hidden', 'true');
     const style = el.getAttribute('style') || '';
     if (!/(^|;)\\s*display\\s*:/i.test(style)) {{
@@ -3094,7 +3094,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
   }}
   function revealPreconditionHost(el) {{
     if (!el || !el.style) return;
-    el.setAttribute('data-ghostweb-precondition-satisfied', 'true');
+    el.setAttribute('data-sim-precondition-satisfied', 'true');
     if (forceHideInitialHiddenStateContainer(el)) return;
     el.setAttribute('aria-hidden', 'false');
     el.style.display = '';
@@ -3114,7 +3114,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
       if (!rect || rect.width <= 0 || rect.height <= 0 || rect.bottom <= 0 || rect.top >= window.innerHeight) return;
       var blocker = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
       if (!blocker || blocker === host || host.contains(blocker) || blocker.contains(host) || overlay.contains(blocker)) return;
-      var surface = blocker.closest && blocker.closest('section, article, [data-ghostweb-surface-role]');
+      var surface = blocker.closest && blocker.closest('section, article, [data-sim-surface-role]');
       if (!surface || !scope.contains(surface) || surface === overlay) return;
       var surfaceRect = surface.getBoundingClientRect();
       var style = window.getComputedStyle ? window.getComputedStyle(surface) : null;
@@ -3127,7 +3127,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
   function clearStaleOwningSurfaceLayers(scope, overlay) {{
     var traceId = contextTraceId();
     if (!traceId || !scope || !scope.querySelectorAll) return;
-    scope.querySelectorAll('section, article, [data-ghostweb-surface-role]').forEach(function(surface) {{
+    scope.querySelectorAll('section, article, [data-sim-surface-role]').forEach(function(surface) {{
       if (!surface || surface === overlay || surface.contains(overlay) || overlay.contains(surface)) return;
       var ownsTraceHost = Array.prototype.some.call(
         surface.querySelectorAll('[data-action-id], [data-action-aliases]'),
@@ -3147,13 +3147,13 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
   }}
   function owningOverlayForHost(host) {{
     if (!host || !host.closest) return null;
-    var selector = '[data-ghostweb-overlay-layer-role="backdrop"], [aria-modal="true"], [role="dialog"], dialog, [id*="overlay" i], [id*="modal" i]';
+    var selector = '[data-sim-overlay-layer-role="backdrop"], [aria-modal="true"], [role="dialog"], dialog, [id*="overlay" i], [id*="modal" i]';
     var closest = host.closest(selector);
     if (!closest) return null;
-    if (closest.hasAttribute('aria-hidden') || closest.hasAttribute('open') || closest.hasAttribute('data-ghostweb-overlay-layer-role')) return closest;
+    if (closest.hasAttribute('aria-hidden') || closest.hasAttribute('open') || closest.hasAttribute('data-sim-overlay-layer-role')) return closest;
     var ancestor = closest.parentElement && closest.parentElement.closest(selector);
     while (ancestor) {{
-      if (ancestor.hasAttribute('aria-hidden') || ancestor.hasAttribute('open') || ancestor.hasAttribute('data-ghostweb-overlay-layer-role')) return ancestor;
+      if (ancestor.hasAttribute('aria-hidden') || ancestor.hasAttribute('open') || ancestor.hasAttribute('data-sim-overlay-layer-role')) return ancestor;
       ancestor = ancestor.parentElement && ancestor.parentElement.closest(selector);
     }}
     return closest;
@@ -3169,7 +3169,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     if (!overlay || overlayAlreadyClosed(overlay)) return false;
     var previousDisplay = overlay.style ? overlay.style.getPropertyValue('display') : '';
     var previousPriority = overlay.style ? overlay.style.getPropertyPriority('display') : '';
-    overlay.setAttribute('data-ghostweb-contract-projected-hidden', 'true');
+    overlay.setAttribute('data-sim-contract-projected-hidden', 'true');
     overlay.setAttribute('aria-hidden', 'true');
     if (overlay.style) overlay.style.setProperty('display', 'none', 'important');
     if (typeof MutationObserver === 'function') {{
@@ -3181,7 +3181,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
           if (previousDisplay) overlay.style.setProperty('display', previousDisplay, previousPriority);
           else overlay.style.removeProperty('display');
         }}
-        overlay.removeAttribute('data-ghostweb-contract-projected-hidden');
+        overlay.removeAttribute('data-sim-contract-projected-hidden');
         observer.disconnect();
       }});
       observer.observe(overlay, {{ attributes: true, attributeFilter: ['aria-hidden', 'class', 'open'] }});
@@ -3208,15 +3208,15 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     window.requestAnimationFrame(function() {{ clearStaleOwningSurfaceBlockers(scope, overlay); }});
   }}
   function ensureSamePageActivationStyle() {{
-    if (document.getElementById('ghostweb-same-page-activation-style')) return;
+    if (document.getElementById('sim-same-page-activation-style')) return;
     var style = document.createElement('style');
-    style.id = 'ghostweb-same-page-activation-style';
-    style.textContent = '[data-ghostweb-inline-active="true"]{{outline:2px solid #1677ff!important;outline-offset:-2px!important;}}';
+    style.id = 'sim-same-page-activation-style';
+    style.textContent = '[data-sim-inline-active="true"]{{outline:2px solid #1677ff!important;outline-offset:-2px!important;}}';
     (document.head || document.documentElement).appendChild(style);
   }}
   function setSamePageActivationState(host, active) {{
     if (!host || !host.setAttribute) return;
-    host.setAttribute('data-ghostweb-inline-active', active ? 'true' : 'false');
+    host.setAttribute('data-sim-inline-active', active ? 'true' : 'false');
     host.setAttribute('data-selected', active ? 'true' : 'false');
     host.setAttribute('aria-pressed', active ? 'true' : 'false');
   }}
@@ -3235,17 +3235,17 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
   }}
   function applyVisibilityPreconditions(producerId, row) {{
     if (!producerId) return;
-    document.querySelectorAll('[data-ghostweb-visibility-producer-action-id], [data-ghostweb-visibility-precondition-map]').forEach(function(el) {{
+    document.querySelectorAll('[data-sim-visibility-producer-action-id], [data-sim-visibility-precondition-map]').forEach(function(el) {{
       var matches = [];
       try {{
-        var mapped = JSON.parse(el.getAttribute('data-ghostweb-visibility-precondition-map') || '{{}}');
+        var mapped = JSON.parse(el.getAttribute('data-sim-visibility-precondition-map') || '{{}}');
         Object.keys(mapped || {{}}).forEach(function(actionId) {{
           var entry = mapped[actionId] || {{}};
           if (String(entry.producer_action_id || '') === producerId) matches.push(entry);
         }});
       }} catch (error) {{}}
-      if (el.getAttribute('data-ghostweb-visibility-producer-action-id') === producerId) {{
-        matches.push({{ required_visible_value: el.getAttribute('data-ghostweb-required-visible-value') || '' }});
+      if (el.getAttribute('data-sim-visibility-producer-action-id') === producerId) {{
+        matches.push({{ required_visible_value: el.getAttribute('data-sim-required-visible-value') || '' }});
       }}
       if (!matches.length) return;
       revealPreconditionHost(el);
@@ -3253,8 +3253,8 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
   }}
   function runtimeSnapshot() {{
     try {{
-      if (window.GhostwebRuntimeState && typeof window.GhostwebRuntimeState.snapshot === 'function') {{
-        return window.GhostwebRuntimeState.snapshot();
+      if (window.SimRuntimeState && typeof window.SimRuntimeState.snapshot === 'function') {{
+        return window.SimRuntimeState.snapshot();
       }}
     }} catch (error) {{}}
     return null;
@@ -3270,7 +3270,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
       const name = String(attribute.name || '').toLowerCase();
       if (!name.startsWith('data-') ||
           name.startsWith('data-action-') ||
-          name.startsWith('data-ghostweb-') ||
+          name.startsWith('data-sim-') ||
           name.startsWith('data-element-')) return;
       const value = String(attribute.value || '').trim();
       if (value) entityParts.push(name + '=' + value);
@@ -3308,7 +3308,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
         effect_kind: row.effect_kind || '',
         trigger: trigger || '',
         observed_page: decodeURIComponent(String(window.location.pathname || '').split('/').pop() || ''),
-        observed_target_filename: String(host.getAttribute('data-ghostweb-target') || host.getAttribute('href') || '').replace(/^.*\\//, ''),
+        observed_target_filename: String(host.getAttribute('data-sim-target') || host.getAttribute('href') || '').replace(/^.*\\//, ''),
         observed_host_text: String(host.innerText || host.textContent || '').replace(/\\s+/g, ' ').trim(),
         observed_control_value: targetTextValue(host),
         observed_selected: host.getAttribute('data-selected') === 'true' || host.getAttribute('aria-selected') === 'true' || host.getAttribute('aria-checked') === 'true',
@@ -3320,13 +3320,13 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
         observed_at_ms: Date.now()
       }};
       let observations = [];
-      try {{ observations = JSON.parse(sessionStorage.getItem('__ghostweb_dom_action_observations_v1__') || '[]'); }} catch (error) {{}}
+      try {{ observations = JSON.parse(sessionStorage.getItem('__sim_dom_action_observations_v1__') || '[]'); }} catch (error) {{}}
       if (!Array.isArray(observations)) observations = [];
       observations.push(observation);
       if (observations.length > 200) observations = observations.slice(-200);
-      try {{ sessionStorage.setItem('__ghostweb_dom_action_observations_v1__', JSON.stringify(observations)); }} catch (error) {{}}
-      window.__ghostwebLastDomActionObservation = observation;
-      try {{ window.dispatchEvent(new CustomEvent('ghostweb:dom-action-observed', {{ detail: observation }})); }} catch (error) {{}}
+      try {{ sessionStorage.setItem('__sim_dom_action_observations_v1__', JSON.stringify(observations)); }} catch (error) {{}}
+      window.__simLastDomActionObservation = observation;
+      try {{ window.dispatchEvent(new CustomEvent('sim:dom-action-observed', {{ detail: observation }})); }} catch (error) {{}}
     }});
   }}
   function isVisibleGestureHost(host) {{
@@ -3340,7 +3340,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     const direct = event.target && event.target.closest &&
       event.target.closest('[data-gesture-host][data-action-id], [data-gesture-host][data-action-aliases]');
     const context = (function() {{
-      try {{ return window.__ghostwebExecutionContext || JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{{}}'); }}
+      try {{ return window.__simExecutionContext || JSON.parse(localStorage.getItem('sim.execution_context') || '{{}}'); }}
       catch (error) {{ return {{}}; }}
     }})();
     const actionId = context && context.action_id ? String(context.action_id) : '';
@@ -3401,7 +3401,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     var actionId = runtimeActionIds(host)[0] || '';
     var transition = gestureTransitionFor(host, actionId);
     if (!gestureDeltaMatchesTransition(transition, delta)) return false;
-    var runtime = window.GhostwebRuntimeState;
+    var runtime = window.SimRuntimeState;
     if (!runtime || typeof runtime.write !== 'function') return false;
     var value = {{ effect: 'advance_visible_window' }};
     ['axis', 'direction', 'reveals'].forEach(function(key) {{
@@ -3412,7 +3412,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
       source: 'action_effect_materializer.visible_window_gesture'
     }});
     try {{
-      window.dispatchEvent(new CustomEvent('ghostweb:visible-window-advanced', {{
+      window.dispatchEvent(new CustomEvent('sim:visible-window-advanced', {{
         detail: {{ action_id: actionId, state_ref: transition.state_ref, value: value }}
       }}));
     }} catch (error) {{}}
@@ -3431,9 +3431,9 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
        consumers.  This is a presentation of already materialized host
        identity, not a task answer or evaluator-derived state write. */
     if (active && ids.indexOf(active) !== -1) {{
-      setObservedAttr(el, 'data-ghostweb-context-action-id', active);
+      setObservedAttr(el, 'data-sim-context-action-id', active);
     }} else {{
-      removeObservedAttr(el, 'data-ghostweb-context-action-id');
+      removeObservedAttr(el, 'data-sim-context-action-id');
     }}
     /* Keep the page-authored primary identity stable. Page-owned reducers may
        bind their listener during DOMContentLoaded with an exact
@@ -3448,12 +3448,12 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     const aliases = ids.filter(function(id) {{ return id !== primary; }});
     if (aliases.length) setObservedAttr(el, 'data-action-aliases', aliases.join(' '));
     else removeObservedAttr(el, 'data-action-aliases');
-    removeObservedAttr(el, 'data-ghostweb-click-contract-kind');
+    removeObservedAttr(el, 'data-sim-click-contract-kind');
     removeObservedAttr(el, 'aria-disabled');
     const map = readMap(el);
-    const staticTarget = el.getAttribute('data-ghostweb-target') || el.getAttribute('href') || '';
+    const staticTarget = el.getAttribute('data-sim-target') || el.getAttribute('href') || '';
     const hasStaticRoute = Boolean(staticTarget) && (
-      el.getAttribute('data-ghostweb-action') === 'navigate' ||
+      el.getAttribute('data-sim-action') === 'navigate' ||
       el.hasAttribute('href') ||
       el.hasAttribute('onclick')
     );
@@ -3481,23 +3481,23 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
       effectiveRow.route_navigation !== false
     );
     if (effectiveHasRoute) {{
-      el.setAttribute('data-ghostweb-action', 'navigate');
-      if (effectiveRow.target) el.setAttribute('data-ghostweb-target', effectiveRow.target);
+      el.setAttribute('data-sim-action', 'navigate');
+      if (effectiveRow.target) el.setAttribute('data-sim-target', effectiveRow.target);
       writeMap(el, map);
     }} else if (hasExactStaticRoute) {{
-      el.setAttribute('data-ghostweb-action', 'navigate');
-      el.setAttribute('data-ghostweb-target', staticMappedTarget);
+      el.setAttribute('data-sim-action', 'navigate');
+      el.setAttribute('data-sim-target', staticMappedTarget);
     }} else if (!active && hasStaticRoute) {{
       // No context/formal route may erase the page-authored entity target.
       // This is the fallback after rejecting a stale cross-target alias.
       if (hasRoute) writeMap(el, map);
     }} else {{
-      removeObservedAttr(el, 'data-ghostweb-action');
-      removeObservedAttr(el, 'data-ghostweb-target');
+      removeObservedAttr(el, 'data-sim-action');
+      removeObservedAttr(el, 'data-sim-target');
       if (hasRoute) writeMap(el, map);
     }}
-    if (effectiveRow.effect_kind) setObservedAttr(el, 'data-ghostweb-effect-kind', effectiveRow.effect_kind);
-    if (effectiveRow.dom_binding_id) setObservedAttr(el, 'data-ghostweb-dom-binding-id', effectiveRow.dom_binding_id);
+    if (effectiveRow.effect_kind) setObservedAttr(el, 'data-sim-effect-kind', effectiveRow.effect_kind);
+    if (effectiveRow.dom_binding_id) setObservedAttr(el, 'data-sim-dom-binding-id', effectiveRow.dom_binding_id);
     hidePendingPreconditionHost(el);
   }}
   function scan(root) {{
@@ -3561,15 +3561,15 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
       scanned_host_count: scannedHostCount || 0,
       refreshed_subtree_root_id: candidates.length === 1 ? (candidates[0].id || '') : ''
     }};
-    window.__ghostwebLastContextHostRefresh = diagnostic;
-    try {{ window.dispatchEvent(new CustomEvent('ghostweb:task-context-host-refresh', {{ detail: diagnostic }})); }} catch (error) {{}}
+    window.__simLastContextHostRefresh = diagnostic;
+    try {{ window.dispatchEvent(new CustomEvent('sim:task-context-host-refresh', {{ detail: diagnostic }})); }} catch (error) {{}}
   }}
   function refreshCurrentContextHost(event) {{
     flushPendingGestureObservations('before_context_action_change');
     const detail = event && event.detail && typeof event.detail === 'object' ? event.detail : {{}};
     const context = detail.context && typeof detail.context === 'object'
       ? detail.context
-      : (window.__ghostwebExecutionContext || {{}});
+      : (window.__simExecutionContext || {{}});
     const actionId = String(detail.action_id || context.action_id || '').trim();
     if (!actionId) {{
       recordContextHostRefresh('fail_closed_missing_action_contract', actionId, [], 0);
@@ -3581,9 +3581,9 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
     const hasDynamicContract = Object.prototype.hasOwnProperty.call(ACTIONS, actionId);
     const exactStaticRouteCandidates = candidates.filter(function(host) {{
       const target = String(readMap(host)[actionId] || '').trim();
-      const declaredRoute = host.getAttribute('data-ghostweb-action') === 'navigate' ||
+      const declaredRoute = host.getAttribute('data-sim-action') === 'navigate' ||
         host.hasAttribute('href') || host.hasAttribute('onclick') ||
-        Boolean(host.getAttribute('data-ghostweb-target'));
+        Boolean(host.getAttribute('data-sim-target'));
       return Boolean(target) && declaredRoute;
     }});
     if (!hasDynamicContract && exactStaticRouteCandidates.length !== 1) {{
@@ -3610,7 +3610,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
       scannedHostCount
     );
   }}
-  window.addEventListener('ghostweb:task-context-update', function(event) {{
+  window.addEventListener('sim:task-context-update', function(event) {{
     /* The unique current contract host must update synchronously so a click
        issued in this same host turn sees its current route/effect projection.
        Missing or ambiguous hosts fail closed instead of scanning unrelated
@@ -3622,7 +3622,7 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
        final gesture observation before the owning page can disappear. */
     flushPendingGestureObservations('before_click_or_navigation');
     const host = event.target && event.target.closest && event.target.closest('[data-action-id], [data-action-aliases]');
-    if (!host || host.closest('[data-ghostweb-noninteractive-notice]')) return;
+    if (!host || host.closest('[data-sim-noninteractive-notice]')) return;
     const active = activeActionId(host);
     if (active) synchronizeExecutionContextAction(active);
     /* Observe after page-owned reducers have handled the real GUI action. */
@@ -3689,15 +3689,15 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
         flush_reason: reason || 'explicit'
       }});
     }});
-    window.__ghostwebLastGestureObservationFlush = {{
+    window.__simLastGestureObservationFlush = {{
       reason: reason || 'explicit',
       observation_count: pending.length,
       input_event_count: pending.reduce(function(total, entry) {{ return total + entry.event_count; }}, 0),
       action_ids: pending.map(function(entry) {{ return entry.action_id; }})
     }};
-    return window.__ghostwebLastGestureObservationFlush;
+    return window.__simLastGestureObservationFlush;
   }}
-  window.__ghostwebFlushPendingGestureObservations = flushPendingGestureObservations;
+  window.__simFlushPendingGestureObservations = flushPendingGestureObservations;
   ['pointerdown', 'touchstart'].forEach(function(eventName) {{
     document.addEventListener(eventName, function(event) {{
       var host = gestureHostForEvent(event);
@@ -3752,10 +3752,10 @@ def _dom_binding_runtime(bindings: Iterable[Mapping[str, Any]]) -> str:
       flushPendingGestureObservations('before_navigation_or_submit');
     }}, true);
   }});
-  window.addEventListener('ghostweb:before-terminate', function() {{
+  window.addEventListener('sim:before-terminate', function() {{
     flushPendingGestureObservations('before_terminate');
   }});
-  window.addEventListener('ghostweb:before-evaluator-read', function() {{
+  window.addEventListener('sim:before-evaluator-read', function() {{
     flushPendingGestureObservations('before_evaluator_read');
   }});
 }})();
@@ -3793,7 +3793,7 @@ def _inject_head_runtime_after_charset(html_text: str, runtime: str) -> str:
 
 def _ensure_runtime(html_text: str) -> str:
     html_text = re.sub(
-        r"<script\b[^>]*data-ghostweb-runtime=[\"']action-effect-materializer[\"'][^>]*>[\s\S]*?</script>\s*",
+        r"<script\b[^>]*data-sim-runtime=[\"']action-effect-materializer[\"'][^>]*>[\s\S]*?</script>\s*",
         "",
         html_text,
         flags=re.IGNORECASE,
@@ -3805,11 +3805,11 @@ def _ensure_runtime(html_text: str) -> str:
 
 
 _DOM_BINDING_RUNTIME_BLOCK_RE = re.compile(
-    r"<script\b[^>]*data-ghostweb-runtime=[\"']dom-binding-action-host-bridge[\"'][^>]*>(?P<body>[\s\S]*?)</script>\s*",
+    r"<script\b[^>]*data-sim-runtime=[\"']dom-binding-action-host-bridge[\"'][^>]*>(?P<body>[\s\S]*?)</script>\s*",
     flags=re.IGNORECASE,
 )
 _DOM_BINDING_ACTIONS_ASSIGNMENT_RE = re.compile(
-    r"window\.__GHOSTWEB_DOM_BINDING_ACTIONS\s*=\s*(?P<payload>\{[\s\S]*?\})\s*;\s*const\s+ACTIONS",
+    r"window\.__SIM_DOM_BINDING_ACTIONS\s*=\s*(?P<payload>\{[\s\S]*?\})\s*;\s*const\s+ACTIONS",
 )
 
 
@@ -3934,10 +3934,10 @@ def materialize_action_effect_dom(
         except OSError:
             continue
         if (
-            'data-ghostweb-runtime="action-effect-materializer"' in text
-            or "data-ghostweb-runtime='action-effect-materializer'" in text
-            or 'data-ghostweb-runtime="dom-binding-action-host-bridge"' in text
-            or "data-ghostweb-runtime='dom-binding-action-host-bridge'" in text
+            'data-sim-runtime="action-effect-materializer"' in text
+            or "data-sim-runtime='action-effect-materializer'" in text
+            or 'data-sim-runtime="dom-binding-action-host-bridge"' in text
+            or "data-sim-runtime='dom-binding-action-host-bridge'" in text
         ):
             pages_to_visit.add(path.name)
     if included_pages is not None:

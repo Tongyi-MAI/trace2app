@@ -18,7 +18,7 @@ OPEN_TAG_RE = re.compile(r"<(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>[^>]*)>", re.DOT
 ATTR_RE = re.compile(r"""(?P<name>[\w:-]+)\s*=\s*("(?P<dq>[^"]*)"|'(?P<sq>[^']*)')""", re.DOTALL)
 ACTION_HOST_ATTRS = (
     "data-action-id",
-    "data-ghostweb-action-id",
+    "data-sim-action-id",
     "data-action-aliases",
     "data-element-id",
     "data-element-aliases",
@@ -464,7 +464,7 @@ def build_action_execution_contracts_from_replay_plan(
     checkpoint_count = len(checkpoints)
     checkpoint_source_action_count = sum(1 for cp in checkpoints if cp.get("source_actions"))
     return {
-        "format": "ghostweb_action_execution_contracts",
+        "format": "sim_action_execution_contracts",
         "schema_revision": 2,
         "source": (
             "contract_replay_plan + checkpoint_matrix + action_effect_contracts"
@@ -570,7 +570,7 @@ def build_action_execution_contracts_from_formal_package_inputs(
         onload_outcome_observer = bool(
             not action_hosts
             and primary_binding.get("checkpoint_kind") == "outcome"
-            and str(primary_binding.get("event") or "").startswith("ghostweb:checkpoint:")
+            and str(primary_binding.get("event") or "").startswith("sim:checkpoint:")
             and primary_binding.get("terminal_observable_page_filename")
         )
         source_page = str(
@@ -657,7 +657,7 @@ def build_action_execution_contracts_from_formal_package_inputs(
     ]
     actions_by_id = {row["action_id"]: row for row in actions}
     return {
-        "format": "ghostweb_action_execution_contracts",
+        "format": "sim_action_execution_contracts",
         "schema_revision": 3,
         "source": "sealed_package_action_host_manifest + runtime_event_bindings + checkpoint_matrix",
         "action_count": len(actions),
@@ -745,7 +745,7 @@ def build_action_execution_contracts(
     checkpoint_count = len(checkpoints)
     checkpoint_source_action_count = sum(1 for cp in checkpoints if cp.get("source_actions"))
     return {
-        "format": "ghostweb_action_execution_contracts",
+        "format": "sim_action_execution_contracts",
         "schema_revision": 1,
         "action_count": len(actions),
         "checkpoint_count": checkpoint_count,
@@ -813,7 +813,7 @@ def action_ids_from_attrs(attrs: dict[str, str]) -> list[str]:
         value = str(attrs.get(attr_name, "") or "").strip()
         if not value:
             continue
-        if attr_name in {"data-action-id", "data-ghostweb-action-id"}:
+        if attr_name in {"data-action-id", "data-sim-action-id"}:
             candidates = [value] if _is_exact_action_id(value) else []
         elif attr_name == "data-action-aliases":
             candidates = [token for token in value.split() if _is_exact_action_id(token)]
@@ -855,7 +855,7 @@ def _selector_for_attr(attr_name: str, value: str, action_id: str) -> str:
 def _selector_for_action(attrs: dict[str, str], action_id: str) -> str:
     for attr_name in ACTION_HOST_ATTRS:
         value = attrs.get(attr_name, "")
-        if attr_name in {"data-action-id", "data-ghostweb-action-id"} and value != action_id:
+        if attr_name in {"data-action-id", "data-sim-action-id"} and value != action_id:
             continue
         if attr_name == "data-action-aliases" and action_id not in value.split():
             continue
@@ -866,7 +866,7 @@ def _selector_for_action(attrs: dict[str, str], action_id: str) -> str:
 
 
 def _event_types_for_host(tag: str, attrs: dict[str, str]) -> list[str]:
-    if attrs.get("data-gesture-host") or attrs.get("data-ghostweb-gesture-action"):
+    if attrs.get("data-gesture-host") or attrs.get("data-sim-gesture-action"):
         return ["wheel", "scroll", "pointerup", "touchend"]
     tag_lower = tag.lower()
     if tag_lower in {"input", "textarea", "select"}:
@@ -878,8 +878,8 @@ def _state_fields_for_host(attrs: dict[str, str]) -> list[str]:
     raw_values = [
         attrs.get("data-state-ref", ""),
         attrs.get("data-state-refs", ""),
-        attrs.get("data-ghostweb-state-ref", ""),
-        attrs.get("data-ghostweb-state-refs", ""),
+        attrs.get("data-sim-state-ref", ""),
+        attrs.get("data-sim-state-refs", ""),
     ]
     fields: list[str] = []
     for raw in raw_values:
@@ -903,11 +903,11 @@ def _state_fields_for_host(attrs: dict[str, str]) -> list[str]:
 
 
 def _runtime_event_for_host(attrs: dict[str, str]) -> str:
-    if attrs.get("data-ghostweb-effect-kind") == "same_page_mutation":
+    if attrs.get("data-sim-effect-kind") == "same_page_mutation":
         return "same_page_state_mutated"
-    if attrs.get("data-gesture-host") or attrs.get("data-ghostweb-gesture-action"):
-        return str(attrs.get("data-ghostweb-runtime-event") or "gesture")
-    return str(attrs.get("data-ghostweb-runtime-event") or "")
+    if attrs.get("data-gesture-host") or attrs.get("data-sim-gesture-action"):
+        return str(attrs.get("data-sim-runtime-event") or "gesture")
+    return str(attrs.get("data-sim-runtime-event") or "")
 
 
 def _script_has_dynamic_action_host(script_source: str, action_id: str) -> bool:
@@ -926,7 +926,7 @@ def _script_has_dynamic_action_host(script_source: str, action_id: str) -> bool:
 
 
 def _target_filename_for_action(attrs: dict[str, str], action_id: str) -> str:
-    raw_target_map = str(attrs.get("data-ghostweb-target-map") or "").strip()
+    raw_target_map = str(attrs.get("data-sim-target-map") or "").strip()
     if raw_target_map:
         try:
             target_map = json.loads(html_lib.unescape(raw_target_map))
@@ -936,7 +936,7 @@ def _target_filename_for_action(attrs: dict[str, str], action_id: str) -> str:
             target = str(target_map.get(action_id) or "").strip()
             if target:
                 return target
-    return attrs.get("data-ghostweb-target", "")
+    return attrs.get("data-sim-target", "")
 
 
 def _dynamic_host_contract_for_action(
@@ -1055,13 +1055,13 @@ def build_action_host_manifest_for_page(
                 continue
             for name in (
                 "data-action-id",
-                "data-ghostweb-action-id",
+                "data-sim-action-id",
                 "data-action-aliases",
             ):
                 value = str(attrs.get(name, "") or "").strip()
                 if not value:
                     continue
-                if name in {"data-action-id", "data-ghostweb-action-id"}:
+                if name in {"data-action-id", "data-sim-action-id"}:
                     candidates = [value] if _is_exact_action_id(value) else []
                 else:
                     candidates = [token for token in value.split() if _is_exact_action_id(token)]
@@ -1114,7 +1114,7 @@ def build_action_host_manifest_for_page(
                         "target_filename": _target_filename_for_action(attrs, action_id),
                         "runtime_event": _runtime_event_for_host(attrs),
                         "state_fields": _state_fields_for_host(attrs),
-                        "source_contract": attrs.get("data-ghostweb-dom-binding-id", ""),
+                        "source_contract": attrs.get("data-sim-dom-binding-id", ""),
                         "authority": authority,
                     }
                 )

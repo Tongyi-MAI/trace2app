@@ -87,7 +87,7 @@ class PersistenceMixin:
         producer_version: str = "v1",
     ) -> Dict[str, Any]:
         manifest = {
-            "format": "ghostweb_phase_manifest",
+            "format": "sim_phase_manifest",
             "phase": phase,
             "producer": producer,
             "producer_version": producer_version,

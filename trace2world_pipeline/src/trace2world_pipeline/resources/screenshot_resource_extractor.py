@@ -152,7 +152,7 @@ class ScreenshotResourceExtractor:
             window_seconds=self.file_rate_window_seconds,
             state_path=str(
                 self.config.get("mineru_rate_limit_state_path")
-                or os.path.join(tempfile.gettempdir(), "ghostweb_mineru_file_rate_limit.json")
+                or os.path.join(tempfile.gettempdir(), "sim_mineru_file_rate_limit.json")
             ),
             logger=self.logger,
         )

@@ -98,7 +98,7 @@ def materialize(result_dir: Path, *, replace_existing: bool = False) -> dict[str
     if before != after:
         raise RuntimeError("pre-existing compiled execution views changed during materialization")
     report = {
-        "format": "ghostweb_environment_state_kernel_materialization_report",
+        "format": "sim_environment_state_kernel_materialization_report",
         "schema_revision": 1,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "result_dir": str(result_dir),

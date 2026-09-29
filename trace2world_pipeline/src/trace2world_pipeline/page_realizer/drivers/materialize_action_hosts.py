@@ -65,7 +65,7 @@ def _load_route_manifest(result_dir: Path) -> dict[str, Any]:
     if not path.is_file():
         return {}
     text = path.read_text(encoding="utf-8")
-    marker = "window.GhostwebRouteManifest"
+    marker = "window.SimRouteManifest"
     start = text.rfind(marker)
     if start < 0:
         raise ValueError(f"route manifest is not a JSON assignment: {path}")
@@ -87,7 +87,7 @@ def _preserved_action_host_expectations(
     pages_dir: Path,
 ) -> dict[str, set[str]]:
     manifest = _load_json(manifest_path)
-    if manifest.get("format") != "ghostweb_action_host_manifest":
+    if manifest.get("format") != "sim_action_host_manifest":
         raise ValueError(f"invalid preserved action-host manifest: {manifest_path}")
     hosts = manifest.get("hosts")
     if not isinstance(hosts, list) or not hosts:
@@ -139,7 +139,7 @@ def _refresh_page_execution_runtimes(
             "changed_pages": [],
         }
     for page_path in sorted(pages_dir.glob("*.html")):
-        if page_path.name == "ghostweb-task-runner.html":
+        if page_path.name == "sim-task-runner.html":
             continue
         contract = page_execution_contract_for_filename(page_execution_contracts, page_path.name)
         original = page_path.read_text(encoding="utf-8")
@@ -164,7 +164,7 @@ def _refresh_route_execution_runtime_only(
     changed_pages: list[str] = []
     included_pages = set(included_page_filenames or [])
     for page_path in sorted(pages_dir.glob("*.html")):
-        if page_path.name == "ghostweb-task-runner.html":
+        if page_path.name == "sim-task-runner.html":
             continue
         if included_pages and page_path.name not in included_pages:
             continue
@@ -205,7 +205,7 @@ def _gesture_route_actions_by_page(action_effect_contracts: dict[str, Any]) -> d
 
 
 _GESTURE_ROUTE_RUNTIME_RE = re.compile(
-    r"\s*<script\s+data-ghostweb-runtime=[\"']gesture-route-materializer[\"'][^>]*>.*?</script>",
+    r"\s*<script\s+data-sim-runtime=[\"']gesture-route-materializer[\"'][^>]*>.*?</script>",
     re.DOTALL,
 )
 
@@ -217,34 +217,34 @@ def _strip_gesture_route_runtime(html: str) -> str:
 def _gesture_route_runtime_script(actions: list[dict[str, str]]) -> str:
     payload = json.dumps(actions, ensure_ascii=False, sort_keys=True)
     return f"""
-<script data-ghostweb-runtime="gesture-route-materializer">
+<script data-sim-runtime="gesture-route-materializer">
 (function() {{
   const ACTIONS = {payload};
   if (!Array.isArray(ACTIONS) || !ACTIONS.length) return;
   const fired = new Set();
   function writeRuntime(action) {{
     const target = action && action.target_filename;
-    if (!target || !window.GhostwebRuntimeState || !window.GhostwebRuntimeState.write) return;
+    if (!target || !window.SimRuntimeState || !window.SimRuntimeState.write) return;
     const meta = {{
       action_id: action.action_id,
       transaction_id: action.transaction_id || '',
       effect_kind: 'gesture_route',
       source: 'gesture_route_materializer'
     }};
-    try {{ window.GhostwebRuntimeState.write('target_filename', target, meta); }} catch (error) {{}}
-    try {{ window.GhostwebRuntimeState.write('runtime.page', target, meta); }} catch (error) {{}}
+    try {{ window.SimRuntimeState.write('target_filename', target, meta); }} catch (error) {{}}
+    try {{ window.SimRuntimeState.write('runtime.page', target, meta); }} catch (error) {{}}
   }}
   function emit(action, eventType) {{
     if (!action || !action.action_id) return;
-    if (window.GhostwebCheckpointActionMap && window.GhostwebCheckpointActionMap.emitForAction) {{
-      try {{ window.GhostwebCheckpointActionMap.emitForAction(action.action_id, eventType || 'gesture'); }} catch (error) {{}}
+    if (window.SimCheckpointActionMap && window.SimCheckpointActionMap.emitForAction) {{
+      try {{ window.SimCheckpointActionMap.emitForAction(action.action_id, eventType || 'gesture'); }} catch (error) {{}}
     }}
   }}
   function navigate(action) {{
     const target = action && action.target_filename;
     if (!target) return;
-    if (window.GhostwebRouteExecution && window.GhostwebRouteExecution.navigate) {{
-      window.GhostwebRouteExecution.navigate(target, {{ mode: 'push' }});
+    if (window.SimRouteExecution && window.SimRouteExecution.navigate) {{
+      window.SimRouteExecution.navigate(target, {{ mode: 'push' }});
       return;
     }}
     window.location.href = target;
@@ -256,7 +256,7 @@ def _gesture_route_runtime_script(actions: list[dict[str, str]]) -> str:
     writeRuntime(action);
     window.setTimeout(function() {{ navigate(action); }}, 0);
   }}
-  window.GhostwebGestureRouteRuntime = Object.assign(window.GhostwebGestureRouteRuntime || {{}}, {{
+  window.SimGestureRouteRuntime = Object.assign(window.SimGestureRouteRuntime || {{}}, {{
     actions: ACTIONS.slice(),
     fireAction: function(actionId, eventType) {{
       const action = ACTIONS.find(function(row) {{ return row.action_id === actionId; }});
@@ -329,7 +329,7 @@ def _reseal_exported_formal_mirror(*, source_root: Path, export_app_dir: Path) -
         source_root=source_root,
         app_root=export_app_dir,
         package_name=export_app_dir.parent.name,
-        target="slime_webenv_preserved_package_route_materialization",
+        target="environment_preserved_package_route_materialization",
         require_action_authority=True,
         require_evaluators=True,
     )
@@ -554,7 +554,7 @@ def run(
                 expected_actions_by_page.setdefault(page, set()).add("fallback_back")
 
     action_host_manifest: dict[str, Any] = {
-        "format": "ghostweb_action_host_manifest",
+        "format": "sim_action_host_manifest",
         "schema_revision": 2,
         "source": "scripts.analysis.materialize_action_hosts",
         "contract_source_mode": (
@@ -573,7 +573,7 @@ def run(
         ],
     }
     action_host_validation: dict[str, Any] = {
-        "format": "ghostweb_action_host_manifest_validation",
+        "format": "sim_action_host_manifest_validation",
         "schema_revision": 2,
         "source": "scripts.analysis.materialize_action_hosts",
         "contract_source_mode": action_host_manifest["contract_source_mode"],

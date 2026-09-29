@@ -53,7 +53,7 @@ def _build_all_trace_screenshot_scope(mt_resource_root: Path, traces: List[Dict]
             )
         trace_screenshots[trace_id] = sorted(dict.fromkeys(refs))
     return {
-        "schema": "ghostweb.resource_extraction_scope.v1",
+        "schema": "sim.resource_extraction_scope.v1",
         "mode": "all_trace_screenshots",
         "trace_root": str(mt_resource_root),
         "trace_count": len(traces),

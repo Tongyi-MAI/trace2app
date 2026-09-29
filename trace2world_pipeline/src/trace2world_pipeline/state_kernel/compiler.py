@@ -166,8 +166,8 @@ def compile_environment_state_artifacts(
             "transaction_id": "compat::storage_replace",
             "transaction_kind": "compat_storage_replace",
             "input_schema": {"type": "object", "required": ["storage_key", "value"]},
-            "allowed_storage_keys": sorted([*collections, "idCounter", "__ghostweb_seed_version"]),
-            "allowed_storage_prefixes": ["__gw_drafts__", "__gw_passenger_form_draft__", "__ghostweb_route_events"],
+            "allowed_storage_keys": sorted([*collections, "idCounter", "__sim_seed_version"]),
+            "allowed_storage_prefixes": ["__gw_drafts__", "__gw_passenger_form_draft__", "__sim_route_events"],
             "state_reads": ["compat::storage::<payload.storage_key>"],
             "state_writes": ["compat::storage::<payload.storage_key>"],
             "write_policy": "compiled_storage_key_or_prefix_only",
@@ -192,7 +192,7 @@ def compile_environment_state_artifacts(
     ]
 
     storage_plan = {
-        "format": "ghostweb_environment_storage_plan",
+        "format": "sim_environment_storage_plan",
         "schema_revision": 1,
         "backend": "sqlite",
         "schema_hash": schema_hash,
@@ -214,7 +214,7 @@ def compile_environment_state_artifacts(
         "source_provenance": dict(source_provenance or {}),
     }
     runtime_state_registry = {
-        "format": "ghostweb_runtime_state_registry",
+        "format": "sim_runtime_state_registry",
         "schema_revision": 1,
         "schema_hash": schema_hash,
         "world_hash": world_hash,
@@ -223,7 +223,7 @@ def compile_environment_state_artifacts(
         "authority": "environment_state_kernel",
     }
     transaction_manifest = {
-        "format": "ghostweb_transaction_manifest",
+        "format": "sim_transaction_manifest",
         "schema_revision": 1,
         "schema_hash": schema_hash,
         "world_hash": world_hash,
@@ -233,7 +233,7 @@ def compile_environment_state_artifacts(
         },
     }
     seed_manifest = {
-        "format": "ghostweb_environment_seed_manifest",
+        "format": "sim_environment_seed_manifest",
         "schema_revision": 1,
         "schema_hash": schema_hash,
         "world_hash": world_hash,
@@ -245,7 +245,7 @@ def compile_environment_state_artifacts(
         "injection_policy": "controller_initializing_only",
     }
     evaluator_state_view = {
-        "format": "ghostweb_evaluator_state_view",
+        "format": "sim_evaluator_state_view",
         "schema_revision": 1,
         "schema_hash": schema_hash,
         "world_hash": world_hash,
@@ -256,7 +256,7 @@ def compile_environment_state_artifacts(
         "dom_evidence_role": "visible_projection_only",
     }
     state_api_contract = {
-        "format": "ghostweb_state_api_contract",
+        "format": "sim_state_api_contract",
         "schema_revision": 1,
         "schema_hash": schema_hash,
         "world_hash": world_hash,

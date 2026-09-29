@@ -317,7 +317,7 @@ def _has_href_target(html_text: str, target: str) -> bool:
     escaped = re.escape(target)
     return bool(
         re.search(
-            rf"""(?is)(?:\bhref\s*=\s*["'][^"']*{escaped}(?:[#?][^"']*)?["']|\bdata-ghostweb-action\s*=\s*["']navigate["'][^>]*\bdata-ghostweb-target\s*=\s*["'][^"']*{escaped}(?:[#?][^"']*)?["']|\bdata-ghostweb-target\s*=\s*["'][^"']*{escaped}(?:[#?][^"']*)?["'][^>]*\bdata-ghostweb-action\s*=\s*["']navigate["'])""",
+            rf"""(?is)(?:\bhref\s*=\s*["'][^"']*{escaped}(?:[#?][^"']*)?["']|\bdata-sim-action\s*=\s*["']navigate["'][^>]*\bdata-sim-target\s*=\s*["'][^"']*{escaped}(?:[#?][^"']*)?["']|\bdata-sim-target\s*=\s*["'][^"']*{escaped}(?:[#?][^"']*)?["'][^>]*\bdata-sim-action\s*=\s*["']navigate["'])""",
             html_text or "",
         )
     )
@@ -4699,16 +4699,16 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     runtime_contract = _compact_route_contract_for_runtime(route_contract or {})
     payload = json.dumps(runtime_contract, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
     return f"""
-<script data-ghostweb-runtime="route-execution">
+<script data-sim-runtime="route-execution">
 (function () {{
   const CONTRACT = {payload};
-  const STACK_KEY = 'ghostweb_route_stack';
-  const CURRENT_KEY = 'ghostweb_current_page';
-  const LAST_BACK_FROM_KEY = 'ghostweb_last_back_from';
-  const PENDING_COMMIT_KEY = 'ghostweb_pending_commit_navigation';
-  const STATE_COMMITS_KEY = 'ghostweb_state_commits';
-  const RUNTIME_STATE_KEY = 'ghostweb_runtime_state_v1';
-  const RUNTIME_EVENTS_KEY = 'ghostweb_runtime_events_v1';
+  const STACK_KEY = 'sim_route_stack';
+  const CURRENT_KEY = 'sim_current_page';
+  const LAST_BACK_FROM_KEY = 'sim_last_back_from';
+  const PENDING_COMMIT_KEY = 'sim_pending_commit_navigation';
+  const STATE_COMMITS_KEY = 'sim_state_commits';
+  const RUNTIME_STATE_KEY = 'sim_runtime_state_v1';
+  const RUNTIME_EVENTS_KEY = 'sim_runtime_events_v1';
   const MAX_STACK = 64;
   const actions = Array.isArray(CONTRACT && CONTRACT.actions) ? CONTRACT.actions : [];
   const statefulActions = Array.isArray(CONTRACT && CONTRACT.stateful_actions) ? CONTRACT.stateful_actions : [];
@@ -4741,7 +4741,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     }} catch (e) {{}}
   }}
   function installRuntimeStateAuthority() {{
-    const existing = window.GhostwebRuntimeState || {{}};
+    const existing = window.SimRuntimeState || {{}};
     let existingSnapshot = null;
     try {{
       existingSnapshot = typeof existing.snapshot === 'function' ? existing.snapshot() : null;
@@ -4757,7 +4757,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     ) {{
       return existing;
     }}
-    window.GhostwebRuntimeState = Object.assign(existing, {{
+    window.SimRuntimeState = Object.assign(existing, {{
       write: function (ref, value, meta) {{
         const key = String(ref || '').trim();
         if (!key) return false;
@@ -4772,7 +4772,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
           timestamp: Date.now()
         }}, meta || {{}});
         appendRuntimeEvent(event);
-        window.__ghostwebLastRuntimeStateEvent = event;
+        window.__simLastRuntimeStateEvent = event;
         return true;
       }},
       read: function (ref) {{
@@ -4788,11 +4788,11 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
           timestamp: Date.now()
         }}, payload || {{}});
         appendRuntimeEvent(event);
-        window.__ghostwebLastRuntimeTransaction = event;
+        window.__simLastRuntimeTransaction = event;
         return event;
       }}
     }});
-    return window.GhostwebRuntimeState;
+    return window.SimRuntimeState;
   }}
   installRuntimeStateAuthority();
   function baseFilename(target) {{
@@ -4809,14 +4809,14 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     append(host.getAttribute('data-action-id'));
     append(host.getAttribute('data-action-aliases'));
     try {{
-      const targetMap = JSON.parse(host.getAttribute('data-ghostweb-target-map') || '{{}}');
+      const targetMap = JSON.parse(host.getAttribute('data-sim-target-map') || '{{}}');
       Object.keys(targetMap || {{}}).forEach(append);
     }} catch (e) {{}}
     return ids;
   }}
   function contextActionIdForHost(host, context) {{
     const ids = hostActionIds(host);
-    const explicitActionId = String((context && context.action_id) || window.__ghostwebActiveActionId || '');
+    const explicitActionId = String((context && context.action_id) || window.__simActiveActionId || '');
     if (explicitActionId && ids.includes(explicitActionId)) return explicitActionId;
     const traceId = String((context && (context.reference_trace_id || context.trace_id || context.task_id)) || '');
     if (!traceId) return '';
@@ -4827,7 +4827,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     const explicitTarget = String(target || '').trim();
     let context = {{}};
     try {{
-      context = window.__ghostwebExecutionContext || JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{{}}');
+      context = window.__simExecutionContext || JSON.parse(localStorage.getItem('sim.execution_context') || '{{}}');
     }} catch (e) {{}}
     // A concrete route chosen by a page-owned interaction (for example a
     // query-specific submit) must win over the context from the preceding
@@ -4841,12 +4841,12 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
       const sourceActionId = contextActionIdForHost(sourceHost, context);
       if (!sourceActionId) return explicitTarget || target;
       try {{
-        const sourceTargetMap = JSON.parse(sourceHost.getAttribute('data-ghostweb-target-map') || '{{}}');
+        const sourceTargetMap = JSON.parse(sourceHost.getAttribute('data-sim-target-map') || '{{}}');
         if (sourceTargetMap && sourceTargetMap[sourceActionId]) return String(sourceTargetMap[sourceActionId]);
       }} catch (e) {{}}
       return explicitTarget || target;
     }}
-    const actionId = String((context && context.action_id) || window.__ghostwebActiveActionId || '');
+    const actionId = String((context && context.action_id) || window.__simActiveActionId || '');
     if (!actionId) return explicitTarget || target;
     const hosts = document.querySelectorAll('[data-action-id], [data-action-aliases]');
     for (let index = 0; index < hosts.length; index += 1) {{
@@ -4854,7 +4854,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
       const ids = hostActionIds(host);
       if (!ids.includes(actionId)) continue;
       try {{
-        const targetMap = JSON.parse(host.getAttribute('data-ghostweb-target-map') || '{{}}');
+        const targetMap = JSON.parse(host.getAttribute('data-sim-target-map') || '{{}}');
         if (targetMap && targetMap[actionId]) return String(targetMap[actionId]);
       }} catch (e) {{}}
     }}
@@ -4864,10 +4864,10 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     if (!host) return false;
     let context = {{}};
     try {{
-      context = window.__ghostwebExecutionContext || JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{{}}');
+      context = window.__simExecutionContext || JSON.parse(localStorage.getItem('sim.execution_context') || '{{}}');
     }} catch (e) {{}}
     const actionId = contextActionIdForHost(host, context);
-    const checkpointMap = window.GhostwebCheckpointActionMap;
+    const checkpointMap = window.SimCheckpointActionMap;
     if (!actionId || !checkpointMap || typeof checkpointMap.emitForAction !== 'function') return false;
     checkpointMap.emitForAction(actionId, 'click', host);
     return true;
@@ -4916,9 +4916,9 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
   function explicitSurfaceTarget(el, target) {{
     const text = String(target || '').trim();
     if (!el || !el.closest || !text) return '';
-    const host = el.closest('a[href], [data-ghostweb-target], [data-href], [data-url], [data-target], [data-id], [data-record-id], [data-item-id], [data-entity-id]');
+    const host = el.closest('a[href], [data-sim-target], [data-href], [data-url], [data-target], [data-id], [data-record-id], [data-item-id], [data-entity-id]');
     if (!host) return '';
-    const raw = host.getAttribute('data-ghostweb-target') ||
+    const raw = host.getAttribute('data-sim-target') ||
       host.getAttribute('href') ||
       host.getAttribute('data-href') ||
       host.getAttribute('data-url') ||
@@ -4950,8 +4950,8 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
   function syncCurrentPageRuntimeState() {{
     const current = baseFilename(window.location.pathname || '') ||
       baseFilename(CONTRACT && CONTRACT.filename ? CONTRACT.filename : '');
-    if (!current || !window.GhostwebRuntimeState || typeof window.GhostwebRuntimeState.write !== 'function') return false;
-    window.GhostwebRuntimeState.write('state::route.current_page', current, {{
+    if (!current || !window.SimRuntimeState || typeof window.SimRuntimeState.write !== 'function') return false;
+    window.SimRuntimeState.write('state::route.current_page', current, {{
       source: 'route_execution_runtime',
       page: current,
       runtime_contract_filename: baseFilename(CONTRACT && CONTRACT.filename ? CONTRACT.filename : '')
@@ -5097,7 +5097,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
       : target;
     const text = targetWithSessionCarrier(String(resolvedTarget || '').trim());
     if (!text) return false;
-    window.__ghostwebRouteNavigationEpoch = Number(window.__ghostwebRouteNavigationEpoch || 0) + 1;
+    window.__simRouteNavigationEpoch = Number(window.__simRouteNavigationEpoch || 0) + 1;
     const stack = readStack();
     const current = currentPageRef();
     const currentBase = baseFilename(current);
@@ -5131,30 +5131,30 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
       timestamp: Date.now()
     }}, payload || {{}});
     try {{
-      const key = '__ghostweb_history_back_events_v1__';
+      const key = '__sim_history_back_events_v1__';
       let existing = JSON.parse(window.sessionStorage.getItem(key) || '[]');
       if (!Array.isArray(existing)) existing = [];
       existing.push(event);
       window.sessionStorage.setItem(key, JSON.stringify(existing.slice(-128)));
     }} catch (e) {{}}
-    if (window.GhostwebRuntimeState && window.GhostwebRuntimeState.emitTransaction) {{
-      window.GhostwebRuntimeState.emitTransaction('history_back_attempted', Object.assign({{}}, event, {{
+    if (window.SimRuntimeState && window.SimRuntimeState.emitTransaction) {{
+      window.SimRuntimeState.emitTransaction('history_back_attempted', Object.assign({{}}, event, {{
         source: 'route_execution_runtime'
       }}));
     }}
-    window.__ghostwebLastHistoryBackEvent = event;
+    window.__simLastHistoryBackEvent = event;
     return event;
   }}
   function warnLegacyBackAction(action, host) {{
     const warning = {{
       event: 'legacy_history_back_action_normalized',
       deprecated_action: String(action || ''),
-      action_id: host && host.getAttribute ? String(host.getAttribute('data-ghostweb-action-id') || '') : '',
+      action_id: host && host.getAttribute ? String(host.getAttribute('data-sim-action-id') || '') : '',
       source_page: baseFilename(currentPageRef()),
       timestamp: Date.now()
     }};
     try {{
-      const key = '__ghostweb_history_back_warnings_v1__';
+      const key = '__sim_history_back_warnings_v1__';
       let existing = JSON.parse(window.sessionStorage.getItem(key) || '[]');
       if (!Array.isArray(existing)) existing = [];
       existing.push(warning);
@@ -5165,7 +5165,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     }}
     return warning;
   }}
-  window.GhostwebRouteExecution = Object.assign(window.GhostwebRouteExecution || {{}}, {{
+  window.SimRouteExecution = Object.assign(window.SimRouteExecution || {{}}, {{
     contract: CONTRACT,
     readStack: readStack,
     writeStack: writeStack,
@@ -5235,14 +5235,14 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
       return false;
     }},
     goBack: function () {{
-      return window.GhostwebRouteExecution.returnBack('fallback_back');
+      return window.SimRouteExecution.returnBack('fallback_back');
     }},
     initSession: function (traceId, initialStack, initialState) {{
       const stack = Array.isArray(initialStack) ? initialStack : [];
       writeStack(stack);
     }},
     step: function (actionId) {{
-      return window.GhostwebRouteExecution.navigate(resolveContextTarget(actionId), {{ contextResolved: true }});
+      return window.SimRouteExecution.navigate(resolveContextTarget(actionId), {{ contextResolved: true }});
     }},
     inspectNavigationStack: function () {{
       return {{
@@ -5272,7 +5272,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
   }});
   function patchWebsiteSdkRouteFallback() {{
     const sdk = window.WebsiteSDK;
-    if (!sdk || sdk.__ghostwebRouteFallbackPatched) return false;
+    if (!sdk || sdk.__simRouteFallbackPatched) return false;
     const methodNames = ['routeTo', 'navigateTo', 'openPage'];
     methodNames.forEach(function (name) {{
       const original = sdk[name];
@@ -5294,16 +5294,16 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
           window.setTimeout(function () {{
             const after = String(window.location.href || '');
             if (after === before) {{
-              window.GhostwebRouteExecution.navigate(target, {{ mode: 'push' }});
+              window.SimRouteExecution.navigate(target, {{ mode: 'push' }});
             }}
           }}, 80);
         }}
-        if (threw && target) return window.GhostwebRouteExecution.navigate(target, {{ mode: 'push' }});
+        if (threw && target) return window.SimRouteExecution.navigate(target, {{ mode: 'push' }});
         if (threw) return false;
         return result;
       }};
     }});
-    sdk.__ghostwebRouteFallbackPatched = true;
+    sdk.__simRouteFallbackPatched = true;
     return true;
   }}
   function installWebsiteSdkRouteFallback() {{
@@ -5337,9 +5337,9 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
   function isBackControl(el) {{
     if (!el) return false;
     if (isDisabledOrNoninteractiveControl(el)) return false;
-    if (el.getAttribute('data-ghostweb-action') === 'history_back') return true;
-    if (el.getAttribute('data-ghostweb-action') === 'returnBack') return true;
-    if (el.getAttribute('data-ghostweb-route-action') === 'default_back') return true;
+    if (el.getAttribute('data-sim-action') === 'history_back') return true;
+    if (el.getAttribute('data-sim-action') === 'returnBack') return true;
+    if (el.getAttribute('data-sim-route-action') === 'default_back') return true;
     // A valid anchor owns its target route.  Do not infer browser-history
     // semantics from visible copy such as "Shop Back to School".
     if (el.matches && el.matches('a[href]')) return false;
@@ -5355,8 +5355,8 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     if (!el) return false;
     if (el.disabled === true) return true;
     if (el.getAttribute && el.getAttribute('aria-disabled') === 'true') return true;
-    if (el.getAttribute && el.getAttribute('data-ghostweb-click-contract-kind') === 'noninteractive') return true;
-    if (el.closest && el.closest('[aria-disabled="true"], [data-ghostweb-click-contract-kind="noninteractive"]')) return true;
+    if (el.getAttribute && el.getAttribute('data-sim-click-contract-kind') === 'noninteractive') return true;
+    if (el.closest && el.closest('[aria-disabled="true"], [data-sim-click-contract-kind="noninteractive"]')) return true;
     return false;
   }}
   function commitActionForControl(el) {{
@@ -5454,13 +5454,13 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     if (isDisabledOrNoninteractiveControl(el)) return null;
     if (commitActionForControl(el)) return null;
     if (isStatefulSubmitControl(el)) return null;
-    const explicitEffectHost = el.closest && el.closest('[data-ghostweb-effect-kind]');
+    const explicitEffectHost = el.closest && el.closest('[data-sim-effect-kind]');
     const explicitEffect = explicitEffectHost && explicitEffectHost.getAttribute
-      ? String(explicitEffectHost.getAttribute('data-ghostweb-effect-kind') || '')
+      ? String(explicitEffectHost.getAttribute('data-sim-effect-kind') || '')
       : '';
     if (explicitEffect && explicitEffect !== 'route' && explicitEffect !== 'gesture_route') return null;
-    if (el.closest && el.closest('a[href], [data-ghostweb-action="navigate"][data-ghostweb-target]')) return null;
-    if (el.matches && el.matches('a[href], [data-ghostweb-action="navigate"][data-ghostweb-target]')) return null;
+    if (el.closest && el.closest('a[href], [data-sim-action="navigate"][data-sim-target]')) return null;
+    if (el.matches && el.matches('a[href], [data-sim-action="navigate"][data-sim-target]')) return null;
     const controlLabels = labelsForControl(el);
     if (!controlLabels.length) return null;
     const navigationActions = actions.filter(isRouteNavigationAction);
@@ -5493,15 +5493,15 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
   document.addEventListener('click', function (event) {{
     if (event.defaultPrevented) return;
     const host = event.target && event.target.closest
-      ? event.target.closest('button, a, [role="button"], [tabindex], [data-ghostweb-action], [data-ghostweb-route-action]')
+      ? event.target.closest('button, a, [role="button"], [tabindex], [data-sim-action], [data-sim-route-action]')
       : null;
     if (!host || !isBackControl(host)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     event.stopPropagation();
-    const actionName = host.getAttribute('data-ghostweb-action') || host.getAttribute('data-ghostweb-route-action') || '';
+    const actionName = host.getAttribute('data-sim-action') || host.getAttribute('data-sim-route-action') || '';
     if (actionName === 'returnBack' || actionName === 'default_back') warnLegacyBackAction(actionName, host);
-    window.GhostwebRouteExecution.returnBack(host.getAttribute('data-ghostweb-action-id') || 'fallback_back');
+    window.SimRouteExecution.returnBack(host.getAttribute('data-sim-action-id') || 'fallback_back');
   }}, true);
 
   document.addEventListener('click', function (event) {{
@@ -5513,7 +5513,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     const action = commitActionForControl(host);
     if (!action) return;
     recordStateCommit(action, host);
-    window.GhostwebRouteExecution.markPendingCommit(action.target_filename || '');
+    window.SimRouteExecution.markPendingCommit(action.target_filename || '');
   }}, true);
 
   document.addEventListener('click', function (event) {{
@@ -5522,7 +5522,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
       ? event.target.closest('button, a, [role="button"], [tabindex], [data-element-id], [data-category-name]')
       : null;
     if (!host || isBackControl(host)) return;
-    if (host.getAttribute('data-ghostweb-route-owner')) return;
+    if (host.getAttribute('data-sim-route-owner')) return;
     // A DOM-bound host is deferred only when its page-local action-effect
     // table contains one of its own action ids.  A shared visible host may
     // retain a stale/no-row binding marker; it has no concrete page reducer
@@ -5538,7 +5538,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
       event.preventDefault();
       event.stopImmediatePropagation();
       event.stopPropagation();
-      window.GhostwebRouteExecution.navigate(contextTarget, {{ mode: 'push', contextResolved: true }});
+      window.SimRouteExecution.navigate(contextTarget, {{ mode: 'push', contextResolved: true }});
       return;
     }}
     const action = navigationActionForControl(host);
@@ -5549,7 +5549,7 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
     recordStateCommit(action, host);
     const target = explicitSurfaceTarget(host, action.target_filename || '') ||
       targetWithSelectedState(action, action.target_filename || '');
-    window.GhostwebRouteExecution.navigate(target, {{
+    window.SimRouteExecution.navigate(target, {{
       mode: action.history_mode === 'replace' ? 'replace' : 'push',
       sourceHost: host
     }});
@@ -5558,33 +5558,33 @@ def _route_execution_runtime_script(route_contract: Dict[str, Any]) -> str:
   document.addEventListener('click', function (event) {{
     if (event.defaultPrevented) return;
     const componentOwner = event.target && event.target.closest
-      ? event.target.closest('[data-ghostweb-route-owner]')
+      ? event.target.closest('[data-sim-route-owner]')
       : null;
     if (componentOwner) return;
     const host = event.target && event.target.closest
-      ? event.target.closest('a[href], [data-ghostweb-action="navigate"][data-ghostweb-target]')
+      ? event.target.closest('a[href], [data-sim-action="navigate"][data-sim-target]')
       : null;
     if (!host || isBackControl(host)) return;
     // Component-owned route controls may need to close or unwind their own
     // surface before navigating.  Preserve that explicit owner instead of
     // racing it from this generic page-level capture handler.
-    if (host.getAttribute('data-ghostweb-route-owner')) return;
+    if (host.getAttribute('data-sim-route-owner')) return;
     // Inline page handlers are app-state authorities. They may need to write
     // a state carrier before routing, so the generic route runtime must not
     // intercept them in capture phase.
     if (host.getAttribute('onclick')) return;
     if (domBindingOwnsHost(host)) return;
-    const explicit = host.getAttribute('data-ghostweb-target') || '';
+    const explicit = host.getAttribute('data-sim-target') || '';
     const href = host.getAttribute('href') || '';
     const target = explicit || href;
     if (!target || !/\\.html(?:[?#].*)?$/.test(target)) return;
     if (host.getAttribute('target') || host.hasAttribute('download')) return;
     event.preventDefault();
-    window.GhostwebRouteExecution.navigate(resolveContextTarget(target, host));
+    window.SimRouteExecution.navigate(resolveContextTarget(target, host));
   }}, true);
   function domBindingOwnsHost(host) {{
-    if (!host || !host.getAttribute || !host.getAttribute('data-ghostweb-dom-binding-id')) return false;
-    const rows = window.__GHOSTWEB_DOM_BINDING_ACTIONS || {{}};
+    if (!host || !host.getAttribute || !host.getAttribute('data-sim-dom-binding-id')) return false;
+    const rows = window.__SIM_DOM_BINDING_ACTIONS || {{}};
     if (!rows || typeof rows !== 'object') return false;
     const ids = [];
     ['data-action-id', 'data-action-aliases'].forEach(function(name) {{
@@ -5618,7 +5618,7 @@ def _inject_route_execution_runtime(html_text: str, page: Dict[str, Any]) -> Tup
         return text, False
     script = _route_execution_runtime_script(route_contract)
     inline_runtime_re = re.compile(
-        r'<script\b(?=[^>]*\bdata-ghostweb-runtime=["\']route-execution["\'])'
+        r'<script\b(?=[^>]*\bdata-sim-runtime=["\']route-execution["\'])'
         r'(?![^>]*\bsrc\s*=)[^>]*>.*?</script>',
         re.IGNORECASE | re.DOTALL,
     )
@@ -5690,10 +5690,10 @@ def _state_display_runtime_script(dynamic_surface_contract: Dict[str, Any]) -> s
     runtime_contract = _compact_dynamic_surface_contract_for_runtime(dynamic_surface_contract or {})
     payload = json.dumps(runtime_contract, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
     return f"""
-<script data-ghostweb-runtime="state-display">
+<script data-sim-runtime="state-display">
 (function () {{
   const CONTRACT = {payload};
-  const STATE_COMMITS_KEY = 'ghostweb_state_commits';
+  const STATE_COMMITS_KEY = 'sim_state_commits';
   const bindings = Array.isArray(CONTRACT && CONTRACT.state_display_bindings)
     ? CONTRACT.state_display_bindings
     : [];
@@ -5729,9 +5729,9 @@ def _state_display_runtime_script(dynamic_surface_contract: Dict[str, Any]) -> s
     const stateRef = String(binding && binding.state_ref || '').trim();
     const role = String(binding && binding.display_role || '').trim();
     const selectors = [
-      '[data-ghostweb-state-ref="' + stateRef + '"]',
+      '[data-sim-state-ref="' + stateRef + '"]',
       '[data-state-ref="' + stateRef + '"]',
-      '[data-ghostweb-display-role="' + role + '"]'
+      '[data-sim-display-role="' + role + '"]'
     ];
     if (role === 'city_selector_label') {{
       selectors.push('#cityLabel');
@@ -5773,13 +5773,13 @@ def _state_display_runtime_script(dynamic_surface_contract: Dict[str, Any]) -> s
         const el = document.querySelector(selectors[i]);
         if (!el) continue;
         applyValue(el, value);
-        el.setAttribute('data-ghostweb-state-ref', String(binding.state_ref || ''));
-        el.setAttribute('data-ghostweb-display-role', String(binding.display_role || ''));
+        el.setAttribute('data-sim-state-ref', String(binding.state_ref || ''));
+        el.setAttribute('data-sim-display-role', String(binding.display_role || ''));
         return;
       }}
     }});
   }}
-  window.GhostwebStateDisplay = Object.assign(window.GhostwebStateDisplay || {{}}, {{
+  window.SimStateDisplay = Object.assign(window.SimStateDisplay || {{}}, {{
     contract: CONTRACT,
     apply: applyStateDisplayBindings,
     readStateCommits: readStateCommits
@@ -5801,7 +5801,7 @@ def _inject_state_display_runtime(html_text: str, page: Dict[str, Any]) -> Tuple
         return text, False
     script = _state_display_runtime_script(dynamic_contract)
     runtime_re = re.compile(
-        r'<script\b(?=[^>]*\bdata-ghostweb-runtime=["\']state-display["\'])[^>]*>.*?</script>',
+        r'<script\b(?=[^>]*\bdata-sim-runtime=["\']state-display["\'])[^>]*>.*?</script>',
         re.IGNORECASE | re.DOTALL,
     )
     if runtime_re.search(text):
@@ -5956,22 +5956,22 @@ def _page_environment_action_surfaces(page_environment: Any) -> List[Dict[str, A
 
 def _actionability_inspector_runtime_script() -> str:
     return """
-<script data-ghostweb-runtime="actionability-inspector">
+<script data-sim-runtime="actionability-inspector">
 (function () {
-  if (window.GhostwebActionability && window.GhostwebActionability.installed) return;
-  const SCHEMA = 'ghostweb.actionability.v1';
+  if (window.SimActionability && window.SimActionability.installed) return;
+  const SCHEMA = 'sim.actionability.v1';
   const MODES = { visual_notice: true, env_text: true, silent: true };
   const EXECUTION_AUTHORITY_SELECTOR = [
-    '[data-ghostweb-action]',
-    '[data-ghostweb-route-action]',
-    '[data-ghostweb-target]',
-    '[data-ghostweb-effect-kind]',
-    '[data-ghostweb-query-result]',
-    '[data-ghostweb-query-suggestion]',
-    '[data-ghostweb-opens-template]',
-    '[data-ghostweb-wheel-trigger]',
-    '[data-ghostweb-actionability-authority="semantic_transaction"]',
-    '[data-ghostweb-action-id]',
+    '[data-sim-action]',
+    '[data-sim-route-action]',
+    '[data-sim-target]',
+    '[data-sim-effect-kind]',
+    '[data-sim-query-result]',
+    '[data-sim-query-suggestion]',
+    '[data-sim-opens-template]',
+    '[data-sim-wheel-trigger]',
+    '[data-sim-actionability-authority="semantic_transaction"]',
+    '[data-sim-action-id]',
     '[data-action-id]'
   ].join(',');
   const TASK_RELATED_CONTROL_SELECTOR = [
@@ -6010,9 +6010,9 @@ def _actionability_inspector_runtime_script() -> str:
     '[contenteditable="true"]'
   ].join(',');
   const BACK_CONTROL_SELECTOR = [
-    '[data-ghostweb-action="history_back"]',
-    '[data-ghostweb-action="returnBack"]',
-    '[data-ghostweb-route-action="default_back"]',
+    '[data-sim-action="history_back"]',
+    '[data-sim-action="returnBack"]',
+    '[data-sim-route-action="default_back"]',
     '[data-history-back]',
     'button',
     'a[href]',
@@ -6032,16 +6032,16 @@ def _actionability_inspector_runtime_script() -> str:
     return MODES[mode] ? mode : '';
   }
   function getResponseMode() {
-    return normalizeMode(window.__GhostwebResponseMode) ||
-      normalizeMode(storageGet('ghostweb.response_mode')) ||
+    return normalizeMode(window.__SimResponseMode) ||
+      normalizeMode(storageGet('sim.response_mode')) ||
       'visual_notice';
   }
   function setResponseMode(mode) {
     const normalized = normalizeMode(mode) || 'visual_notice';
-    window.__GhostwebResponseMode = normalized;
+    window.__SimResponseMode = normalized;
     try {
-      window.localStorage.setItem('ghostweb.response_mode', normalized);
-      window.sessionStorage.setItem('ghostweb.response_mode', normalized);
+      window.localStorage.setItem('sim.response_mode', normalized);
+      window.sessionStorage.setItem('sim.response_mode', normalized);
     } catch (error) {}
     return normalized;
   }
@@ -6069,9 +6069,9 @@ def _actionability_inspector_runtime_script() -> str:
         attr(el, 'aria-disabled') === 'true' ||
         nearest(el, '[inert]')) return true;
     if (el.readOnly !== true) return false;
-    const routeAuthority = attr(el, 'data-ghostweb-target') ||
-      attr(el, 'data-ghostweb-route-action') ||
-      attr(el, 'data-ghostweb-action');
+    const routeAuthority = attr(el, 'data-sim-target') ||
+      attr(el, 'data-sim-route-action') ||
+      attr(el, 'data-sim-action');
     return !routeAuthority;
   }
   function isValidHref(el) {
@@ -6080,7 +6080,7 @@ def _actionability_inspector_runtime_script() -> str:
     return !!href && href !== '#' && !/^javascript:/i.test(href);
   }
   function isTransitionHiddenLayer(el) {
-    if (attr(el, 'data-ghostweb-initial-visibility') !== 'hidden_until_transition') return false;
+    if (attr(el, 'data-sim-initial-visibility') !== 'hidden_until_transition') return false;
     if (attr(el, 'aria-hidden') === 'false') return false;
     return !/(^|\\s)(open|visible|show|active|is-open)(\\s|$)/i.test(attr(el, 'class'));
   }
@@ -6088,7 +6088,7 @@ def _actionability_inspector_runtime_script() -> str:
     '[aria-modal="true"]',
     '[role="dialog"]',
     '[data-overlay]',
-    '[data-ghostweb-overlay-layer-role]',
+    '[data-sim-overlay-layer-role]',
     '.modal',
     '.drawer',
     '.sheet',
@@ -6111,7 +6111,7 @@ def _actionability_inspector_runtime_script() -> str:
     if (attr(node, 'aria-modal') === 'true' ||
         attr(node, 'role') === 'dialog' ||
         node.hasAttribute('data-overlay') ||
-        node.hasAttribute('data-ghostweb-overlay-layer-role')) {
+        node.hasAttribute('data-sim-overlay-layer-role')) {
       return true;
     }
     // Token inference is only for structural layer containers.  Controls such
@@ -6130,14 +6130,14 @@ def _actionability_inspector_runtime_script() -> str:
         return isLayerCandidate(node) &&
           isVisible(node) &&
           !isTransitionHiddenLayer(node) &&
-          attr(node, 'data-ghostweb-overlay-layer-role') !== 'backdrop';
+          attr(node, 'data-sim-overlay-layer-role') !== 'backdrop';
       });
     return layers.length ? layers[layers.length - 1] : null;
   }
   function inActiveLayer(el) {
     const layer = activeLayer();
-    const role = attr(el, 'data-ghostweb-overlay-layer-role');
-    const action = attr(el, 'data-ghostweb-action').toLowerCase();
+    const role = attr(el, 'data-sim-overlay-layer-role');
+    const action = attr(el, 'data-sim-action').toLowerCase();
     const explicitCloseBackdrop = role === 'backdrop' &&
       (action === 'close_overlay' || action === 'dismiss_overlay') && hasOwnAuthority(el);
     return !layer || layer === el || layer.contains(el) || explicitCloseBackdrop;
@@ -6227,24 +6227,24 @@ def _actionability_inspector_runtime_script() -> str:
   }
   function hasOwnAuthority(el) {
     return !!(
-      attr(el, 'data-ghostweb-action') ||
-      attr(el, 'data-ghostweb-route-action') ||
-      attr(el, 'data-ghostweb-target') ||
-      attr(el, 'data-ghostweb-effect-kind') ||
-      attr(el, 'data-ghostweb-query-result') ||
-      attr(el, 'data-ghostweb-query-suggestion') ||
-      attr(el, 'data-ghostweb-opens-template') ||
-      attr(el, 'data-ghostweb-wheel-trigger') ||
+      attr(el, 'data-sim-action') ||
+      attr(el, 'data-sim-route-action') ||
+      attr(el, 'data-sim-target') ||
+      attr(el, 'data-sim-effect-kind') ||
+      attr(el, 'data-sim-query-result') ||
+      attr(el, 'data-sim-query-suggestion') ||
+      attr(el, 'data-sim-opens-template') ||
+      attr(el, 'data-sim-wheel-trigger') ||
       hasSemanticTransactionAuthority(el) ||
-      attr(el, 'data-ghostweb-action-id') ||
+      attr(el, 'data-sim-action-id') ||
       attr(el, 'data-action-id')
     );
   }
   function hasSemanticTransactionAuthority(el) {
-    if (attr(el, 'data-ghostweb-actionability-authority') !== 'semantic_transaction') return false;
-    const sourceIds = attr(el, 'data-ghostweb-semantic-source-ids');
-    const transactionIds = attr(el, 'data-ghostweb-semantic-transaction-ids');
-    const targetKind = attr(el, 'data-ghostweb-semantic-target-kind');
+    if (attr(el, 'data-sim-actionability-authority') !== 'semantic_transaction') return false;
+    const sourceIds = attr(el, 'data-sim-semantic-source-ids');
+    const transactionIds = attr(el, 'data-sim-semantic-transaction-ids');
+    const targetKind = attr(el, 'data-sim-semantic-target-kind');
     return !!sourceIds && !!transactionIds &&
       (targetKind === 'page_instance' || targetKind === 'interaction_state' || targetKind === 'explicit_boundary');
   }
@@ -6260,20 +6260,20 @@ def _actionability_inspector_runtime_script() -> str:
     // preserve the page-owned navigation handler as the click authority rather
     // than inheriting an unrelated gesture-only ancestor (for example a
     // carousel shell).  This is intentionally contract-based: only handlers
-    // that call the generic Ghostweb route executor qualify.
+    // that call the generic route executor qualify.
     let candidate = element;
     while (candidate) {
       const handlers = handlerText(candidate);
-      const hasRouteHandler = /ghostwebrouteexecution\\.(?:navigate|step)\\s*\\(/.test(handlers);
+      const hasRouteHandler = /simrouteexecution\\.(?:navigate|step)\\s*\\(/.test(handlers);
       if (hasRouteHandler &&
           // A route handler is only a click authority when this element owns
           // the formal action identity.  Generated route shells may carry a
-          // GhostwebRouteExecution.navigate() onclick around a child
+          // SimRouteExecution.navigate() onclick around a child
           // data-action-id host; selecting that shell would navigate without
           // preserving action_observation for /step.
           hasOwnAuthority(candidate) &&
           !candidate.hasAttribute('data-gesture-host') &&
-          !candidate.hasAttribute('data-ghostweb-gesture-action') &&
+          !candidate.hasAttribute('data-sim-gesture-action') &&
           isVisible(candidate) &&
           !isDisabledNative(candidate) &&
           inActiveLayer(candidate) &&
@@ -6305,7 +6305,7 @@ def _actionability_inspector_runtime_script() -> str:
       while (candidate) {
         if (candidate.matches && candidate.matches(EXECUTION_AUTHORITY_SELECTOR)) {
           const gestureOnly = candidate.hasAttribute('data-gesture-host') ||
-            candidate.hasAttribute('data-ghostweb-gesture-action');
+            candidate.hasAttribute('data-sim-gesture-action');
           if (!gestureOnly) {
             host = candidate;
             break;
@@ -6313,7 +6313,7 @@ def _actionability_inspector_runtime_script() -> str:
         }
         candidate = candidate.parentElement;
       }
-      if (host && (host.hasAttribute('data-gesture-host') || host.hasAttribute('data-ghostweb-gesture-action'))) {
+      if (host && (host.hasAttribute('data-gesture-host') || host.hasAttribute('data-sim-gesture-action'))) {
         host = null;
       }
     }
@@ -6360,8 +6360,8 @@ def _actionability_inspector_runtime_script() -> str:
       ? element
       : nearest(element, BACK_CONTROL_SELECTOR);
     if (!host || isDisabledNative(host) || !isVisible(host) || !inActiveLayer(host) || !topmostContains(host, viewport)) return null;
-    const ghostAction = attr(host, 'data-ghostweb-action');
-    const routeAction = attr(host, 'data-ghostweb-route-action');
+    const ghostAction = attr(host, 'data-sim-action');
+    const routeAction = attr(host, 'data-sim-route-action');
     if (ghostAction === 'history_back' ||
         ghostAction === 'returnBack' ||
         routeAction === 'default_back') {
@@ -6376,7 +6376,7 @@ def _actionability_inspector_runtime_script() -> str:
       host.textContent || ''
     ].join(' '), 300);
     const handlers = handlerText(host);
-    if (/history\\.back\\s*\\(|ghostwebrouteexecution\\.(?:goback|returnback)\\s*\\(/.test(handlers)) return host;
+    if (/history\\.back\\s*\\(|simrouteexecution\\.(?:goback|returnback)\\s*\\(/.test(handlers)) return host;
     const icons = lucideIconTokens(host);
     if (isTopChromeControl(host) && /(^|\\s)(chevron-left|arrow-left|circle-arrow-left|corner-up-left)(\\s|$)/.test(icons)) return host;
     if (isTopChromeControl(host) && /(^|\\s)(x|x-circle|circle-x)(\\s|$)/.test(icons)) return host;
@@ -6397,7 +6397,7 @@ def _actionability_inspector_runtime_script() -> str:
       attr(el, 'aria-label'),
       attr(el, 'title'),
       attr(el, 'data-element-id'),
-      attr(el, 'data-ghostweb-action-id'),
+      attr(el, 'data-sim-action-id'),
       el.textContent || ''
     ];
     for (const value of values) {
@@ -6409,7 +6409,7 @@ def _actionability_inspector_runtime_script() -> str:
   function messageFor(status, label) {
     if (status === 'interactive') return '';
     if (status === 'background') return 'No actionable component was found at the selected point.';
-    if (status === 'unknown') return 'The selected component does not expose a Ghostweb action contract.';
+    if (status === 'unknown') return 'The selected component does not expose an action contract.';
     return label
       ? 'The selected component is not interactive: ' + label
       : 'The selected component is not interactive.';
@@ -6422,19 +6422,19 @@ def _actionability_inspector_runtime_script() -> str:
       });
     }
     if (!el) return ids;
-    append(attr(el, 'data-ghostweb-action-id'));
+    append(attr(el, 'data-sim-action-id'));
     append(attr(el, 'data-action-id'));
     append(attr(el, 'data-action-aliases'));
     return ids;
   }
   function executionContextForActionability() {
     let context = null;
-    try { context = window.__ghostwebExecutionContext || null; } catch (error) {}
+    try { context = window.__simExecutionContext || null; } catch (error) {}
     if (context && typeof context === 'object') return context;
     for (const storageName of ['sessionStorage', 'localStorage']) {
       try {
         const storage = window[storageName];
-        context = JSON.parse(storage.getItem('ghostweb.execution_context') || 'null');
+        context = JSON.parse(storage.getItem('sim.execution_context') || 'null');
         if (context && typeof context === 'object') return context;
       } catch (error) {}
     }
@@ -6443,14 +6443,14 @@ def _actionability_inspector_runtime_script() -> str:
   function contextualActionIdFor(el) {
     const ids = actionIdsFor(el);
     if (!ids.length) return '';
-    const declared = attr(el, 'data-ghostweb-context-action-id');
+    const declared = attr(el, 'data-sim-context-action-id');
     if (declared && ids.includes(declared)) return declared;
     const context = executionContextForActionability();
-    const active = String((context && context.action_id) || window.__ghostwebActiveActionId || '').trim();
+    const active = String((context && context.action_id) || window.__simActiveActionId || '').trim();
     if (active && ids.includes(active)) return active;
     const traceId = String(
       (context && (context.reference_trace_id || context.trace_id || context.task_id)) ||
-      window.__ghostwebActiveTraceId || ''
+      window.__simActiveTraceId || ''
     ).trim();
     if (!traceId) return '';
     const matches = ids.filter(function (id) { return id.indexOf(traceId + ':step') === 0; });
@@ -6458,7 +6458,7 @@ def _actionability_inspector_runtime_script() -> str:
   }
   function baseResult(status, el, reason, viewport) {
     const label = labelFor(el);
-    // Shared DOM hosts retain their page-owned primary id, while the WebEnv
+    // Shared DOM hosts retain their page-owned primary id, while the host
     // task context selects a trace-specific alias for the observation.  Do
     // this in the inspector as well as the optional action-effect bridge: a
     // sealed package can legitimately omit that bridge yet still carries the
@@ -6471,16 +6471,16 @@ def _actionability_inspector_runtime_script() -> str:
       message: messageFor(status, label),
       label: label,
       element_id: attr(el, 'data-element-id') || attr(el, 'id'),
-      action_id: contextualActionId || attr(el, 'data-ghostweb-action-id') || attr(el, 'data-action-id'),
-      action_kind: attr(el, 'data-ghostweb-action') || attr(el, 'data-ghostweb-route-action') || attr(el, 'data-ghostweb-effect-kind'),
-      target: attr(el, 'data-ghostweb-target') || attr(el, 'href'),
+      action_id: contextualActionId || attr(el, 'data-sim-action-id') || attr(el, 'data-action-id'),
+      action_kind: attr(el, 'data-sim-action') || attr(el, 'data-sim-route-action') || attr(el, 'data-sim-effect-kind'),
+      target: attr(el, 'data-sim-target') || attr(el, 'href'),
       reason: reason,
-      source: 'ghostweb_dom_contract',
+      source: 'sim_dom_contract',
       viewport: viewport || null,
       timestamp: Date.now()
     };
     lastResult = result;
-    window.__ghostwebLastActionability = result;
+    window.__simLastActionability = result;
     return result;
   }
   function inspectElement(element, options) {
@@ -6555,7 +6555,7 @@ def _actionability_inspector_runtime_script() -> str:
     const resolved = inspectPointStack(stack, inspectedOptions);
     return resolved || inspectElement(stack[0], inspectedOptions);
   }
-  window.GhostwebActionability = {
+  window.SimActionability = {
     installed: true,
     schema: SCHEMA,
     getResponseMode: getResponseMode,
@@ -6573,7 +6573,7 @@ def _inject_actionability_inspector_runtime(html_text: str, page: Dict[str, Any]
     text = str(html_text or "")
     script = _actionability_inspector_runtime_script()
     runtime_re = re.compile(
-        r'<script\b(?=[^>]*\bdata-ghostweb-runtime=["\']actionability-inspector["\'])[^>]*>.*?</script>',
+        r'<script\b(?=[^>]*\bdata-sim-runtime=["\']actionability-inspector["\'])[^>]*>.*?</script>',
         re.IGNORECASE | re.DOTALL,
     )
     if runtime_re.search(text):
@@ -6592,9 +6592,9 @@ def _inject_actionability_inspector_runtime(html_text: str, page: Dict[str, Any]
 
 def _input_focus_state_runtime_script() -> str:
     return """
-<script data-ghostweb-runtime="input-focus-state">
+<script data-sim-runtime="input-focus-state">
 (function () {
-  if (window.GhostwebInputFocusState && window.GhostwebInputFocusState.installed) return;
+  if (window.SimInputFocusState && window.SimInputFocusState.installed) return;
   const EDITABLE_SELECTOR = [
     'textarea',
     '[contenteditable="true"]',
@@ -6613,18 +6613,18 @@ def _input_focus_state_runtime_script() -> str:
     'a[href]',
     'select',
     '[role="button"]',
-    '[data-ghostweb-click-contract-kind="noninteractive"]'
+    '[data-sim-click-contract-kind="noninteractive"]'
   ].join(',');
-  const PLACEHOLDER_ATTR = 'data-ghostweb-placeholder-original';
+  const PLACEHOLDER_ATTR = 'data-sim-placeholder-original';
   function ensureStyle() {
-    if (document.querySelector('style[data-ghostweb-runtime="input-focus-state-style"]')) return;
+    if (document.querySelector('style[data-sim-runtime="input-focus-state-style"]')) return;
     const style = document.createElement('style');
-    style.setAttribute('data-ghostweb-runtime', 'input-focus-state-style');
+    style.setAttribute('data-sim-runtime', 'input-focus-state-style');
     style.textContent = [
-      '[data-ghostweb-input-state="focused"],[data-ghostweb-input-state="focused-filled"]{caret-color:#2563eb!important;}',
-      '[contenteditable][data-ghostweb-input-state="focused"],[contenteditable][data-ghostweb-input-state="focused-filled"]{min-height:1.2em;}',
-      '[data-ghostweb-mobile-input-surface="true"]{background:#f3f4f6!important;border-radius:9999px!important;padding:4px!important;box-sizing:border-box!important;}',
-      '[data-ghostweb-mobile-input-surface="true"] input:not([type]),[data-ghostweb-mobile-input-surface="true"] input[type="text"],[data-ghostweb-mobile-input-surface="true"] input[type="search"],[data-ghostweb-mobile-input-surface="true"] input[type="email"],[data-ghostweb-mobile-input-surface="true"] input[type="tel"],[data-ghostweb-mobile-input-surface="true"] input[type="url"],[data-ghostweb-mobile-input-surface="true"] input[type="number"],[data-ghostweb-mobile-input-surface="true"] input[type="password"]{background:#fff!important;border-radius:9999px!important;caret-color:#2563eb!important;}'
+      '[data-sim-input-state="focused"],[data-sim-input-state="focused-filled"]{caret-color:#2563eb!important;}',
+      '[contenteditable][data-sim-input-state="focused"],[contenteditable][data-sim-input-state="focused-filled"]{min-height:1.2em;}',
+      '[data-sim-mobile-input-surface="true"]{background:#f3f4f6!important;border-radius:9999px!important;padding:4px!important;box-sizing:border-box!important;}',
+      '[data-sim-mobile-input-surface="true"] input:not([type]),[data-sim-mobile-input-surface="true"] input[type="text"],[data-sim-mobile-input-surface="true"] input[type="search"],[data-sim-mobile-input-surface="true"] input[type="email"],[data-sim-mobile-input-surface="true"] input[type="tel"],[data-sim-mobile-input-surface="true"] input[type="url"],[data-sim-mobile-input-surface="true"] input[type="number"],[data-sim-mobile-input-surface="true"] input[type="password"]{background:#fff!important;border-radius:9999px!important;caret-color:#2563eb!important;}'
     ].join('\\n');
     (document.head || document.documentElement).appendChild(style);
   }
@@ -6642,7 +6642,7 @@ def _input_focus_state_runtime_script() -> str:
   }
   function surfaceFor(el) {
     if (!el || !el.parentElement) return null;
-    return el.closest('[data-ghostweb-input-surface]') ||
+    return el.closest('[data-sim-input-surface]') ||
       el.closest('label') ||
       el.parentElement;
   }
@@ -6670,28 +6670,28 @@ def _input_focus_state_runtime_script() -> str:
   function mobileSurfaceRequested(el) {
     const surface = surfaceFor(el);
     const requestedByControl = !!(el && el.getAttribute &&
-      el.getAttribute('data-ghostweb-mobile-input-surface') === 'true');
+      el.getAttribute('data-sim-mobile-input-surface') === 'true');
     const requestedBySurface = !!(surface && surface.getAttribute &&
-      surface.getAttribute('data-ghostweb-mobile-input-surface') === 'true');
+      surface.getAttribute('data-sim-mobile-input-surface') === 'true');
     return requestedByControl || requestedBySurface;
   }
   function shouldPrepareMobileSurface(el) {
     if (!isEditable(el) || !el.matches || !el.matches('input,textarea')) return false;
     if (el.disabled || el.readOnly) return false;
-    if (el.getAttribute && el.getAttribute('data-ghostweb-mobile-input-surface') === 'skip') return false;
-    if (el.closest && el.closest('[data-ghostweb-mobile-input-surface="skip"],[data-ghostweb-input-surface-style="preserve"]')) return false;
+    if (el.getAttribute && el.getAttribute('data-sim-mobile-input-surface') === 'skip') return false;
+    if (el.closest && el.closest('[data-sim-mobile-input-surface="skip"],[data-sim-input-surface-style="preserve"]')) return false;
     return mobileSurfaceRequested(el);
   }
   function prepareMobileInputSurface(el) {
     if (!shouldPrepareMobileSurface(el)) return;
     const surface = surfaceFor(el);
     if (!surface || surface === document.body || surface === document.documentElement) return;
-    if (surface.getAttribute && surface.getAttribute('data-ghostweb-mobile-input-surface') === 'skip') return;
-    surface.setAttribute('data-ghostweb-mobile-input-surface', 'true');
-    if (!surface.hasAttribute('data-ghostweb-input-surface')) {
-      surface.setAttribute('data-ghostweb-input-surface', 'mobile');
+    if (surface.getAttribute && surface.getAttribute('data-sim-mobile-input-surface') === 'skip') return;
+    surface.setAttribute('data-sim-mobile-input-surface', 'true');
+    if (!surface.hasAttribute('data-sim-input-surface')) {
+      surface.setAttribute('data-sim-input-surface', 'mobile');
     }
-    el.setAttribute('data-ghostweb-mobile-input-control', 'true');
+    el.setAttribute('data-sim-mobile-input-control', 'true');
     el.style.caretColor = '#2563eb';
     el.style.backgroundColor = '#fff';
   }
@@ -6703,14 +6703,14 @@ def _input_focus_state_runtime_script() -> str:
       el.setAttribute(PLACEHOLDER_ATTR, current);
     }
     el.setAttribute('placeholder', '');
-    el.setAttribute('data-ghostweb-placeholder-hidden', 'true');
+    el.setAttribute('data-sim-placeholder-hidden', 'true');
   }
   function restorePlaceholderAfterBlur(el) {
     if (!el || !el.getAttribute || !el.setAttribute || valueOf(el)) return;
     const original = el.getAttribute(PLACEHOLDER_ATTR);
     if (!original) return;
     el.setAttribute('placeholder', original);
-    el.removeAttribute('data-ghostweb-placeholder-hidden');
+    el.removeAttribute('data-sim-placeholder-hidden');
   }
   function setState(el, focused) {
     if (!isEditable(el)) return;
@@ -6722,25 +6722,25 @@ def _input_focus_state_runtime_script() -> str:
     const state = stateFor(el, focused);
     const surface = surfaceFor(el);
     if (state) {
-      el.setAttribute('data-ghostweb-input-state', state);
-      el.setAttribute('data-ghostweb-awaiting-input', focused ? 'true' : 'false');
+      el.setAttribute('data-sim-input-state', state);
+      el.setAttribute('data-sim-awaiting-input', focused ? 'true' : 'false');
     } else {
-      el.removeAttribute('data-ghostweb-input-state');
-      el.removeAttribute('data-ghostweb-awaiting-input');
+      el.removeAttribute('data-sim-input-state');
+      el.removeAttribute('data-sim-awaiting-input');
     }
     if (surface) {
       if (state) {
-        surface.setAttribute('data-ghostweb-input-surface-state', state);
-        surface.setAttribute('data-ghostweb-focused-input', focused ? 'true' : 'false');
+        surface.setAttribute('data-sim-input-surface-state', state);
+        surface.setAttribute('data-sim-focused-input', focused ? 'true' : 'false');
       } else {
-        surface.removeAttribute('data-ghostweb-input-surface-state');
-        surface.removeAttribute('data-ghostweb-focused-input');
+        surface.removeAttribute('data-sim-input-surface-state');
+        surface.removeAttribute('data-sim-focused-input');
       }
     }
   }
   function bind(el) {
-    if (!isEditable(el) || el.__ghostwebInputFocusBound) return;
-    el.__ghostwebInputFocusBound = true;
+    if (!isEditable(el) || el.__simInputFocusBound) return;
+    el.__simInputFocusBound = true;
     prepareMobileInputSurface(el);
     el.addEventListener('focus', function () { setState(el, true); }, true);
     el.addEventListener('blur', function () { setState(el, false); }, true);
@@ -6794,8 +6794,8 @@ def _input_focus_state_runtime_script() -> str:
     const candidates = Array.from(document.querySelectorAll(EDITABLE_SELECTOR)).filter(visibleEditable);
     const explicit = candidates.find(function (el) {
       return el.hasAttribute('autofocus') ||
-        el.getAttribute('data-ghostweb-autofocus') === 'true' ||
-        el.getAttribute('data-ghostweb-input-autofocus') === 'true';
+        el.getAttribute('data-sim-autofocus') === 'true' ||
+        el.getAttribute('data-sim-input-autofocus') === 'true';
     });
     const searchLike = candidates.find(isSearchLikeEditable);
     const target = explicit;
@@ -6841,7 +6841,7 @@ def _input_focus_state_runtime_script() -> str:
   } else {
     window.setTimeout(focusInitialEditable, 0);
   }
-  window.GhostwebInputFocusState = {
+  window.SimInputFocusState = {
     installed: true,
     bindAll: bindAll,
     focusEditable: focusEditable,
@@ -6858,7 +6858,7 @@ def _inject_input_focus_state_runtime(html_text: str, page: Dict[str, Any]) -> T
         return text, False
     script = _input_focus_state_runtime_script()
     runtime_re = re.compile(
-        r'<script\b(?=[^>]*\bdata-ghostweb-runtime=["\']input-focus-state["\'])[^>]*>.*?</script>',
+        r'<script\b(?=[^>]*\bdata-sim-runtime=["\']input-focus-state["\'])[^>]*>.*?</script>',
         re.IGNORECASE | re.DOTALL,
     )
     if runtime_re.search(text):
@@ -6883,7 +6883,7 @@ def _query_state_runtime_script(query_contract: Dict[str, Any]) -> str:
   }
 """
     return f"""
-<script data-ghostweb-runtime="query-state">
+<script data-sim-runtime="query-state">
 (function () {{
   const CONTRACT = {payload};
   const states = Array.isArray(CONTRACT && CONTRACT.states) ? CONTRACT.states : [];
@@ -6912,8 +6912,8 @@ def _query_state_runtime_script(query_contract: Dict[str, Any]) -> str:
   function routedSuggestionHost(target) {{
     return target && target.closest
       ? target.closest(
-        '[data-ghostweb-query-suggestion][data-ghostweb-query-target], ' +
-        '[data-ghostweb-query-suggestion][data-ghostweb-target]'
+        '[data-sim-query-suggestion][data-sim-query-target], ' +
+        '[data-sim-query-suggestion][data-sim-target]'
       )
       : null;
   }}
@@ -6970,7 +6970,7 @@ def _query_state_runtime_script(query_contract: Dict[str, Any]) -> str:
     if (!input) return;
     const value = String(input.value || '').trim();
     const state = matchingState(value);
-    window.GhostwebQueryState = Object.assign(window.GhostwebQueryState || {{}}, {{
+    window.SimQueryState = Object.assign(window.SimQueryState || {{}}, {{
       contract: CONTRACT,
       current_query: value,
       current_state: state
@@ -6990,7 +6990,7 @@ def _query_state_runtime_script(query_contract: Dict[str, Any]) -> str:
   function routeTo(target, query) {{
     const url = targetWithQuery(target, query);
     if (!url) return false;
-    const runtime = window.GhostwebRouteExecution;
+    const runtime = window.SimRouteExecution;
     if (runtime && typeof runtime.navigate === 'function' && runtime.navigate(url, {{ mode: 'push' }})) return true;
     window.location.href = url;
     return true;
@@ -7060,8 +7060,8 @@ def _query_state_runtime_script(query_contract: Dict[str, Any]) -> str:
     const suggestion = routedSuggestionHost(event.target);
     if (!suggestion) return;
     const target = String(
-      suggestion.getAttribute('data-ghostweb-query-target') ||
-      suggestion.getAttribute('data-ghostweb-target') ||
+      suggestion.getAttribute('data-sim-query-target') ||
+      suggestion.getAttribute('data-sim-target') ||
       ''
     ).trim();
     if (!target) return;
@@ -7099,7 +7099,7 @@ def _inject_query_state_runtime(html_text: str, page: Dict[str, Any]) -> Tuple[s
         return text, False
     script = _query_state_runtime_script(query_contract)
     runtime_re = re.compile(
-        r'<script\b(?=[^>]*\bdata-ghostweb-runtime=["\']query-state["\'])[^>]*>.*?</script>',
+        r'<script\b(?=[^>]*\bdata-sim-runtime=["\']query-state["\'])[^>]*>.*?</script>',
         re.IGNORECASE | re.DOTALL,
     )
     if runtime_re.search(text):
@@ -7159,7 +7159,7 @@ def _record_form_hydration_contract_for_page(page: Dict[str, Any]) -> Dict[str, 
 def _record_form_hydration_runtime_script(contract: Dict[str, Any]) -> str:
     payload = json.dumps(contract or {}, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
     return f"""
-<script data-ghostweb-runtime="record-form-hydration">
+<script data-sim-runtime="record-form-hydration">
 (function () {{
   const CONTRACT = {payload};
   const entities = Array.isArray(CONTRACT && CONTRACT.entities) ? CONTRACT.entities : [];
@@ -7349,7 +7349,7 @@ def _inject_record_form_hydration_runtime(html_text: str, page: Dict[str, Any]) 
         return text, False
     script = _record_form_hydration_runtime_script(contract)
     runtime_re = re.compile(
-        r'<script\b(?=[^>]*\bdata-ghostweb-runtime=["\']record-form-hydration["\'])[^>]*>.*?</script>',
+        r'<script\b(?=[^>]*\bdata-sim-runtime=["\']record-form-hydration["\'])[^>]*>.*?</script>',
         re.IGNORECASE | re.DOTALL,
     )
     if runtime_re.search(text):
@@ -7364,10 +7364,10 @@ def _inject_record_form_hydration_runtime(html_text: str, page: Dict[str, Any]) 
 
 def _overlay_hit_test_runtime_script() -> str:
     return """
-<script data-ghostweb-runtime="overlay-hit-test">
+<script data-sim-runtime="overlay-hit-test">
 (function () {
-  if (window.__ghostwebStableOverlayHitTestInstalled) return;
-  window.__ghostwebStableOverlayHitTestInstalled = true;
+  if (window.__simStableOverlayHitTestInstalled) return;
+  window.__simStableOverlayHitTestInstalled = true;
   const OVERLAY_SELECTOR = '[role="dialog"], [aria-modal="true"], [id*="Overlay"], [id*="overlay"], [data-overlay], .modal, .drawer, .sheet';
   let scheduled = false;
   let scanning = false;
@@ -7393,7 +7393,7 @@ def _overlay_hit_test_runtime_script() -> str:
       node.id || '',
       node.className || '',
       node.getAttribute('data-overlay') || '',
-      node.getAttribute('data-ghostweb-overlay-layer-role') || ''
+      node.getAttribute('data-sim-overlay-layer-role') || ''
     ].join(' ').toLowerCase();
   }
   function hasForegroundOverlaySignal(node) {
@@ -7416,7 +7416,7 @@ def _overlay_hit_test_runtime_script() -> str:
     const fullScreenLike = tokens.includes('inset-0') ||
       (rect.width >= viewportWidth * 0.8 && rect.height >= viewportHeight * 0.6) ||
       (parentRect && rect.width >= parentRect.width * 0.8 && rect.height >= parentRect.height * 0.6);
-    const explicitBackdrop = node.getAttribute('data-ghostweb-overlay-layer-role') === 'backdrop' ||
+    const explicitBackdrop = node.getAttribute('data-sim-overlay-layer-role') === 'backdrop' ||
       tokens.includes('backdrop') || tokens.includes('dim') ||
       (tokens.includes('overlay') && isDimBackground(style, tokens));
     return fullScreenLike && explicitBackdrop;
@@ -7429,7 +7429,7 @@ def _overlay_hit_test_runtime_script() -> str:
     }
     setStyle(overlay, 'pointerEvents', 'auto');
     if (!isBackdropLayer(overlay) && !overlay.style.zIndex) setStyle(overlay, 'zIndex', '2147483000');
-    if (isBackdropLayer(overlay)) setAttr(overlay, 'data-ghostweb-overlay-layer-role', 'backdrop');
+    if (isBackdropLayer(overlay)) setAttr(overlay, 'data-sim-overlay-layer-role', 'backdrop');
     let node = overlay.parentElement;
     while (node && node !== document.body && node !== document.documentElement) {
       if (isClosedOverlay(node)) break;
@@ -7437,7 +7437,7 @@ def _overlay_hit_test_runtime_script() -> str:
       if (style && style.pointerEvents === 'none') {
         node.classList.remove('pointer-events-none');
         setStyle(node, 'pointerEvents', 'auto');
-        setAttr(node, 'data-ghostweb-overlay-hit-test-restored', 'true');
+        setAttr(node, 'data-sim-overlay-hit-test-restored', 'true');
       }
       node = node.parentElement;
     }
@@ -7491,7 +7491,7 @@ def _inject_overlay_hit_test_runtime(html_text: str, page: Dict[str, Any]) -> Tu
         return text, False
     script = _overlay_hit_test_runtime_script()
     runtime_re = re.compile(
-        r'<script\b(?=[^>]*\bdata-ghostweb-runtime=["\']overlay-hit-test["\'])[^>]*>.*?</script>',
+        r'<script\b(?=[^>]*\bdata-sim-runtime=["\']overlay-hit-test["\'])[^>]*>.*?</script>',
         re.IGNORECASE | re.DOTALL,
     )
     if runtime_re.search(text):
@@ -7511,9 +7511,9 @@ def _inject_overlay_hit_test_runtime(html_text: str, page: Dict[str, Any]) -> Tu
 def _execution_obligation_action_surface_runtime_script(obligations: List[Dict[str, Any]]) -> str:
     payload = json.dumps(obligations or [], ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
     return (
-        "<script data-ghostweb-metadata=\"execution-obligations\">\n"
+        "<script data-sim-metadata=\"execution-obligations\">\n"
         f"  const OBLIGATIONS = {payload};\n"
-        "  window.__ghostwebExecutionObligations = OBLIGATIONS;\n"
+        "  window.__simExecutionObligations = OBLIGATIONS;\n"
         "</script>"
     )
 
@@ -7616,7 +7616,7 @@ def _inject_execution_obligation_action_surface_runtime(html_text: str, page: Di
         return text, False
     script = _execution_obligation_action_surface_runtime_script(obligations)
     runtime_re = re.compile(
-        r'<script\b(?=[^>]*(?:\bdata-ghostweb-runtime=["\']execution-obligation-action-surface["\']|\bdata-ghostweb-metadata=["\']execution-obligations["\']))[^>]*>.*?</script>',
+        r'<script\b(?=[^>]*(?:\bdata-sim-runtime=["\']execution-obligation-action-surface["\']|\bdata-sim-metadata=["\']execution-obligations["\']))[^>]*>.*?</script>',
         re.IGNORECASE | re.DOTALL,
     )
     if runtime_re.search(text):
@@ -7635,24 +7635,24 @@ def _inject_execution_obligation_action_surface_runtime(html_text: str, page: Di
 
 def _execution_obligation_geometry_runtime_script() -> str:
     return """
-<script data-ghostweb-runtime="execution-obligation-geometry">
+<script data-sim-runtime="execution-obligation-geometry">
 (function () {
   'use strict';
-  if (window.GhostwebExecutionGeometry) return;
+  if (window.SimExecutionGeometry) return;
   function context() {
     try {
-      const value = window.__ghostwebExecutionContext || JSON.parse(
-        window.sessionStorage.getItem('ghostweb.execution_context') ||
-        window.localStorage.getItem('ghostweb.execution_context') || '{}'
+      const value = window.__simExecutionContext || JSON.parse(
+        window.sessionStorage.getItem('sim.execution_context') ||
+        window.localStorage.getItem('sim.execution_context') || '{}'
       );
       return value && typeof value === 'object' ? value : {};
     } catch (error) { return {}; }
   }
   function obligations() {
-    const rows = window.__ghostwebExecutionObligations;
+    const rows = window.__simExecutionObligations;
     if (Array.isArray(rows)) return rows;
     const metadata = document.querySelector(
-      'script[data-ghostweb-metadata="execution-obligations"]'
+      'script[data-sim-metadata="execution-obligations"]'
     );
     const match = metadata && String(metadata.textContent || '').match(
       /const\\s+OBLIGATIONS\\s*=\\s*(\\[[\\s\\S]*?\\])\\s*;/
@@ -7661,7 +7661,7 @@ def _execution_obligation_geometry_runtime_script() -> str:
     try {
       const parsed = JSON.parse(match[1]);
       if (Array.isArray(parsed)) {
-        window.__ghostwebExecutionObligations = parsed;
+        window.__simExecutionObligations = parsed;
         return parsed;
       }
     } catch (error) {}
@@ -7678,7 +7678,7 @@ def _execution_obligation_geometry_runtime_script() -> str:
       });
     }
     if (!host || !host.getAttribute) return ids;
-    append(host.getAttribute('data-ghostweb-action-id'));
+    append(host.getAttribute('data-sim-action-id'));
     append(host.getAttribute('data-action-id'));
     append(host.getAttribute('data-action-aliases'));
     return ids;
@@ -7773,7 +7773,7 @@ def _execution_obligation_geometry_runtime_script() -> str:
   }
   function hostFor(id) {
     const matches = Array.from(document.querySelectorAll(
-      '[data-ghostweb-action-id], [data-action-id], [data-action-aliases]'
+      '[data-sim-action-id], [data-action-id], [data-action-aliases]'
     )).filter(function (candidate) { return idsFor(candidate).includes(id); });
     return matches.length === 1 ? matches[0] : null;
   }
@@ -7904,7 +7904,7 @@ def _execution_obligation_geometry_runtime_script() -> str:
       expected_action_id: obligation.action_id,
       expected_point: obligation.point,
       declared_point: obligation.declared_point,
-      point_source: 'webenv_actionability_preflight',
+      point_source: 'env_actionability_preflight',
       obligation_selection: obligation.obligation_selection
     });
   }
@@ -7950,7 +7950,7 @@ def _execution_obligation_geometry_runtime_script() -> str:
   function align() {
     const before = inspect();
     if (before.status !== 'unsatisfied' || before.reason !== 'reference_point_outside_visible_host') {
-      window.__ghostwebExecutionGeometry = before;
+      window.__simExecutionGeometry = before;
       return before;
     }
     const host = hostFor(before.expected_action_id);
@@ -7964,7 +7964,7 @@ def _execution_obligation_geometry_runtime_script() -> str:
           scroll_adjustments_rolled_back: false
         }
       };
-      window.__ghostwebExecutionGeometry = result;
+      window.__simExecutionGeometry = result;
       return result;
     }
     const adjustments = [];
@@ -8032,7 +8032,7 @@ def _execution_obligation_geometry_runtime_script() -> str:
         failure_before_rollback: alignmentFailure
       }
     };
-    window.__ghostwebExecutionGeometry = result;
+    window.__simExecutionGeometry = result;
     return result;
   }
   function scheduleAlign() {
@@ -8067,19 +8067,19 @@ def _execution_obligation_geometry_runtime_script() -> str:
         point_topmost: true,
         alignment: { adjustments: [], scroll_adjustments_rolled_back: false }
       };
-      window.__ghostwebExecutionGeometry = result;
+      window.__simExecutionGeometry = result;
       return result;
     }
     const result = align();
     if (window.requestAnimationFrame) window.requestAnimationFrame(align);
     return result;
   }
-  window.GhostwebExecutionGeometry = {
+  window.SimExecutionGeometry = {
     inspect: inspect,
     align: align,
     alignToViewportPoint: alignToViewportPoint
   };
-  window.addEventListener('ghostweb:task-context-update', scheduleAlign);
+  window.addEventListener('sim:task-context-update', scheduleAlign);
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', scheduleAlign, { once: true });
   } else {
@@ -8098,7 +8098,7 @@ def _inject_execution_obligation_geometry_runtime(html_text: str, page: Dict[str
         for surface in _obligation_action_surfaces_from_page(page)
     )
     existing_obligation_metadata = bool(re.search(
-        r"<script\b(?=[^>]*\bdata-ghostweb-metadata=[\"']execution-obligations[\"'])[^>]*>",
+        r"<script\b(?=[^>]*\bdata-sim-metadata=[\"']execution-obligations[\"'])[^>]*>",
         text,
         re.IGNORECASE,
     ))
@@ -8106,7 +8106,7 @@ def _inject_execution_obligation_geometry_runtime(html_text: str, page: Dict[str
         return text, False
     script = _execution_obligation_geometry_runtime_script()
     runtime_re = re.compile(
-        r"<script\b(?=[^>]*\bdata-ghostweb-runtime=[\"']execution-obligation-geometry[\"'])[^>]*>.*?</script>",
+        r"<script\b(?=[^>]*\bdata-sim-runtime=[\"']execution-obligation-geometry[\"'])[^>]*>.*?</script>",
         re.IGNORECASE | re.DOTALL,
     )
     if runtime_re.search(text):
@@ -8239,9 +8239,9 @@ def detect_page_execution_html_artifacts(
     )
     for match in hidden_container_re.finditer(text):
         body = match.group("body") or ""
-        if "data-element-id" not in body or "data-ghostweb-click-contract-kind" not in body:
+        if "data-element-id" not in body or "data-sim-click-contract-kind" not in body:
             continue
-        if re.search(r'data-ghostweb-click-contract-kind=["\']task["\']', body, re.IGNORECASE):
+        if re.search(r'data-sim-click-contract-kind=["\']task["\']', body, re.IGNORECASE):
             add("hidden_task_surface", match.group(0), severity="contract_violation")
 
     observed_control_keys = _visible_control_label_keys_from_page(page)
@@ -8266,7 +8266,7 @@ def detect_page_execution_html_artifacts(
             if not labels:
                 continue
             option_group_hint = bool(
-                re.search(r"\bdata-(?!ghostweb)[\w-]+\s*=", body, re.IGNORECASE)
+                re.search(r"\bdata-(?!sim-)[\w-]+\s*=", body, re.IGNORECASE)
                 or re.search(r"\b(?:dropdown|popover|option|select|panel)\b", attrs, re.IGNORECASE)
             )
             if option_group_hint and not any(label in observed_control_keys for label in labels):
@@ -8373,11 +8373,11 @@ def _html_has_clickable_label_target(html_text: str, label: str, target_filename
         haystack = _normalize_validation_text(_html_plain_text(attrs + " " + body))
         if label_key not in haystack:
             continue
-        if re.search(r'data-ghostweb-click-contract-kind=["\']noninteractive["\']', attrs, re.IGNORECASE):
+        if re.search(r'data-sim-click-contract-kind=["\']noninteractive["\']', attrs, re.IGNORECASE):
             continue
         href_match = re.search(r'href=["\']([^"\']+)["\']', attrs, re.IGNORECASE)
-        target_match = re.search(r'data-ghostweb-target=["\']([^"\']+)["\']', attrs, re.IGNORECASE)
-        route_action = re.search(r'data-ghostweb-route-action=["\'][^"\']+["\']', attrs, re.IGNORECASE)
+        target_match = re.search(r'data-sim-target=["\']([^"\']+)["\']', attrs, re.IGNORECASE)
+        route_action = re.search(r'data-sim-route-action=["\'][^"\']+["\']', attrs, re.IGNORECASE)
         declared_target = _filename_without_query(
             (href_match.group(1) if href_match else "")
             or (target_match.group(1) if target_match else "")
@@ -8393,7 +8393,7 @@ def _html_noninteractive_label_host(html_text: str, label: str) -> str:
         return ""
     noninteractive_re = re.compile(
         r'<(?P<tag>[a-zA-Z][\w:-]*)\b'
-        r'(?P<attrs>[^>]*)data-ghostweb-click-contract-kind=["\']noninteractive["\'][^>]*>'
+        r'(?P<attrs>[^>]*)data-sim-click-contract-kind=["\']noninteractive["\'][^>]*>'
         r'(?P<body>.*?)</(?P=tag)>',
         re.IGNORECASE | re.DOTALL,
     )

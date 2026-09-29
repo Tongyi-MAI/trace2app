@@ -113,7 +113,7 @@ class TraceLoader:
         return False
 
     @staticmethod
-    def is_webenv_rewritten_trace(path: str) -> bool:
+    def is_env_rewritten_trace(path: str) -> bool:
         if not os.path.isdir(path):
             return False
         trajectory_path = os.path.join(path, "trajectory.json")
@@ -121,7 +121,7 @@ class TraceLoader:
         return os.path.isfile(trajectory_path) and os.path.isdir(screenshots_dir)
 
     @classmethod
-    def is_webenv_rewritten_root(cls, path: str) -> bool:
+    def is_env_rewritten_root(cls, path: str) -> bool:
         if not os.path.isdir(path) or not os.path.isfile(os.path.join(path, "index.json")):
             return False
         try:
@@ -136,7 +136,7 @@ class TraceLoader:
             if not isinstance(entry, dict):
                 continue
             entry_path = str(entry.get("path", "") or entry.get("id", "") or "").strip()
-            if entry_path and cls.is_webenv_rewritten_trace(os.path.join(path, entry_path)):
+            if entry_path and cls.is_env_rewritten_trace(os.path.join(path, entry_path)):
                 return True
         return False
 
@@ -258,7 +258,7 @@ class TraceLoader:
             steps=steps,
         )
 
-    def load_webenv_rewritten(self, resource_dir: str, trace_filter: List[str] = None) -> List[TraceData]:
+    def load_env_rewritten(self, resource_dir: str, trace_filter: List[str] = None) -> List[TraceData]:
         root_index_path = os.path.join(resource_dir, "index.json")
         with open(root_index_path, "r", encoding="utf-8") as f:
             root_index = json.load(f)
@@ -272,18 +272,18 @@ class TraceLoader:
                 continue
             entry_path = str(entry.get("path", "") or trace_id).strip()
             trace_dir = os.path.join(resource_dir, entry_path)
-            trace = self.load_webenv_rewritten_trace(trace_dir, trace_id=trace_id, website_url=website_url)
+            trace = self.load_env_rewritten_trace(trace_dir, trace_id=trace_id, website_url=website_url)
             if trace:
                 traces.append(trace)
         return traces
 
-    def load_webenv_rewritten_trace(
+    def load_env_rewritten_trace(
         self,
         trace_dir: str,
         trace_id: str = "",
         website_url: str = "",
     ) -> Optional[TraceData]:
-        if not self.is_webenv_rewritten_trace(trace_dir):
+        if not self.is_env_rewritten_trace(trace_dir):
             return None
         trajectory_path = os.path.join(trace_dir, "trajectory.json")
         with open(trajectory_path, "r", encoding="utf-8") as f:
@@ -300,10 +300,10 @@ class TraceLoader:
             step_index = step_entry.get("step_index")
             if not isinstance(step_index, int):
                 step_index = index
-            raw_action = self._format_webenv_action(step_entry)
-            raw_action_payload = self._webenv_raw_action_payload(step_entry)
+            raw_action = self._format_env_action(step_entry)
+            raw_action_payload = self._env_raw_action_payload(step_entry)
             screenshot_ref = str(step_entry.get("screenshot", "") or step_entry.get("image_file", "") or "").strip()
-            screenshot_path = self._resolve_webenv_screenshot(trace_dir, screenshot_ref, index)
+            screenshot_path = self._resolve_env_screenshot(trace_dir, screenshot_ref, index)
             disposition = step_entry.get("step_disposition")
             conflicts = validate_step_authority_consistency(
                 step_entry,
@@ -318,15 +318,15 @@ class TraceLoader:
                 disp_record.setdefault("step_index", step_index)
                 disp_record.setdefault("screenshot_path", screenshot_path or "")
                 step_dispositions.append(disp_record)
-            skip_reason = self._webenv_skip_reason(step_entry)
-            effective_step = self._webenv_effective_step(step_entry)
+            skip_reason = self._env_skip_reason(step_entry)
+            effective_step = self._env_effective_step(step_entry)
             observation_disposition = str(
                 step_entry.get("observation_disposition")
                 or effective_step.get("observation_disposition")
                 or (disposition.get("observation_disposition") if isinstance(disposition, dict) else "")
                 or ""
             ).strip().lower()
-            is_terminal_observation = self._webenv_action_family(step_entry) == "finish" and (
+            is_terminal_observation = self._env_action_family(step_entry) == "finish" and (
                 observation_disposition == "retain"
                 or skip_reason == "terminal_observation"
             )
@@ -354,8 +354,8 @@ class TraceLoader:
                     "trace_id": trace_id,
                     "step_index": step_index,
                     "skip_reason": skip_reason,
-                    "reason": self._webenv_skip_detail(step_entry),
-                    "source": self._webenv_skip_source(step_entry),
+                    "reason": self._env_skip_detail(step_entry),
+                    "source": self._env_skip_source(step_entry),
                     "raw_action": raw_action,
                     "raw_action_payload": raw_action_payload,
                     "screenshot_path": screenshot_path or "",
@@ -391,7 +391,7 @@ class TraceLoader:
         )
 
     @staticmethod
-    def _resolve_webenv_screenshot(trace_dir: str, screenshot_ref: str, step_index: int) -> Optional[str]:
+    def _resolve_env_screenshot(trace_dir: str, screenshot_ref: str, step_index: int) -> Optional[str]:
         if screenshot_ref:
             candidate = os.path.join(trace_dir, screenshot_ref)
             if os.path.exists(candidate):
@@ -408,7 +408,7 @@ class TraceLoader:
         return None
 
     @staticmethod
-    def _format_webenv_action(step_entry: Dict[str, Any]) -> str:
+    def _format_env_action(step_entry: Dict[str, Any]) -> str:
         action = step_entry.get("action", "")
         if isinstance(action, dict):
             return TraceLoader._format_meituan_action(action)
@@ -425,7 +425,7 @@ class TraceLoader:
         return " ".join(parts) if parts else json.dumps(step_entry, ensure_ascii=False)
 
     @staticmethod
-    def _webenv_raw_action_payload(step_entry: Dict[str, Any]) -> Dict[str, Any]:
+    def _env_raw_action_payload(step_entry: Dict[str, Any]) -> Dict[str, Any]:
         keys = (
             "action",
             "action_type",
@@ -453,7 +453,7 @@ class TraceLoader:
         }
 
     @staticmethod
-    def _webenv_action_family(step_entry: Dict[str, Any]) -> str:
+    def _env_action_family(step_entry: Dict[str, Any]) -> str:
         action = step_entry.get("action")
         if isinstance(action, dict):
             action = action.get("type") or action.get("action") or action.get("name")
@@ -465,25 +465,25 @@ class TraceLoader:
         return text
 
     @staticmethod
-    def _webenv_effective_step(step_entry: Dict[str, Any]) -> Dict[str, Any]:
+    def _env_effective_step(step_entry: Dict[str, Any]) -> Dict[str, Any]:
         value = step_entry.get("effective_step")
         return value if isinstance(value, dict) else {}
 
     @staticmethod
-    def _webenv_skip_reason(step_entry: Dict[str, Any]) -> str:
-        effective = TraceLoader._webenv_effective_step(step_entry)
+    def _env_skip_reason(step_entry: Dict[str, Any]) -> str:
+        effective = TraceLoader._env_effective_step(step_entry)
         verdict = str(effective.get("verdict") or "").strip().lower()
         if verdict in {"skip", "drop", "manual", "manual_required", "not_applicable"}:
             return str(effective.get("skip_reason") or verdict)
         if step_entry.get("drop") is True:
             return "dropped_by_preprocess"
-        if TraceLoader._webenv_action_family(step_entry) == "take_over":
+        if TraceLoader._env_action_family(step_entry) == "take_over":
             return "manual_takeover_noop"
         return ""
 
     @staticmethod
-    def _webenv_skip_detail(step_entry: Dict[str, Any]) -> str:
-        effective = TraceLoader._webenv_effective_step(step_entry)
+    def _env_skip_detail(step_entry: Dict[str, Any]) -> str:
+        effective = TraceLoader._env_effective_step(step_entry)
         return str(
             effective.get("reason")
             or step_entry.get("drop_reason")
@@ -493,9 +493,9 @@ class TraceLoader:
         )
 
     @staticmethod
-    def _webenv_skip_source(step_entry: Dict[str, Any]) -> str:
-        effective = TraceLoader._webenv_effective_step(step_entry)
-        return str(effective.get("source") or "webenv_trace_loader")
+    def _env_skip_source(step_entry: Dict[str, Any]) -> str:
+        effective = TraceLoader._env_effective_step(step_entry)
+        return str(effective.get("source") or "env_trace_loader")
 
     @staticmethod
     def _should_skip_meituan_step(step_entry: Dict[str, Any]) -> bool:
@@ -774,8 +774,8 @@ class TraceLoader:
     def load_traces_for_website(self, trace_dirs: List[str],
                                  task_metadata_path: str = None,
                                  website_filter: str = None) -> List[TraceData]:
-        if len(trace_dirs) == 1 and self.is_webenv_rewritten_root(trace_dirs[0]):
-            traces = self.load_webenv_rewritten(trace_dirs[0])
+        if len(trace_dirs) == 1 and self.is_env_rewritten_root(trace_dirs[0]):
+            traces = self.load_env_rewritten(trace_dirs[0])
             if website_filter:
                 traces = [t for t in traces if website_filter in t.website_url]
             return traces
@@ -791,10 +791,10 @@ class TraceLoader:
         mind2web_dirs: List[str] = []
         traces: List[TraceData] = []
         for d in trace_dirs:
-            if self.is_webenv_rewritten_root(d):
-                traces.extend(self.load_webenv_rewritten(d))
-            elif self.is_webenv_rewritten_trace(d):
-                trace = self.load_webenv_rewritten_trace(d)
+            if self.is_env_rewritten_root(d):
+                traces.extend(self.load_env_rewritten(d))
+            elif self.is_env_rewritten_trace(d):
+                trace = self.load_env_rewritten_trace(d)
                 if trace:
                     traces.append(trace)
             elif self.is_mt_resource(d):
@@ -844,9 +844,9 @@ class TraceLoader:
         return traces
 
     def discover_trace_dirs(self, base_dir: str) -> List[str]:
-        if self.is_webenv_rewritten_root(base_dir):
+        if self.is_env_rewritten_root(base_dir):
             return [base_dir]
-        if self.is_webenv_rewritten_trace(base_dir):
+        if self.is_env_rewritten_trace(base_dir):
             return [base_dir]
         if self.is_meituan_session(base_dir):
             return [base_dir]
@@ -868,7 +868,7 @@ class TraceLoader:
             if (
                 os.path.exists(os.path.join(full_path, "result.json"))
                 or self.is_meituan_session(full_path)
-                or self.is_webenv_rewritten_trace(full_path)
+                or self.is_env_rewritten_trace(full_path)
             ):
                 trace_dirs.append(full_path)
         return trace_dirs

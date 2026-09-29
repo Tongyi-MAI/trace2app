@@ -21,7 +21,7 @@ _SEAT_MAP_ZONE_PAIR_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 _NONINTERACTIVE_ATTR_RE = re.compile(
-    r'data-ghostweb-click-contract-kind\s*=\s*["\']noninteractive["\']',
+    r'data-sim-click-contract-kind\s*=\s*["\']noninteractive["\']',
     re.IGNORECASE,
 )
 _REMOTE_SCRIPT_OR_LINK_RE = re.compile(
@@ -144,7 +144,7 @@ def _tag_records_by_data_element_id(html: str) -> Dict[str, List[Dict[str, Any]]
         prefix = scan_html[:start]
         last_noninteractive_open = -1
         for ancestor_match in re.finditer(
-            r"<[A-Za-z][\w:-]*\b[^<>]*data-ghostweb-click-contract-kind\s*=\s*['\"]noninteractive['\"][^<>]*>",
+            r"<[A-Za-z][\w:-]*\b[^<>]*data-sim-click-contract-kind\s*=\s*['\"]noninteractive['\"][^<>]*>",
             prefix,
             re.IGNORECASE,
         ):
@@ -202,7 +202,7 @@ def _looks_interactive(record: Dict[str, Any]) -> bool:
     attrs = str(record.get("attrs") or "").lower()
     role = str(record.get("role") or "").lower()
     if tag in {"a", "button", "input", "select", "textarea", "summary"}:
-        if tag == "a" and not record.get("href") and "onclick" not in attrs and "data-ghostweb" not in attrs:
+        if tag == "a" and not record.get("href") and "onclick" not in attrs and "data-sim-" not in attrs:
             return False
         return True
     if role in {"button", "link", "textbox", "checkbox", "radio", "switch", "menuitem", "tab", "combobox"}:
@@ -213,8 +213,8 @@ def _looks_interactive(record: Dict[str, Any]) -> bool:
         token in attrs
         for token in (
             "onclick",
-            "data-ghostweb-action",
-            "data-ghostweb-target",
+            "data-sim-action",
+            "data-sim-target",
             "data-route",
             "data-target",
             "href=",
@@ -362,7 +362,7 @@ def _route_target_matches(value: str, target_filename: str) -> bool:
     return bool(value) and _base_filename(value) == _base_filename(target_filename)
 
 
-def _record_has_ghostweb_route_executor(
+def _record_has_sim_route_executor(
     record: Dict[str, Any],
     target_filename: str,
 ) -> bool:
@@ -372,7 +372,7 @@ def _record_has_ghostweb_route_executor(
         return False
     return bool(
         re.search(
-            rf"GhostwebRouteExecution\.navigate\s*\(\s*['\"]{target}(?:[?#][^'\"]*)?['\"]",
+            rf"SimRouteExecution\.navigate\s*\(\s*['\"]{target}(?:[?#][^'\"]*)?['\"]",
             attrs,
             re.IGNORECASE | re.DOTALL,
         )
@@ -384,9 +384,9 @@ def _record_has_data_route_executor(
     target_filename: str,
 ) -> bool:
     attrs = str(record.get("attrs") or "")
-    data_target = _attr_value(attrs, "data-ghostweb-target")
+    data_target = _attr_value(attrs, "data-sim-target")
     href = _attr_value(attrs, "href")
-    data_action = _attr_value(attrs, "data-ghostweb-action")
+    data_action = _attr_value(attrs, "data-sim-action")
     return (
         data_action == "navigate"
         and _route_target_matches(data_target, target_filename)
@@ -413,7 +413,7 @@ def _record_has_sdk_route_side_effect(
 
 def _html_has_route_runtime_target(html: str, target_filename: str) -> bool:
     target = str(target_filename or "").strip()
-    if not target or 'data-ghostweb-runtime="route-execution"' not in html:
+    if not target or 'data-sim-runtime="route-execution"' not in html:
         return False
     pattern = re.escape(target)
     return bool(
@@ -422,7 +422,7 @@ def _html_has_route_runtime_target(html: str, target_filename: str) -> bool:
             html,
             re.IGNORECASE,
         )
-        and "GhostwebRouteExecution.navigate" in html
+        and "SimRouteExecution.navigate" in html
     )
 
 
@@ -450,7 +450,7 @@ def _html_has_query_route_guard(html: str, query_text: str, target_filename: str
     target_pattern = re.escape(target)
     return bool(
         re.search(
-            rf"GhostwebRouteExecution\.navigate\s*\(\s*['\"]{target_pattern}(?:[?#][^'\"]*)?['\"]",
+            rf"SimRouteExecution\.navigate\s*\(\s*['\"]{target_pattern}(?:[?#][^'\"]*)?['\"]",
             html,
             re.IGNORECASE | re.DOTALL,
         )
@@ -893,7 +893,7 @@ def _tailwind_probe_fallback_css(html: str) -> str:
         dynamic = _tailwind_probe_dynamic_rule(token)
         if dynamic:
             rules.append(dynamic)
-    return "<style data-ghostweb-probe-tailwind-fallback>" + "\n".join(rules) + "</style>"
+    return "<style data-sim-probe-tailwind-fallback>" + "\n".join(rules) + "</style>"
 
 
 def _prepare_probe_html(html: str, html_path: Path) -> tuple[str, bool]:
@@ -969,14 +969,14 @@ async def _runtime_dom_probe_async(
               }
               function isInteractive(el) {
                 if (!el) return false;
-                if (el.closest('[data-ghostweb-click-contract-kind="noninteractive"], [aria-disabled="true"]')) return false;
+                if (el.closest('[data-sim-click-contract-kind="noninteractive"], [aria-disabled="true"]')) return false;
                 const tag = String(el.tagName || '').toLowerCase();
                 const role = String(el.getAttribute('role') || '').toLowerCase();
                 if (['button', 'input', 'select', 'textarea', 'summary'].includes(tag)) return true;
-                if (tag === 'a') return !!el.getAttribute('href') || !!el.onclick || el.hasAttribute('data-ghostweb-action');
+                if (tag === 'a') return !!el.getAttribute('href') || !!el.onclick || el.hasAttribute('data-sim-action');
                 if (['button', 'link', 'textbox', 'checkbox', 'radio', 'switch', 'menuitem', 'tab', 'combobox'].includes(role)) return true;
                 if (el.hasAttribute('tabindex')) return true;
-                return !!el.onclick || el.hasAttribute('data-ghostweb-action') || el.hasAttribute('data-route') || el.hasAttribute('data-target');
+                return !!el.onclick || el.hasAttribute('data-sim-action') || el.hasAttribute('data-route') || el.hasAttribute('data-target');
               }
               function topmostState(el) {
                 function probe() {
@@ -1128,7 +1128,7 @@ async def _domain_materialization_probe_async(
                   input.dispatchEvent(new Event('change', { bubbles: true }));
                   await new Promise((resolve) => setTimeout(resolve, 80));
                 }
-                const nodes = Array.from(document.querySelectorAll('[data-ghostweb-query-suggestions="true"] *, [role="option"], li, button, a, .suggestion, .autocomplete, .typeahead'));
+                const nodes = Array.from(document.querySelectorAll('[data-sim-query-suggestions="true"] *, [role="option"], li, button, a, .suggestion, .autocomplete, .typeahead'));
                 const rendered = [];
                 for (const node of nodes) {
                   if (!visible(node)) continue;
@@ -1263,14 +1263,14 @@ async def _runtime_state_surface_probe_async(
               }
               function isInteractive(el) {
                 if (!el) return false;
-                if (el.closest('[data-ghostweb-click-contract-kind="noninteractive"], [aria-disabled="true"]')) return false;
+                if (el.closest('[data-sim-click-contract-kind="noninteractive"], [aria-disabled="true"]')) return false;
                 const tag = String(el.tagName || '').toLowerCase();
                 const role = String(el.getAttribute('role') || '').toLowerCase();
                 if (['button', 'input', 'select', 'textarea', 'summary'].includes(tag)) return true;
-                if (tag === 'a') return !!el.getAttribute('href') || !!el.onclick || el.hasAttribute('data-ghostweb-action');
+                if (tag === 'a') return !!el.getAttribute('href') || !!el.onclick || el.hasAttribute('data-sim-action');
                 if (['button', 'link', 'menuitem', 'tab'].includes(role)) return true;
                 if (el.hasAttribute('tabindex')) return true;
-                return !!el.onclick || el.hasAttribute('data-ghostweb-action') || el.hasAttribute('data-route') || el.hasAttribute('data-target');
+                return !!el.onclick || el.hasAttribute('data-sim-action') || el.hasAttribute('data-route') || el.hasAttribute('data-target');
               }
               function topmostState(el) {
                 if (!el) return 'missing';
@@ -1993,8 +1993,8 @@ def validate_action_slot_route_contracts(
             records = records_by_id.get(component_id, [])
             record = records[0] if records else {}
             attrs = str(record.get("attrs") or "")
-            data_target = _attr_value(attrs, "data-ghostweb-target")
-            data_action = _attr_value(attrs, "data-ghostweb-action")
+            data_target = _attr_value(attrs, "data-sim-target")
+            data_action = _attr_value(attrs, "data-sim-action")
             if data_action == "navigate" and _base_filename(data_target) in {
                 _base_filename(target) for target in targets
             }:
@@ -2002,7 +2002,7 @@ def validate_action_slot_route_contracts(
                     {
                         "component_id": component_id,
                         "reason": "fixed_data_target_on_stateful_query_host",
-                        "data_ghostweb_target": data_target,
+                        "data_sim_target": data_target,
                         "expected_queries": sorted(queries),
                         "expected_targets": sorted(targets),
                     }
@@ -2046,8 +2046,8 @@ def validate_action_slot_route_contracts(
             record = records[0]
             host_attrs = str(record.get("attrs") or "")
             if (
-                'data-ghostweb-action=' in host_attrs.lower()
-                and 'data-ghostweb-target=' in host_attrs.lower()
+                'data-sim-action=' in host_attrs.lower()
+                and 'data-sim-target=' in host_attrs.lower()
             ):
                 page_record["bound_host_count"] += 1
                 bound_host_total += 1
@@ -2062,7 +2062,7 @@ def validate_action_slot_route_contracts(
                 "action_slot_id": slot.get("action_slot_id"),
                 "component_id": component_id,
                 "target_filename": target_filename,
-                "expected_executor": "GhostwebRouteExecution.navigate",
+                "expected_executor": "SimRouteExecution.navigate",
                 "attrs": str(record.get("attrs") or "")[:600],
             }
             if _record_has_sdk_route_side_effect(record, target_filename):
@@ -2124,19 +2124,19 @@ def validate_action_slot_route_contracts(
 
 
 _RUNTIME_REFERENCE_PATTERN = re.compile(
-    r"GhostwebRouteExecution\.",
+    r"SimRouteExecution\.",
     re.IGNORECASE,
 )
 _RUNTIME_SCRIPT_PATTERN = re.compile(
-    r'data-ghostweb-runtime=["\']route-execution["\']',
+    r'data-sim-runtime=["\']route-execution["\']',
     re.IGNORECASE,
 )
 _RETURN_BACK_REFERENCE_PATTERN = re.compile(
-    r"GhostwebRouteExecution\.returnBack",
+    r"SimRouteExecution\.returnBack",
     re.IGNORECASE,
 )
 _ROUTE_OBLIGATION_PATTERN = re.compile(
-    r'data-ghostweb-(?:action|target)\s*=',
+    r'data-sim-(?:action|target)\s*=',
     re.IGNORECASE,
 )
 
@@ -2172,13 +2172,13 @@ def validate_runtime_injection_closure(
         has_route_obligation = bool(_ROUTE_OBLIGATION_PATTERN.search(html))
         violations: List[str] = []
         if has_runtime_ref and not has_runtime_script:
-            violations.append("runtime_missing:GhostwebRouteExecution referenced but no route-execution runtime script")
+            violations.append("runtime_missing:SimRouteExecution referenced but no route-execution runtime script")
             runtime_missing_total += 1
         if has_return_back_ref and not has_runtime_script:
-            violations.append("return_back_missing:GhostwebRouteExecution.returnBack referenced but no runtime")
+            violations.append("return_back_missing:SimRouteExecution.returnBack referenced but no runtime")
             return_back_missing_total += 1
         if has_route_obligation and not has_runtime_script:
-            violations.append("route_obligation_without_runtime:data-ghostweb-action/target present but no runtime script")
+            violations.append("route_obligation_without_runtime:data-sim-action/target present but no runtime script")
             route_obligation_without_runtime_total += 1
         pages.append({
             "filename": html_path.name,

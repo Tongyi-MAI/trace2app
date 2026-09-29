@@ -123,7 +123,7 @@ service.dispatch("seal_initial", sid=args.sid)
     client_source = _FRONTEND_TEMPLATES_DIR / "environment_state_client.js"
     shutil.copy2(client_source, runtime_dir / "environment_state_client.js")
     manifest = {
-        "format": "ghostweb_environment_state_service_manifest",
+        "format": "sim_environment_state_service_manifest",
         "schema_revision": 1,
         "runtime_profile": "state_kernel_sqlite",
         "backend": "sqlite",

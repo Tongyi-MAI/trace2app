@@ -115,7 +115,7 @@ def invalidate_from_phase(
     if not dry_run:
         index_path = rebuild_artifact_index(root, preserve_existing=True)
     payload = {
-        "format": "ghostweb_artifact_lifecycle_cleanup_report",
+        "format": "sim_artifact_lifecycle_cleanup_report",
         "version": 2,
         "result_dir": str(root),
         "from_phase": phase,
@@ -182,7 +182,7 @@ def migrate_result_artifacts(
                 copied.append({"relative_path": rel, "phase": copy_phase})
 
     payload = {
-        "format": "ghostweb_artifact_migration",
+        "format": "sim_artifact_migration",
         "version": 2,
         "source_result_dir": str(source),
         "target_result_dir": str(target),

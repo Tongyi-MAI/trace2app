@@ -5,26 +5,26 @@
   // only visible route transitions and state already written by the page's
   // own reducers/handlers; it never reads evaluator/checkpoint verdicts and
   // never writes business state on their behalf.
-  var KEY = 'ghostweb:evidence_revisit:v1';
+  var KEY = 'sim:evidence_revisit:v1';
   var INFRA_KEYS = {
-    'ghostweb:evidence_revisit:v1': true,
-    'ghostweb.execution_context': true,
-    'ghostweb.task_initial_state': true,
-    'ghostweb.current_task_id': true,
-    'ghostweb.trainable_trace_id': true,
-    'ghostweb.response_mode': true,
-    'ghostweb.actionability_preflight': true,
-    'ghostweb_runtime_state_v1': true,
-    'ghostweb_runtime_events_v1': true,
-    '__ghostweb_checkpoint_events_v1__': true,
-    '__ghostweb_history_back_events_v1__': true,
-    '__ghostweb_history_back_warnings_v1__': true,
-    'ghostweb.route.pending_commit': true,
-    'ghostweb_route_stack': true,
-    'ghostweb_current_page': true,
-    'ghostweb_last_back_from': true,
-    'ghostweb_pending_commit_navigation': true,
-    'ghostweb_state_commits': true
+    'sim:evidence_revisit:v1': true,
+    'sim.execution_context': true,
+    'sim.task_initial_state': true,
+    'sim.current_task_id': true,
+    'sim.trainable_trace_id': true,
+    'sim.response_mode': true,
+    'sim.actionability_preflight': true,
+    'sim_runtime_state_v1': true,
+    'sim_runtime_events_v1': true,
+    '__sim_checkpoint_events_v1__': true,
+    '__sim_history_back_events_v1__': true,
+    '__sim_history_back_warnings_v1__': true,
+    'sim.route.pending_commit': true,
+    'sim_route_stack': true,
+    'sim_current_page': true,
+    'sim_last_back_from': true,
+    'sim_pending_commit_navigation': true,
+    'sim_state_commits': true
   };
 
   function parse(raw, fallback) {
@@ -36,17 +36,17 @@
 
   function context() {
     try {
-      return window.__ghostwebExecutionContext ||
-        parse(window.sessionStorage.getItem('ghostweb.execution_context') ||
-          window.localStorage.getItem('ghostweb.execution_context'), {});
+      return window.__simExecutionContext ||
+        parse(window.sessionStorage.getItem('sim.execution_context') ||
+          window.localStorage.getItem('sim.execution_context'), {});
     } catch (_) { return {}; }
   }
 
   function taskId() {
     var ctx = context();
     return String(ctx.task_id || ctx.taskId ||
-      window.sessionStorage.getItem('ghostweb.current_task_id') ||
-      window.localStorage.getItem('ghostweb.current_task_id') || '').trim();
+      window.sessionStorage.getItem('sim.current_task_id') ||
+      window.localStorage.getItem('sim.current_task_id') || '').trim();
   }
 
   function surface() {
@@ -59,7 +59,7 @@
       for (var i = 0; i < store.length; i += 1) {
         var key = store.key(i);
         if (!key || INFRA_KEYS[key] || key.indexOf('__') === 0 ||
-            key.indexOf('ghostweb.execution') === 0) continue;
+            key.indexOf('sim.execution') === 0) continue;
         var raw = store.getItem(key);
         if (raw == null || raw === '') continue;
         // Keep the app-owned value itself: this is evidence, not a verdict.
@@ -86,13 +86,13 @@
 
   function write(value) {
     try { window.sessionStorage.setItem(KEY, JSON.stringify(value)); } catch (_) {}
-    window.GhostwebEvidenceRevisit = value;
+    window.SimEvidenceRevisit = value;
     return value;
   }
 
   function freshState(id, page, snapshot) {
     return {
-      format: 'ghostweb.evidence_revisit_state.v1',
+      format: 'sim.evidence_revisit_state.v1',
       task_id: id,
       episode_id: String(Date.now()) + '-' + Math.random().toString(16).slice(2),
       current_surface: page,
@@ -173,5 +173,5 @@
 
   update();
   window.addEventListener('pageshow', update, { once: true });
-  window.addEventListener('ghostweb:task-context-update', update);
+  window.addEventListener('sim:task-context-update', update);
 })();

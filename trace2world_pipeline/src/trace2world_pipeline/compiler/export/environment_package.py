@@ -34,12 +34,8 @@ MOBILE_DRAG_SCROLL_SCRIPT = "../../phase_sdk_generation/runtime/mobile_drag_scro
 EVIDENCE_REVISIT_SCRIPT = "../../phase_sdk_generation/runtime/evidence_revisit_runtime.js?v=20260813"
 STATE_KERNEL_PROFILE = "state_kernel_sqlite"
 BROWSER_CHECKPOINT_PROFILE = "browser_checkpoint_events"
-# Canonical wire format for precompiled state evaluator plans, plus the legacy
-# name still declared by result directories compiled before the rename.
-_STATE_EVALUATOR_PLAN_FORMATS = {
-    "ghostweb_trace2world_state_evaluator_plan",
-    "ghostweb_anchorgym_state_evaluator_plan",
-}
+# Wire format of precompiled state evaluator plans.
+STATE_EVALUATOR_PLAN_FORMAT = "trace2world_state_evaluator_plan"
 EVALUATOR_EXPORT_REQUIRED = "required"
 EVALUATOR_EXPORT_DISABLED_ENV_ONLY = "disabled_env_only"
 EVALUATOR_EXPORT_DISABLED_ARTIFACT_ONLY = "disabled_artifact_only"
@@ -70,9 +66,9 @@ def _tag_owns_action(tag: str, action_id: str) -> bool:
 
 
 def _with_initial_input_focus(tag: str) -> str:
-    if _html_attribute(tag, "data-ghostweb-input-autofocus").lower() == "true":
+    if _html_attribute(tag, "data-sim-input-autofocus").lower() == "true":
         return tag
-    insertion = ' data-ghostweb-input-autofocus="true"'
+    insertion = ' data-sim-input-autofocus="true"'
     if tag.rstrip().endswith("/>"):
         offset = tag.rfind("/>")
     else:
@@ -172,7 +168,7 @@ def _bind_route_target_query_input_focus(app_dir: Path) -> int:
                 query_hosts = [
                     index
                     for index, tag in enumerate(tags)
-                    if _html_attribute(tag, "data-ghostweb-query-input").lower() == "true"
+                    if _html_attribute(tag, "data-sim-query-input").lower() == "true"
                 ]
                 if len(query_hosts) == 1:
                     host_index = query_hosts[0]
@@ -195,7 +191,7 @@ def _bind_route_target_query_input_focus(app_dir: Path) -> int:
             )
         host_index = next(iter(matched_indexes))
         host_tag = tags[host_index]
-        if _html_attribute(host_tag, "data-ghostweb-query-input").lower() != "true":
+        if _html_attribute(host_tag, "data-sim-query-input").lower() != "true":
             raise RuntimeError(
                 "Route-target query projection is not bound to a formal query input: "
                 f"page={target_page!r} actions={sorted(action_ids)!r}"
@@ -295,8 +291,8 @@ def _build_state_evaluator_plan(result_dir: Path) -> dict[str, Any]:
         / "phase_page_environment/semantic_api/08_spec_compiled_execution_views/reward_authority_bundle.json",
         {},
     ) or {}
-    if reward_bundle.get("format") != "ghostweb_reward_authority_bundle":
-        raise ValueError("Missing formal ghostweb_reward_authority_bundle")
+    if reward_bundle.get("format") != "sim_reward_authority_bundle":
+        raise ValueError("Missing formal sim_reward_authority_bundle")
     reward_by_task = {
         str(row.get("task_id")): row
         for row in reward_bundle.get("contracts", [])
@@ -423,7 +419,7 @@ def _build_state_evaluator_plan(result_dir: Path) -> dict[str, Any]:
             "canonical_outcome_ready": canonical_outcome,
         }
     return {
-        "format": "ghostweb_slime_state_evaluator_plan",
+        "format": STATE_EVALUATOR_PLAN_FORMAT,
         "schema_revision": 1,
         "state_source": "finalized_environment_state_snapshot",
         "evaluation_handle_fields": binding.get("evaluation_handle_fields") or [
@@ -481,10 +477,10 @@ function safeLocalStorageGet(key) {{
   catch (error) {{ return null; }}
 }}
 function readEvents() {{
-  let events = safeParse(safeStorageGet('__ghostweb_checkpoint_events_v1__'), null);
-  if (!Array.isArray(events)) events = safeParse(safeLocalStorageGet('__ghostweb_checkpoint_events_v1__'), []);
-  if ((!events || !events.length) && window.GhostwebCheckpointRuntime && window.GhostwebCheckpointRuntime.eventLog) {{
-    try {{ events = window.GhostwebCheckpointRuntime.eventLog(); }} catch (error) {{ events = []; }}
+  let events = safeParse(safeStorageGet('__sim_checkpoint_events_v1__'), null);
+  if (!Array.isArray(events)) events = safeParse(safeLocalStorageGet('__sim_checkpoint_events_v1__'), []);
+  if ((!events || !events.length) && window.SimCheckpointRuntime && window.SimCheckpointRuntime.eventLog) {{
+    try {{ events = window.SimCheckpointRuntime.eventLog(); }} catch (error) {{ events = []; }}
   }}
   return Array.isArray(events) ? events : [];
 }}
@@ -567,7 +563,7 @@ const forbiddenHit = matching.some((event) => {{
   return FORBIDDEN.some((name) => haystack.includes(String(name).toLowerCase()));
 }});
 const score = REQUIRED.length ? (REQUIRED.length - missing.length) / REQUIRED.length : 0;
-window.__ghostweb_last_eval_result__ = {{
+window.__sim_last_eval_result__ = {{
   task_id: TASK_ID,
   required: REQUIRED,
   missing,
@@ -623,7 +619,7 @@ def _build_browser_evaluators(
             "terminal_policy": spec.get("terminal_policy"),
         }
     return {
-        "format": "ghostweb_slime_browser_evaluator_plan",
+        "format": "trace2world_browser_evaluator_plan",
         "schema_revision": 1,
         "mode": BROWSER_CHECKPOINT_PROFILE,
         "task_count": len(plans),
@@ -748,7 +744,7 @@ def build_package(
         source_root=result_dir,
         app_root=app_dir,
         package_name=package_dir.name,
-        target="slime_webenv",
+        target="environment_package",
         require_action_authority=state_kernel_enabled and evaluation_enabled,
         require_evaluators=evaluation_enabled,
     )
@@ -757,7 +753,7 @@ def build_package(
     write_json(
         package_dir / "data/source_hashes.json",
         {
-            "format": "ghostweb_slime_source_hashes.v1",
+            "format": "trace2world_source_hashes.v1",
             "source_result_dir": str(result_dir),
             "files": {
                 row["path"]: {
@@ -806,7 +802,7 @@ def build_package(
         evaluator_mode = evaluator_export_mode
         artifact_only = evaluator_export_mode == EVALUATOR_EXPORT_DISABLED_ARTIFACT_ONLY
         evaluator_runtime_manifest = {
-            "format": "ghostweb_slime_evaluator_runtime_manifest",
+            "format": "trace2world_evaluator_runtime_manifest",
             "schema_revision": 1,
             "enabled": False,
             "mode": evaluator_mode,
@@ -828,10 +824,7 @@ def build_package(
         )
         if precompiled_plan_path.is_file():
             evaluator_plan = read_json(precompiled_plan_path, {}) or {}
-            # Precompiled plans carry the canonical Trace2World format; result
-            # directories produced by the upstream evaluator compiler
-            # before the rename still declare the legacy name and stay importable.
-            if evaluator_plan.get("format") not in _STATE_EVALUATOR_PLAN_FORMATS:
+            if evaluator_plan.get("format") != STATE_EVALUATOR_PLAN_FORMAT:
                 raise ValueError(
                     f"Invalid precompiled state evaluator plan: {precompiled_plan_path}"
                 )
@@ -853,7 +846,7 @@ def build_package(
         else:
             evaluator_plan = _build_state_evaluator_plan(result_dir)
             evaluator_runtime_manifest = {
-                "format": "ghostweb_slime_evaluator_runtime_manifest",
+                "format": "trace2world_evaluator_runtime_manifest",
                 "schema_revision": 1,
                 "mode": "finalized_environment_state_snapshot",
                 "plan": "state_evaluator_plan.json",
@@ -926,7 +919,7 @@ def build_package(
             )
         evaluator_runtime_manifest = {
             **precompiled_runtime,
-            "format": "ghostweb_slime_evaluator_runtime_manifest",
+            "format": "trace2world_evaluator_runtime_manifest",
             "schema_revision": 1,
             "mode": evaluator_mode,
             "plan": evaluator_plan_name,
@@ -963,7 +956,7 @@ def build_package(
     resource_manifest = {
 
 
-            "format": "ghostweb_agentforge_webenv_resource.v2",
+            "format": "trace2world_environment_resource.v2",
         "schema_revision": 2,
         "package_name": package_dir.name,
         "env_name": env_name,
@@ -1065,7 +1058,7 @@ def build_package(
 
     authority = formal_manifest["instrumentation"]["action_authority"]
     validation = {
-        "format": "ghostweb_slime_webenv_package_validation.v2",
+        "format": "trace2world_environment_package_validation.v2",
         "status": "pass" if not issues else "fail",
         "package_dir": str(package_dir),
         "source_result_dir": str(result_dir),
@@ -1110,11 +1103,11 @@ def build_package(
     write_json(package_dir / "package_validation_report.json", validation)
 
     provenance = {
-        "format": "ghostweb_slime_webenv_package_provenance.v2",
+        "format": "trace2world_environment_package_provenance.v2",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source_result_dir": str(result_dir),
         "package_dir": str(package_dir),
-        "delivery_surface": "slime_webenv_direct_package",
+        "delivery_surface": "environment_direct_package",
         "delivery_scope": delivery_scope,
         "training_ready": training_ready,
         "evaluation_enabled": evaluation_enabled,
@@ -1129,7 +1122,7 @@ def build_package(
     }
     write_json(package_dir / "package_provenance.json", provenance)
     host_graph = {
-        "format": "ghostweb_slime_package_host_graph.v1",
+        "format": "trace2world_package_host_graph.v1",
         "host_command": "t2w-serve --environment-dir <package_dir>",
         "resource_manifest": "resource_manifest.json",
         "app_root": "app",

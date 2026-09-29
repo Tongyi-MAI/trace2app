@@ -33,7 +33,7 @@ def _collect_probes(manifest_entry: dict) -> list[dict]:
 
 
 def _event_name_for_checkpoint(cp_id: str, cp: dict) -> str:
-    return cp.get("required_event") or f"ghostweb:checkpoint:{cp_id}"
+    return cp.get("required_event") or f"sim:checkpoint:{cp_id}"
 
 
 def _apply_assertions_to_snapshot(snapshot: dict[str, Any], assertions: dict[str, dict]) -> None:
@@ -124,7 +124,7 @@ def _create_mutated_data(
             events = [
                 ev for ev in events
                 if str(ev.get("checkpoint_id") or "") != remove_checkpoint
-                and str(ev.get("event") or "") != f"ghostweb:checkpoint:{remove_checkpoint}"
+                and str(ev.get("event") or "") != f"sim:checkpoint:{remove_checkpoint}"
             ]
             if len(events) != before_count:
                 mutated_fields.append(f"__event__:{remove_checkpoint}")
@@ -376,7 +376,7 @@ def execute_negative_probes(
         }
 
     report = {
-        "format": "ghostweb_negative_probe_report",
+        "format": "sim_negative_probe_report",
         "schema_revision": 1,
         "traces": traces,
         "summary": {

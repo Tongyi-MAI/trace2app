@@ -3863,7 +3863,7 @@ def build_pagegen_input_scopes(
                     page_scope["route_action_slots"] = route_slots
                     page_scope["action_slot_route_contract"] = {
                         "source": "action_slot_registry",
-                        "executor": "GhostwebRouteExecution.navigate",
+                        "executor": "SimRouteExecution.navigate",
                         "sdk_side_effect": "WebsiteSDK.navigateRoute",
                         "sdk_side_effect_only": True,
                     }

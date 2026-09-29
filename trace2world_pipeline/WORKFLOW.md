@@ -80,7 +80,7 @@ places the flow leaves the parent process.
 
 Produces `action_host_manifest.json` and the action-effect DOM. The published
 environments contain this stage's output (`action_effect` in 435 files,
-`data-ghostweb-overlay-layer-role` in 1167).
+`data-sim-overlay-layer-role` in 1167).
 
 ---
 

@@ -2195,7 +2195,7 @@ class GlobalReasoningMixin:
             self._save_compact_global_reasoning_debug(
                 f"{chunk_id}_rejected_segment_coverage",
                 {
-                    "schema": "ghostweb.compact_global_reasoning_rejected_chunk.v1",
+                    "schema": "sim.compact_global_reasoning_rejected_chunk.v1",
                     "chunk_id": chunk_id,
                     "reason": str(exc),
                     "input_segment_ids": sorted(

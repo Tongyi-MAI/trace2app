@@ -1607,7 +1607,7 @@ class AppSpecBuilder(
             ) from exc
         if not isinstance(manifest, dict):
             raise ValueError("selected-instance compile manifest must be an object")
-        if manifest.get("schema") != "ghostweb.selected-instance-compile.v1":
+        if manifest.get("schema") != "sim.selected-instance-compile.v1":
             raise ValueError("selected-instance compile manifest has incompatible schema")
         if manifest.get("failure_policy") != "hard_fail":
             raise ValueError("selected-instance compile requires failure_policy=hard_fail")
@@ -1940,7 +1940,7 @@ class AppSpecBuilder(
                 f"full={binding['full_instance_count']}"
             )
         return {
-            "format": "ghostweb.selected-instance-site-model-compile-receipt.v1",
+            "format": "sim.selected-instance-site-model-compile-receipt.v1",
             "status": "site_model_complete",
             "manifest_path": binding["manifest_path"],
             "manifest_sha256": binding["manifest_sha256"],
@@ -8778,7 +8778,7 @@ class AppSpecBuilder(
                     "debug",
                     "selected_instance_compile_receipt.json",
                     {
-                        "format": "ghostweb.selected-instance-compile-receipt.v1",
+                        "format": "sim.selected-instance-compile-receipt.v1",
                         "status": "content_extraction_complete",
                         "manifest_path": selected_instance_compile_binding[
                             "manifest_path"

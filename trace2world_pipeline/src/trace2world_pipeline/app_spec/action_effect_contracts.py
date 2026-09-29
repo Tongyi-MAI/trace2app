@@ -1894,15 +1894,15 @@ def _projection_from_action(action: Mapping[str, Any], state_write: str) -> Dict
 
 def _handler_for(effect_kind: str) -> str:
     mapping = {
-        "select_result_return": "GhostwebRuntime.commitSelectionAndReturn",
-        "stateful_submit": "GhostwebRuntime.submitFromState",
-        "save_return": "GhostwebRuntime.saveAndReturn",
-        "same_page_mutation": "GhostwebRuntime.commitSamePageMutation",
-        "gesture_route": "GhostwebRuntime.commitGestureRoute",
-        "activation": "GhostwebRuntime.openInteractionSurface",
-        "route": "GhostwebRouteExecution.navigate",
+        "select_result_return": "SimRuntime.commitSelectionAndReturn",
+        "stateful_submit": "SimRuntime.submitFromState",
+        "save_return": "SimRuntime.saveAndReturn",
+        "same_page_mutation": "SimRuntime.commitSamePageMutation",
+        "gesture_route": "SimRuntime.commitGestureRoute",
+        "activation": "SimRuntime.openInteractionSurface",
+        "route": "SimRouteExecution.navigate",
     }
-    return mapping.get(effect_kind, "GhostwebRuntime.dispatchActionEffect")
+    return mapping.get(effect_kind, "SimRuntime.dispatchActionEffect")
 
 
 def _requires_dom_binding(action: Mapping[str, Any]) -> bool:

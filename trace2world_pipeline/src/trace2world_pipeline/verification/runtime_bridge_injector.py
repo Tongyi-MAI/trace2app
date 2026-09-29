@@ -11,8 +11,8 @@ from typing import Any
 
 
 BRIDGE_JS = r"""
-window.GhostwebRuntimeState = (function(existingRuntimeState) {
-  const STORE_KEY = '__ghostweb_runtime_state_v1__';
+window.SimRuntimeState = (function(existingRuntimeState) {
+  const STORE_KEY = '__sim_runtime_state_v1__';
   // Chromium grants roughly 5 MiB per storage area.  This store shares
   // sessionStorage with app-owned business state and formal checkpoint
   // events, so audit history may not consume the whole origin quota.  The
@@ -25,7 +25,7 @@ window.GhostwebRuntimeState = (function(existingRuntimeState) {
   // persist across a page transition without evicting the other.
   const SESSION_STORAGE_BUDGET_BYTES = 4 * 1024 * 1024;
   const MAX_PERSISTED_STORE_BYTES = 1024 * 1024;
-  const EVENT_STORE_KEY = '__ghostweb_checkpoint_events_v1__';
+  const EVENT_STORE_KEY = '__sim_checkpoint_events_v1__';
   const COMPACTABLE_AUDIT_LOG_FIELDS = [
     'state_reads',
     'state_writes',
@@ -234,7 +234,7 @@ window.GhostwebRuntimeState = (function(existingRuntimeState) {
     try {
       var compacted = compactForStorage();
       if (!compacted.fits) {
-        window.__ghostwebRuntimeStatePersistError = {
+        window.__simRuntimeStatePersistError = {
           reason: 'authoritative_runtime_state_exceeds_storage_budget',
           bytes: compacted.bytes,
           max_persisted_bytes: MAX_PERSISTED_STORE_BYTES,
@@ -243,11 +243,11 @@ window.GhostwebRuntimeState = (function(existingRuntimeState) {
         return false;
       }
       if (window.sessionStorage) window.sessionStorage.setItem(STORE_KEY, compacted.serialized);
-      window.__ghostwebRuntimeStatePersistError = null;
+      window.__simRuntimeStatePersistError = null;
       return true;
     } catch (e) {
       // Runtime state remains available in memory if storage is blocked.
-      window.__ghostwebRuntimeStatePersistError = {
+      window.__simRuntimeStatePersistError = {
         reason: 'runtime_state_storage_write_failed',
         message: String(e && e.message || e).substring(0, 200),
         max_persisted_bytes: MAX_PERSISTED_STORE_BYTES,
@@ -264,12 +264,12 @@ window.GhostwebRuntimeState = (function(existingRuntimeState) {
     // browser episode.  Treating each action/source trace as the state-store
     // owner clears previously observed scope and selection on every route.
     var context = null;
-    try { context = window.__ghostwebExecutionContext || null; } catch (error) {}
+    try { context = window.__simExecutionContext || null; } catch (error) {}
     if (!context || typeof context !== 'object') {
       try {
         context = JSON.parse(
-          window.sessionStorage.getItem('ghostweb.execution_context')
-          || window.localStorage.getItem('ghostweb.execution_context')
+          window.sessionStorage.getItem('sim.execution_context')
+          || window.localStorage.getItem('sim.execution_context')
           || '{}'
         );
       } catch (error) { context = {}; }
@@ -278,8 +278,8 @@ window.GhostwebRuntimeState = (function(existingRuntimeState) {
     if (!taskId) {
       try {
         taskId = String(
-          window.sessionStorage.getItem('ghostweb.current_task_id')
-          || window.localStorage.getItem('ghostweb.current_task_id')
+          window.sessionStorage.getItem('sim.current_task_id')
+          || window.localStorage.getItem('sim.current_task_id')
           || ''
         ).trim();
       } catch (error) { taskId = ''; }
@@ -452,13 +452,13 @@ window.GhostwebRuntimeState = (function(existingRuntimeState) {
     observeDomState: observeDomState,
     snapshot: snapshot
   };
-})(window.GhostwebRuntimeState || null);
+})(window.SimRuntimeState || null);
 
-window.GhostwebCheckpointRuntime = (function() {
-  const EVENT_STORE_KEY = '__ghostweb_checkpoint_events_v1__';
+window.SimCheckpointRuntime = (function() {
+  const EVENT_STORE_KEY = '__sim_checkpoint_events_v1__';
   const SESSION_STORAGE_BUDGET_BYTES = 4 * 1024 * 1024;
   const EVENT_STORE_MAX_BYTES = 3 * 1024 * 1024;
-  const RUNTIME_STATE_STORE_KEY = '__ghostweb_runtime_state_v1__';
+  const RUNTIME_STATE_STORE_KEY = '__sim_runtime_state_v1__';
   let _traceId = '';
   let _sequence = 0;
   let _eventLog = [];
@@ -478,8 +478,8 @@ window.GhostwebCheckpointRuntime = (function() {
       return Number.isFinite(value) && value > maximum ? value : maximum;
     }, 0);
     _eventLog = [];
-    if (window.GhostwebRuntimeState && window.GhostwebRuntimeState.setTraceId) {
-      window.GhostwebRuntimeState.setTraceId(traceId || '');
+    if (window.SimRuntimeState && window.SimRuntimeState.setTraceId) {
+      window.SimRuntimeState.setTraceId(traceId || '');
     }
     _currentState = captureState();
     _initialState = JSON.parse(JSON.stringify(_currentState));
@@ -551,10 +551,10 @@ window.GhostwebCheckpointRuntime = (function() {
       var events = readStoredEvents();
       events.push(event);
       writeStoredEvents(events);
-      window.__ghostwebCheckpointEventPersistError = null;
+      window.__simCheckpointEventPersistError = null;
       return true;
     } catch (error) {
-      window.__ghostwebCheckpointEventPersistError = {
+      window.__simCheckpointEventPersistError = {
         reason: String(error && error.message || error).substring(0, 200),
         checkpoint_id: String(event && event.checkpoint_id || ''),
         max_event_store_bytes: EVENT_STORE_MAX_BYTES,
@@ -664,18 +664,18 @@ window.GhostwebCheckpointRuntime = (function() {
     }
     state['__page__'] = location.pathname.split('/').pop();
     state['__visible_text__'] = document.body ? (document.body.innerText || '').substring(0, 2000) : '';
-    if (window.GhostwebRuntimeState) {
+    if (window.SimRuntimeState) {
       try {
-        if (window.GhostwebRuntimeState.setTraceId) {
-          window.GhostwebRuntimeState.setTraceId(_traceId || '');
+        if (window.SimRuntimeState.setTraceId) {
+          window.SimRuntimeState.setTraceId(_traceId || '');
         }
-        var runtimeStore = window.GhostwebRuntimeState.observeDomState
-          ? window.GhostwebRuntimeState.observeDomState(state, {
+        var runtimeStore = window.SimRuntimeState.observeDomState
+          ? window.SimRuntimeState.observeDomState(state, {
               trace_id: _traceId || '',
               page: state['__page__'],
               source: 'checkpoint_capture'
             })
-          : (window.GhostwebRuntimeState.snapshot ? window.GhostwebRuntimeState.snapshot() : null);
+          : (window.SimRuntimeState.snapshot ? window.SimRuntimeState.snapshot() : null);
         if (runtimeStore) {
           Object.keys(runtimeStore.committed_state || {}).forEach(function(ref) {
             if (state[ref] === undefined) state[ref] = runtimeStore.committed_state[ref];
@@ -705,7 +705,7 @@ window.GhostwebCheckpointRuntime = (function() {
   }
 
   // This canonicalizer and hash are the producer half of
-  // agentforge.webenv.runtime-event-contract.v2.  Keep it byte-for-byte
+  // trace2world.runtime-event-contract.v2.  Keep it byte-for-byte
   // semantically aligned with the host's evaluator-side implementation:
   // JSON.stringify alone preserves insertion order and previously generated
   // a value that could not be verified after transport/replay.
@@ -758,10 +758,10 @@ window.GhostwebCheckpointRuntime = (function() {
 
   function activeTaskId() {
     var context = null;
-    try { context = window.__ghostwebExecutionContext || null; } catch (_) {}
+    try { context = window.__simExecutionContext || null; } catch (_) {}
     if (!context || typeof context !== 'object') {
       try {
-        context = JSON.parse(window.sessionStorage.getItem('ghostweb.execution_context') || '{}');
+        context = JSON.parse(window.sessionStorage.getItem('sim.execution_context') || '{}');
       } catch (_) { context = {}; }
     }
     return String(context && (context.task_id || context.taskId || context.trace_id) || _traceId || '');
@@ -797,7 +797,7 @@ window.GhostwebCheckpointRuntime = (function() {
         changedState[key] = cloneJson(stateAfter[key]);
       });
       normalizedPayload.runtime_observation = {
-        schema: 'ghostweb.changed-state-observation.v1',
+        schema: 'sim.changed-state-observation.v1',
         changed_state: changedState
       };
     }
@@ -836,8 +836,8 @@ window.GhostwebCheckpointRuntime = (function() {
     if (!persistEvent(event)) return null;
     _sequence = event.sequence;
     _eventLog.push(event);
-    if (window.GhostwebRuntimeState && window.GhostwebRuntimeState.emitTransaction) {
-      window.GhostwebRuntimeState.emitTransaction('checkpoint:' + normalizedCheckpointId, {
+    if (window.SimRuntimeState && window.SimRuntimeState.emitTransaction) {
+      window.SimRuntimeState.emitTransaction('checkpoint:' + normalizedCheckpointId, {
         trace_id: taskId,
         task_id: taskId,
         checkpoint_id: normalizedCheckpointId,
@@ -890,15 +890,15 @@ window.GhostwebCheckpointRuntime = (function() {
     // observations belong to the discarded episode and cannot be redeemed by
     // a later arrival.
     try {
-      window.sessionStorage.removeItem('__ghostweb_pending_cross_page_checkpoints_v1__');
-      window.sessionStorage.removeItem('__ghostweb_checkpoint_episode_id_v1__');
+      window.sessionStorage.removeItem('__sim_pending_cross_page_checkpoints_v1__');
+      window.sessionStorage.removeItem('__sim_checkpoint_episode_id_v1__');
     } catch (_) {}
   }
   function setTraceId(traceId) {
     if (traceId) {
       _traceId = traceId;
-      if (window.GhostwebRuntimeState && window.GhostwebRuntimeState.setTraceId) {
-        window.GhostwebRuntimeState.setTraceId(traceId);
+      if (window.SimRuntimeState && window.SimRuntimeState.setTraceId) {
+        window.SimRuntimeState.setTraceId(traceId);
       }
     }
   }
@@ -981,8 +981,8 @@ def _build_emission_harness_js(
         checkpoint_json = json.dumps(cross_page_checkpoints, ensure_ascii=False)
         cross_page_checkpoint_prelude = f"""
   var CROSS_PAGE_CHECKPOINTS_ON_LOAD = {checkpoint_json};
-  var PENDING_CROSS_PAGE_CHECKPOINT_KEY = '__ghostweb_pending_cross_page_checkpoints_v1__';
-  var CROSS_PAGE_EPISODE_KEY = '__ghostweb_checkpoint_episode_id_v1__';
+  var PENDING_CROSS_PAGE_CHECKPOINT_KEY = '__sim_pending_cross_page_checkpoints_v1__';
+  var CROSS_PAGE_EPISODE_KEY = '__sim_checkpoint_episode_id_v1__';
   var CROSS_PAGE_CHECKPOINT_MAX_AGE_MS = 15000;
 
   function crossPageFilename() {{
@@ -1068,7 +1068,7 @@ def _build_emission_harness_js(
 
   function consumePendingCrossPageCheckpoints() {{
     if (!CROSS_PAGE_CHECKPOINTS_ON_LOAD.length) return;
-    var runtime = window.GhostwebCheckpointRuntime;
+    var runtime = window.SimCheckpointRuntime;
     if (!runtime) return;
     var pageName = crossPageFilename();
     var contracts = {{}};
@@ -1169,7 +1169,7 @@ def _build_emission_harness_js(
         terminal_json = json.dumps(terminal_outcomes, ensure_ascii=False)
         cross_page_prelude = f"""
   var TERMINAL_OUTCOMES_ON_LOAD = {terminal_json};
-  var PENDING_TERMINAL_OUTCOME_KEY = '__ghostweb_pending_terminal_outcomes_v1__';
+  var PENDING_TERMINAL_OUTCOME_KEY = '__sim_pending_terminal_outcomes_v1__';
 
   function currentFilename() {{
     try {{
@@ -1223,7 +1223,7 @@ def _build_emission_harness_js(
 
   function consumePendingTerminalOutcomes() {{
     if (!TERMINAL_OUTCOMES_ON_LOAD.length) return;
-    var runtime = window.GhostwebCheckpointRuntime;
+    var runtime = window.SimCheckpointRuntime;
     if (!runtime) return;
     var pageName = currentFilename();
     var contracts = {{}};
@@ -1328,7 +1328,7 @@ def _build_emission_harness_js(
     for (var node = el, depth = 0; node && depth < 8; node = node.parentElement, depth++) {{
       var before = ids.length;
       collect(textAttr(node, 'data-action-id'));
-      collect(textAttr(node, 'data-ghostweb-action-id'));
+      collect(textAttr(node, 'data-sim-action-id'));
       collect(textAttr(node, 'data-action-aliases'));
       // PageGen's DOM contract may retain a canonical component id and map
       // source actions through explicit element aliases.  These attributes
@@ -1369,14 +1369,14 @@ def _build_emission_harness_js(
         if (value && targets.indexOf(value) === -1) targets.push(value);
       }}
       for (var routeNode = el, routeDepth = 0; routeNode && routeDepth < 8; routeNode = routeNode.parentElement, routeDepth++) {{
-        var declaredEffectKind = textAttr(routeNode, 'data-ghostweb-effect-kind').toLowerCase();
+        var declaredEffectKind = textAttr(routeNode, 'data-sim-effect-kind').toLowerCase();
         if (
           declaredEffectKind
           && ['route', 'navigate', 'save_return'].indexOf(declaredEffectKind) === -1
         ) explicitNonRoute = true;
-        addTarget(textAttr(routeNode, 'data-ghostweb-target'));
+        addTarget(textAttr(routeNode, 'data-sim-target'));
         try {{
-          var targetMap = JSON.parse(textAttr(routeNode, 'data-ghostweb-target-map') || '{{}}');
+          var targetMap = JSON.parse(textAttr(routeNode, 'data-sim-target-map') || '{{}}');
           Object.keys(targetMap || {{}}).forEach(function(key) {{ addTarget(targetMap[key]); }});
         }} catch (_) {{}}
         var handler = textAttr(routeNode, 'onclick');
@@ -1385,14 +1385,14 @@ def _build_emission_harness_js(
         var identity = [
           textAttr(routeNode, 'id'),
           textAttr(routeNode, 'aria-label'),
-          textAttr(routeNode, 'data-ghostweb-action'),
-          textAttr(routeNode, 'data-ghostweb-route-action')
+          textAttr(routeNode, 'data-sim-action'),
+          textAttr(routeNode, 'data-sim-route-action')
         ].join(' ');
         if (/back|返回|上一页|history_back|returnBack/i.test(identity)) backLike = true;
         var routeHost = routeNode.matches && routeNode.matches(
-          'button, a[href], [role="button"], [data-ghostweb-action], '
-          + '[data-ghostweb-route-action], [data-ghostweb-target], '
-          + '[data-ghostweb-target-map], [onclick]'
+          'button, a[href], [role="button"], [data-sim-action], '
+          + '[data-sim-route-action], [data-sim-target], '
+          + '[data-sim-target-map], [onclick]'
         );
         // Search for a back icon only inside the clicked interactive host.
         // Looking through an arbitrary ancestor can see an unrelated shell or
@@ -1453,9 +1453,9 @@ def _build_emission_harness_js(
 
   function activeExecutionContext() {{
     var ctx = null;
-    try {{ ctx = window.__ghostwebExecutionContext || null; }} catch (e) {{}}
+    try {{ ctx = window.__simExecutionContext || null; }} catch (e) {{}}
     if (!ctx || (!ctx.reference_trace_id && !ctx.task_id && !ctx.action_id)) {{
-      try {{ ctx = JSON.parse(localStorage.getItem('ghostweb.execution_context') || '{{}}'); }} catch (e) {{ ctx = {{}}; }}
+      try {{ ctx = JSON.parse(localStorage.getItem('sim.execution_context') || '{{}}'); }} catch (e) {{ ctx = {{}}; }}
     }}
     return ctx || {{}};
   }}
@@ -1468,8 +1468,8 @@ def _build_emission_harness_js(
     // and then emitting a Reference trace event would make setTraceId() clear
     // all state on every page transition.
     return String(
-      window.GhostwebActiveTraceId
-      || window.__ghostwebActiveTraceId
+      window.SimActiveTraceId
+      || window.__simActiveTraceId
       || (ctx && (ctx.trace_id || ctx.reference_trace_id))
       || (ctx && (ctx.source_reference_task_id || ctx.sourceReferenceTaskId))
       || (ctx && (ctx.task_id || ctx.taskId))
@@ -1483,7 +1483,7 @@ def _build_emission_harness_js(
 
   function activeActionId() {{
     var ctx = activeExecutionContext();
-    return String(window.GhostwebActiveActionId || window.__ghostwebActiveActionId || (ctx && ctx.action_id) || '');
+    return String(window.SimActiveActionId || window.__simActiveActionId || (ctx && ctx.action_id) || '');
   }}
 
   function traceIdFromActionId(actionId) {{
@@ -1493,7 +1493,7 @@ def _build_emission_harness_js(
   }}
 
   function recordActionHostBindingFailure(binding, count) {{
-    var rows = window.__ghostwebActionHostBindingFailures || [];
+    var rows = window.__simActionHostBindingFailures || [];
     rows.push({{
       action_id: binding && binding.action_id || '',
       selector: binding && binding.selector || '',
@@ -1502,7 +1502,7 @@ def _build_emission_harness_js(
       reason: 'selector_not_unique',
       observed_at_ms: Date.now()
     }});
-    window.__ghostwebActionHostBindingFailures = rows.slice(-32);
+    window.__simActionHostBindingFailures = rows.slice(-32);
   }}
 
   function boundActionHost(binding) {{
@@ -1575,7 +1575,7 @@ def _build_emission_harness_js(
         afterChanged[key] = afterValue === undefined ? null : afterValue;
       }});
       if (!Object.keys(afterChanged).length) return;
-      var runtime = window.GhostwebCheckpointRuntime;
+      var runtime = window.SimCheckpointRuntime;
       if (!runtime) return;
       runtime.emitCheckpoint(binding.observation_checkpoint_id, {{
         observed_page: currentFilenameForObservation(),
@@ -1601,7 +1601,7 @@ def _build_emission_harness_js(
     // The task context is the checkpoint-stream owner.  Enhanced episodes
     // intentionally reuse a Reference-owned visible action host, and the
     // context bridge consequently exposes that Reference trace through
-    // GhostwebActiveTraceId.  A task-owned binding is always valid. A
+    // SimActiveTraceId.  A task-owned binding is always valid. A
     // source-reference binding is valid only when the task explicitly names
     // that source trace and this exact action is declared by the binding;
     // active trace alone must not select a foreign checkpoint stream.
@@ -1652,7 +1652,7 @@ def _build_emission_harness_js(
 
   function observedActionRuntimeRow(actionId) {{
     try {{
-      var rows = window.__GHOSTWEB_DOM_BINDING_ACTIONS || {{}};
+      var rows = window.__SIM_DOM_BINDING_ACTIONS || {{}};
       var row = rows && rows[actionId];
       return row && typeof row === 'object' ? row : {{}};
     }} catch (_) {{
@@ -1675,12 +1675,12 @@ def _build_emission_harness_js(
     for (var index = 0; index < nodes.length; index += 1) {{
       var node = nodes[index];
       try {{
-        var targetMap = JSON.parse(node.getAttribute('data-ghostweb-target-map') || '{{}}');
+        var targetMap = JSON.parse(node.getAttribute('data-sim-target-map') || '{{}}');
         var mapped = String(targetMap && targetMap[actionId] || '').trim();
         if (mapped) return mapped.replace(/^.*\\//, '');
       }} catch (_) {{}}
       var direct = String(
-        node.getAttribute('data-ghostweb-target')
+        node.getAttribute('data-sim-target')
         || node.getAttribute('href')
         || ''
       ).trim();
@@ -1713,12 +1713,12 @@ def _build_emission_harness_js(
       dom_binding_id: String(
         runtimeRow.dom_binding_id
         || (hostOwnsExactAction && hostPrimaryActionId === actionId && observedHost && observedHost.getAttribute
-          ? observedHost.getAttribute('data-ghostweb-dom-binding-id') || '' : '')
+          ? observedHost.getAttribute('data-sim-dom-binding-id') || '' : '')
       ),
       effect_kind: String(
         runtimeRow.effect_kind
         || (hostOwnsExactAction && hostPrimaryActionId === actionId && observedHost && observedHost.getAttribute
-          ? observedHost.getAttribute('data-ghostweb-effect-kind') || '' : '')
+          ? observedHost.getAttribute('data-sim-effect-kind') || '' : '')
       ),
       trigger: eventType || '',
       observed_page: payload.observed_page || '',
@@ -1736,7 +1736,7 @@ def _build_emission_harness_js(
   function observedPayload(entry, target, eventType) {{
     var body = document && document.body ? String(document.body.innerText || '').replace(/\\s+/g, ' ').trim() : '';
     var observedHost = target && target.closest
-      ? target.closest('[data-action-id], [data-action-aliases], [data-ghostweb-dom-binding-id], a[href], button, [role="button"], input, textarea, select')
+      ? target.closest('[data-action-id], [data-action-aliases], [data-sim-dom-binding-id], a[href], button, [role="button"], input, textarea, select')
       : target;
     var payload = {{}};
     payload.observed_page = currentFilenameForObservation();
@@ -1757,11 +1757,11 @@ def _build_emission_harness_js(
     payload.observed_aria_expanded = observedHost && observedHost.getAttribute
       ? String(observedHost.getAttribute('aria-expanded') || '') : '';
     payload.observed_effect_kind = observedHost && observedHost.getAttribute
-      ? String(observedHost.getAttribute('data-ghostweb-effect-kind') || '') : '';
+      ? String(observedHost.getAttribute('data-sim-effect-kind') || '') : '';
     if (payload.observed_effect_kind) payload.effect_kind = payload.observed_effect_kind;
     try {{
-      payload.observed_runtime_snapshot = window.GhostwebRuntimeState && window.GhostwebRuntimeState.snapshot
-        ? window.GhostwebRuntimeState.snapshot() : null;
+      payload.observed_runtime_snapshot = window.SimRuntimeState && window.SimRuntimeState.snapshot
+        ? window.SimRuntimeState.snapshot() : null;
     }} catch (_) {{
       payload.observed_runtime_snapshot = null;
     }}
@@ -1851,7 +1851,7 @@ def _build_emission_harness_js(
       // gesture host; ordinary/programmatic page scrolling has no such host.
       for (var node = target, depth = 0; node && depth < 8; node = node.parentElement, depth += 1) {{
         if (
-          textAttr(node, 'data-ghostweb-gesture-action')
+          textAttr(node, 'data-sim-gesture-action')
           || textAttr(node, 'data-gesture-host')
         ) return true;
       }}
@@ -1883,7 +1883,7 @@ def _build_emission_harness_js(
   }}
 
   function rememberPreActionCaptures(target) {{
-    var runtime = window.GhostwebCheckpointRuntime;
+    var runtime = window.SimCheckpointRuntime;
     if (!runtime || !target) return;
     var snapshot = runtime.captureState();
     if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return;
@@ -1911,7 +1911,7 @@ def _build_emission_harness_js(
       var rightOutcome = right && right.checkpoint_kind === 'outcome' ? 1 : 0;
       return leftOutcome - rightOutcome;
     }});
-    var runtime = window.GhostwebCheckpointRuntime;
+    var runtime = window.SimCheckpointRuntime;
     if (!runtime) return;
     var activeAction = activeActionId();
     var activeTrace = explicitActiveTraceId() || traceIdFromActionId(actionId);
@@ -2006,8 +2006,8 @@ def _build_emission_harness_js(
   }}
 
   function emitFromTarget(target, eventType) {{
-    var commitHost = target && target.closest ? target.closest('[data-ghostweb-commit-precondition]') : null;
-    if (commitHost && commitHost.getAttribute('data-ghostweb-commit-ready') !== 'true') return;
+    var commitHost = target && target.closest ? target.closest('[data-sim-commit-precondition]') : null;
+    if (commitHost && commitHost.getAttribute('data-sim-commit-ready') !== 'true') return;
     var orderedActionIds = actionIdsFromElement(target).sort(function(leftId, rightId) {{
       function checkpointIds(actionId) {{
         return (CP_MAP_BY_ACTION_ID[actionId] || []).map(function(entry) {{
@@ -2039,7 +2039,7 @@ def _build_emission_harness_js(
     // producer-owned and lets enhanced tasks consume source action aliases
     // without selector or label heuristics.
     if (orderedActionIds.length && target && target.closest) {{
-      var routeHost = target.closest('a[href], button, [role="button"], [data-ghostweb-target-map], [onclick]');
+      var routeHost = target.closest('a[href], button, [role="button"], [data-sim-target-map], [onclick]');
       if (routeHost && !textAttr(routeHost, 'data-action-id') && !textAttr(routeHost, 'data-action-aliases')) {{
         routeHost.setAttribute('data-action-id', orderedActionIds[0]);
       }}
@@ -2113,7 +2113,7 @@ def _build_emission_harness_js(
   // Route/action materializers may navigate synchronously from a document
   // capture listener. Observe clicks at the window capture boundary so the
   // checkpoint is persisted before the old document unloads.
-  // Some WebEnv drivers synthesize the MouseEvent sequence rather than a
+  // Some host drivers synthesize the MouseEvent sequence rather than a
   // PointerEvent sequence. Both down boundaries precede a target click
   // handler, so they are equivalent real observations for this purpose.
   ['pointerdown', 'mousedown', 'touchstart'].forEach(function(eventType) {{
@@ -2151,7 +2151,7 @@ def _build_emission_harness_js(
     }}, true);
   }});
 
-  window.GhostwebCheckpointActionMap = {{
+  window.SimCheckpointActionMap = {{
     byActionId: CP_MAP_BY_ACTION_ID,
     emitForAction: emitForAction,
     actionIdsFromElement: actionIdsFromElement
@@ -2159,12 +2159,12 @@ def _build_emission_harness_js(
 
   if (document.readyState === 'loading') {{
     document.addEventListener('DOMContentLoaded', function() {{
-      var rt = window.GhostwebCheckpointRuntime;
+      var rt = window.SimCheckpointRuntime;
       if (rt) rt.init(activeTraceId());
       installDraftMaterializationWatchers();{cross_page_checkpoint_init}{cross_page_init}
     }});
   }} else {{
-    var rt = window.GhostwebCheckpointRuntime;
+    var rt = window.SimCheckpointRuntime;
     if (rt) rt.init(activeTraceId());
     installDraftMaterializationWatchers();{cross_page_checkpoint_init}{cross_page_init}
   }}
@@ -2191,14 +2191,14 @@ def _extract_obligations(html: str) -> list[dict[str, Any]]:
 def _strip_existing_bridge(html: str) -> str:
 
     html = re.sub(
-        r'\n?<script\s+data-ghostweb-runtime="checkpoint-bridge">.*?</script>',
+        r'\n?<script\s+data-sim-runtime="checkpoint-bridge">.*?</script>',
         '',
         html,
         flags=re.DOTALL,
     )
 
     html = re.sub(
-        r'\n?<script\s+data-ghostweb-runtime="checkpoint-emission">.*?</script>',
+        r'\n?<script\s+data-sim-runtime="checkpoint-emission">.*?</script>',
         '',
         html,
         flags=re.DOTALL,
@@ -2231,8 +2231,8 @@ def _inject_bridge_scripts(
 ) -> str:
     html = _strip_existing_bridge(html)
     html = _ensure_utf8_charset_meta(html)
-    bridge_block = f'<script data-ghostweb-runtime="checkpoint-bridge">\n{bridge_js}\n</script>'
-    harness_block = f'<script data-ghostweb-runtime="checkpoint-emission">\n{harness_js}\n</script>'
+    bridge_block = f'<script data-sim-runtime="checkpoint-bridge">\n{bridge_js}\n</script>'
+    harness_block = f'<script data-sim-runtime="checkpoint-emission">\n{harness_js}\n</script>'
     injection = f"\n{bridge_block}\n{harness_block}\n"
 
     head_close = re.search(r"</head\s*>", html, flags=re.IGNORECASE)
@@ -2248,11 +2248,11 @@ def _inject_bridge_scripts(
 
 
 _CHECKPOINT_BRIDGE_BLOCK_RE = re.compile(
-    r'<script\s+data-ghostweb-runtime="checkpoint-bridge">.*?</script>',
+    r'<script\s+data-sim-runtime="checkpoint-bridge">.*?</script>',
     flags=re.DOTALL,
 )
 _CHECKPOINT_EMISSION_BLOCK_RE = re.compile(
-    r'<script\s+data-ghostweb-runtime="checkpoint-emission">(?P<body>.*?)</script>',
+    r'<script\s+data-sim-runtime="checkpoint-emission">(?P<body>.*?)</script>',
     flags=re.DOTALL,
 )
 
@@ -2357,7 +2357,7 @@ def refresh_emission_runtime_from_embedded_contract(result_dir: Path) -> dict[st
         if after[3] != cross_page_on_load:
             raise RuntimeError(f"cross-page checkpoint projection drift during runtime-only refresh: {path}")
         updated = _CHECKPOINT_EMISSION_BLOCK_RE.sub(
-            lambda _match: '<script data-ghostweb-runtime="checkpoint-emission">' + replacement + "</script>",
+            lambda _match: '<script data-sim-runtime="checkpoint-emission">' + replacement + "</script>",
             content,
             count=1,
         )
@@ -2420,8 +2420,8 @@ def _has_page_authored_formal_checkpoint_event(html: str) -> bool:
     return all(
         anchor in html
         for anchor in (
-            "__ghostweb_checkpoint_events_v1__",
-            "ghostweb:checkpoint:",
+            "__sim_checkpoint_events_v1__",
+            "sim:checkpoint:",
             "data-reference-terminal-observation",
         )
     )
@@ -2434,9 +2434,9 @@ def _page_authored_formal_event_blocks(html: str) -> list[str]:
     return [
         block
         for block in _SCRIPT_BLOCK_RE.findall(html)
-        if 'data-ghostweb-runtime="checkpoint-bridge"' not in block
-        and "__ghostweb_checkpoint_events_v1__" in block
-        and "ghostweb:checkpoint:" in block
+        if 'data-sim-runtime="checkpoint-bridge"' not in block
+        and "__sim_checkpoint_events_v1__" in block
+        and "sim:checkpoint:" in block
     ]
 
 
@@ -2467,7 +2467,7 @@ def refresh_bridge_runtime_only(
     if not html_files:
         raise RuntimeError(f"no generated HTML pages found under {pages_dir}")
     replacement = (
-        '<script data-ghostweb-runtime="checkpoint-bridge">\n'
+        '<script data-sim-runtime="checkpoint-bridge">\n'
         + BRIDGE_JS
         + "\n</script>"
     )
@@ -2477,7 +2477,7 @@ def refresh_bridge_runtime_only(
     for path in html_files:
         content = path.read_text(encoding="utf-8")
         matches = list(_CHECKPOINT_BRIDGE_BLOCK_RE.finditer(content))
-        emission_count = content.count('data-ghostweb-runtime="checkpoint-emission"')
+        emission_count = content.count('data-sim-runtime="checkpoint-emission"')
         if not matches and emission_count == 0:
             if (
                 admit_page_authored_formal_events
@@ -2489,9 +2489,9 @@ def refresh_bridge_runtime_only(
                         f"page-authored formal-event anchors do not share one script block: {path}"
                     )
                 updated = _inject_bridge_only(content, replacement)
-                if updated.count('data-ghostweb-runtime="checkpoint-bridge"') != 1:
+                if updated.count('data-sim-runtime="checkpoint-bridge"') != 1:
                     raise RuntimeError(f"page-authored formal-event bridge admission failed: {path}")
-                if updated.count('data-ghostweb-runtime="checkpoint-emission"') != 0:
+                if updated.count('data-sim-runtime="checkpoint-emission"') != 0:
                     raise RuntimeError(f"bridge-only admission synthesized an emission harness: {path}")
                 if _page_authored_formal_event_blocks(updated) != authored_event_blocks:
                     raise RuntimeError(
@@ -2515,7 +2515,7 @@ def refresh_bridge_runtime_only(
 
 
         updated = _CHECKPOINT_BRIDGE_BLOCK_RE.sub(lambda _match: replacement, content, count=1)
-        if updated.count('data-ghostweb-runtime="checkpoint-emission"') != emission_count:
+        if updated.count('data-sim-runtime="checkpoint-emission"') != emission_count:
             raise RuntimeError(f"checkpoint emission harness changed while refreshing {path}")
         pending.append((path, updated))
     for path, updated in pending:
@@ -2550,7 +2550,7 @@ def admit_page_authored_formal_event_pages(result_dir: Path) -> dict[str, Any]:
         content = path.read_text(encoding="utf-8")
         contents[path] = content
         matches = [match.group(0) for match in _CHECKPOINT_BRIDGE_BLOCK_RE.finditer(content)]
-        emission_count = content.count('data-ghostweb-runtime="checkpoint-emission"')
+        emission_count = content.count('data-sim-runtime="checkpoint-emission"')
         if len(matches) > 1:
             raise RuntimeError(f"expected at most one checkpoint bridge in {path}, found {len(matches)}")
         if emission_count and not matches:
@@ -2572,7 +2572,7 @@ def admit_page_authored_formal_event_pages(result_dir: Path) -> dict[str, Any]:
         content = contents[path]
         if _CHECKPOINT_BRIDGE_BLOCK_RE.search(content):
             continue
-        emission_count = content.count('data-ghostweb-runtime="checkpoint-emission"')
+        emission_count = content.count('data-sim-runtime="checkpoint-emission"')
         if emission_count:
             raise RuntimeError(f"compiled emission harness has no checkpoint bridge: {path}")
         if not _has_page_authored_formal_checkpoint_event(content):
@@ -2594,9 +2594,9 @@ def admit_page_authored_formal_event_pages(result_dir: Path) -> dict[str, Any]:
             raise RuntimeError(
                 f"reference terminal-observation host changed during bridge admission: {path}"
             )
-        if updated.count('data-ghostweb-runtime="checkpoint-bridge"') != 1:
+        if updated.count('data-sim-runtime="checkpoint-bridge"') != 1:
             raise RuntimeError(f"compiled bridge admission failed: {path}")
-        if updated.count('data-ghostweb-runtime="checkpoint-emission"') != 0:
+        if updated.count('data-sim-runtime="checkpoint-emission"') != 0:
             raise RuntimeError(f"compiled bridge admission synthesized an emission harness: {path}")
         pending.append((path, updated))
         admitted.append(path.name)
@@ -3442,7 +3442,7 @@ def _project_manifest_gesture_authority(
             )
         match = candidates[0]
         attrs = match.group("attrs")
-        if re.search(r'\bdata-(?:ghostweb-gesture-action|gesture-host)\s*=', attrs):
+        if re.search(r'\bdata-(?:sim-gesture-action|gesture-host)\s*=', attrs):
             continue
         tag_text = match.group(0)
         insertion_at = tag_text.rfind("/>")
@@ -3451,7 +3451,7 @@ def _project_manifest_gesture_authority(
         gesture_action = host["gesture_action"]
         rewritten = (
             tag_text[:insertion_at]
-            + f' data-gesture-host="action_host_manifest" data-ghostweb-gesture-action="{gesture_action}"'
+            + f' data-gesture-host="action_host_manifest" data-sim-gesture-action="{gesture_action}"'
             + tag_text[insertion_at:]
         )
         html = html[: match.start()] + rewritten + html[match.end() :]
@@ -3471,7 +3471,7 @@ def _find_pages_dir(result_dir: Path) -> Path | None:
 
 
 _RUNTIME_BRIDGE_MARKER_RE = re.compile(
-    r"\n?/\* Ghostweb runtime bridge injection summary: .*? \*/\n?",
+    r"\n?/\* Runtime bridge injection summary: .*? \*/\n?",
     flags=re.DOTALL,
 )
 
@@ -3497,7 +3497,7 @@ def _refresh_instrumented_runtime_marker(
     runtime_path.write_text(
         stripped
         + "\n\n"
-        + "/* Ghostweb runtime bridge injection summary: "
+        + "/* Runtime bridge injection summary: "
         + json.dumps(marker, ensure_ascii=False, sort_keys=True)
         + " */\n",
         encoding="utf-8",
@@ -3776,7 +3776,7 @@ def _mark_state_projection_oracle_binding(binding: dict[str, Any]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Inject GhostwebCheckpointRuntime bridge into generated HTML pages.",
+        description="Inject SimCheckpointRuntime bridge into generated HTML pages.",
     )
     parser.add_argument(
         "--result-dir",

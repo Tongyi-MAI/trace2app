@@ -254,7 +254,7 @@ def build_formal_manifest(
             issues.append({"code": "action_execution_contracts_duplicate_action_ids", "path": authority_summary["path"]})
 
     return {
-        "schema": "ghostweb.formal_delivery_manifest.v1",
+        "schema": "sim.formal_delivery_manifest.v1",
         "status": "pass" if not issues else "fail",
         "target": target,
         "package_name": package_name,

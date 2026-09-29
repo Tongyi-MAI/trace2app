@@ -157,11 +157,11 @@ class Trace2WorldSdkGenerator:
         ).hexdigest()[:16]
         seed_storage_keys_json = json.dumps(seed_storage_keys, ensure_ascii=False)
         reset_lines = [
-            f'    const __ghostwebSeedVersion = "{seed_version}";',
-            '    if (localStorage.getItem("__ghostweb_seed_version") !== __ghostwebSeedVersion) {',
+            f'    const __simSeedVersion = "{seed_version}";',
+            '    if (localStorage.getItem("__sim_seed_version") !== __simSeedVersion) {',
             f'      [{", ".join(json.dumps(k, ensure_ascii=False) for k in seed_storage_keys)}].forEach(function (key) {{ localStorage.removeItem(key); }});',
             '      localStorage.removeItem("idCounter");',
-            '      localStorage.setItem("__ghostweb_seed_version", __ghostwebSeedVersion);',
+            '      localStorage.setItem("__sim_seed_version", __simSeedVersion);',
             '    }',
             '    if (!localStorage.getItem("idCounter")) {\n      localStorage.setItem("idCounter", "1000");\n    }',
         ]
@@ -236,14 +236,14 @@ class BusinessLogic {
       metadata: this._interfacePayloadFromObject(metadata),
       at: Date.now()
     };
-    const events = this._getFromStorage("__ghostweb_route_events", []);
+    const events = this._getFromStorage("__sim_route_events", []);
     events.push(event);
-    this._saveToStorage("__ghostweb_route_events", events.slice(-128));
+    this._saveToStorage("__sim_route_events", events.slice(-128));
     return false;
   }
 
   getRouteEvents() {
-    return this._getFromStorage("__ghostweb_route_events", []);
+    return this._getFromStorage("__sim_route_events", []);
   }
 
   _getNextIdCounter() {
@@ -490,7 +490,7 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new BusinessLogic();
 
         return '''
   _gwPassengerFormDraftKey(formMode, passengerId) {
-    return "__ghostweb_passenger_form_draft::" + String(formMode || "add") + "::" + String(passengerId || "new");
+    return "__sim_passenger_form_draft::" + String(formMode || "add") + "::" + String(passengerId || "new");
   }
 
   _gwPassengerFormFieldName(fieldName) {
@@ -577,8 +577,8 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new BusinessLogic();
             "(function (root) {\n"
             "  var data = " + seed_json + ";\n"
             '  var version = "' + seed_version + '";\n'
-            '  if (typeof root !== "undefined") { root.GhostwebSeedData = data; root.GhostwebSeedVersion = version; }\n'
-            '  if (typeof module !== "undefined" && module.exports) { module.exports = { GhostwebSeedData: data, GhostwebSeedVersion: version }; }\n'
+            '  if (typeof root !== "undefined") { root.SimSeedData = data; root.SimSeedVersion = version; }\n'
+            '  if (typeof module !== "undefined" && module.exports) { module.exports = { SimSeedData: data, SimSeedVersion: version }; }\n'
             "})(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : this);\n"
         )
 
@@ -614,7 +614,7 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new BusinessLogic();
 '''
         if state_kernel_enabled:
             localstorage_polyfill = '''const stateStorage = (function () {
-  var client = (typeof globalThis !== "undefined" && globalThis.GhostwebEnvironmentState) || null;
+  var client = (typeof globalThis !== "undefined" && globalThis.SimEnvironmentState) || null;
   if (!client) throw new Error("Missing environment-state client; pages must be HTTP-hosted by the SQLite state service");
   return {
     getItem: function (key) {
@@ -640,21 +640,21 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new BusinessLogic();
 
 ''' + localstorage_polyfill + '''
 
-class GhostwebDataLayer {
+class SimDataLayer {
   constructor(seedData, seedVersion) {
     var _g = typeof globalThis !== "undefined" ? globalThis : (typeof window !== "undefined" ? window : {});
-    this._seedData = seedData || _g.GhostwebSeedData || {};
-    this._seedVersion = seedVersion || _g.GhostwebSeedVersion || "";
+    this._seedData = seedData || _g.SimSeedData || {};
+    this._seedVersion = seedVersion || _g.SimSeedVersion || "";
     this._initStorage();
     this.idCounter = this._getNextIdCounter();
     this._installValidationResultAliases();
   }
 
   _initStorage() {
-    if (localStorage.getItem("__ghostweb_seed_version") === this._seedVersion) return;
+    if (localStorage.getItem("__sim_seed_version") === this._seedVersion) return;
     [''' + seed_storage_keys_literal + '''].forEach(function (key) { localStorage.removeItem(key); });
     localStorage.removeItem("idCounter");
-    localStorage.setItem("__ghostweb_seed_version", this._seedVersion);
+    localStorage.setItem("__sim_seed_version", this._seedVersion);
     if (!localStorage.getItem("idCounter")) {
       localStorage.setItem("idCounter", "1000");
     }
@@ -688,14 +688,14 @@ class GhostwebDataLayer {
       metadata: this._interfacePayloadFromObject(metadata),
       at: Date.now()
     };
-    const events = this._getFromStorage("__ghostweb_route_events", []);
+    const events = this._getFromStorage("__sim_route_events", []);
     events.push(event);
-    this._saveToStorage("__ghostweb_route_events", events.slice(-128));
+    this._saveToStorage("__sim_route_events", events.slice(-128));
     return false;
   }
 
   getRouteEvents() {
-    return this._getFromStorage("__ghostweb_route_events", []);
+    return this._getFromStorage("__sim_route_events", []);
   }
 
   _getNextIdCounter() {
@@ -799,8 +799,8 @@ class GhostwebDataLayer {
 
         data_layer_footer = '''}
 
-if (typeof module !== 'undefined' && module.exports) module.exports = GhostwebDataLayer;
-if (typeof window !== 'undefined') window.GhostwebDataLayer = GhostwebDataLayer;
+if (typeof module !== 'undefined' && module.exports) module.exports = SimDataLayer;
+if (typeof window !== 'undefined') window.SimDataLayer = SimDataLayer;
 '''
 
         data_layer_js = data_layer_header + deterministic_methods + data_layer_footer
@@ -820,10 +820,10 @@ if (typeof window !== 'undefined') window.GhostwebDataLayer = GhostwebDataLayer;
 
         bl_header = '''"use strict";
 
-class WebsiteSDK extends GhostwebDataLayer {
+class WebsiteSDK extends SimDataLayer {
   constructor() {
     var _g = typeof globalThis !== "undefined" ? globalThis : (typeof window !== "undefined" ? window : {});
-    super(_g.GhostwebSeedData || {}, _g.GhostwebSeedVersion || "");
+    super(_g.SimSeedData || {}, _g.SimSeedVersion || "");
   }
 
 '''
@@ -1990,7 +1990,7 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new WebsiteSDK();
             )
 
         request_payload = {
-            "schema": "ghostweb.sdk-shard-request.v1",
+            "schema": "sim.sdk-shard-request.v1",
             "shard_id": shard_id,
             "attempt_index": attempt_index,
             "call_id": call_id,
@@ -2075,7 +2075,7 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new WebsiteSDK();
                 "validation_verdict.json",
                 self._canonical_json_bytes(
                     {
-                        "schema": "ghostweb.sdk-shard-validation-verdict.v1",
+                        "schema": "sim.sdk-shard-validation-verdict.v1",
                         "status": "admitted",
                         **verdict,
                     }
@@ -2293,7 +2293,7 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new WebsiteSDK();
         if attempt_dir is None:
             return None
         manifest = {
-            "schema": "ghostweb.sdk-shard-attempt-manifest.v1",
+            "schema": "sim.sdk-shard-attempt-manifest.v1",
             "status": status,
             "shard_id": (shard or {}).get("shard_id", "sdk_methods"),
             "attempt_index": attempt_index,
@@ -2341,7 +2341,7 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new WebsiteSDK();
         verdict = self._sdk_method_coverage_verdict(shard, emitted_methods)
         verdict.update(
             {
-                "schema": "ghostweb.sdk-shard-validation-verdict.v1",
+                "schema": "sim.sdk-shard-validation-verdict.v1",
                 "status": "rejected",
                 "error_type": type(error).__name__,
                 "error": str(error),
@@ -2357,7 +2357,7 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new WebsiteSDK();
             "error.json",
             self._canonical_json_bytes(
                 {
-                    "schema": "ghostweb.sdk-shard-error.v1",
+                    "schema": "sim.sdk-shard-error.v1",
                     "error_type": type(error).__name__,
                     "error": str(error),
                 }
@@ -2390,7 +2390,7 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new WebsiteSDK();
     ) -> str:
         path = Path(manifest_path)
         manifest = json.loads(path.read_text(encoding="utf-8"))
-        if manifest.get("schema") != "ghostweb.sdk-shard-attempt-manifest.v1":
+        if manifest.get("schema") != "sim.sdk-shard-attempt-manifest.v1":
             raise RuntimeError("SDK shard reuse manifest schema mismatch: {}".format(path))
         if manifest.get("status") != "admitted" or manifest.get("manifest_last") is not True:
             raise RuntimeError("SDK shard reuse manifest is not an admitted manifest-last attempt")
@@ -2453,7 +2453,7 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new WebsiteSDK();
             decision_ref, "prompt_only_reuse_decision"
         )
         decision = json.loads(decision_payload.decode("utf-8"))
-        if decision.get("schema") != "ghostweb.sdk-shard-prompt-only-reuse-decision.v1":
+        if decision.get("schema") != "sim.sdk-shard-prompt-only-reuse-decision.v1":
             raise RuntimeError("SDK shard prompt-only reuse decision schema mismatch")
         if decision.get("status") != "reuse_admitted" or decision.get("manifest_last") is not True:
             raise RuntimeError("SDK shard prompt-only reuse decision is not admitted/manifest-last")
@@ -2598,7 +2598,7 @@ if (typeof window !== 'undefined') window.WebsiteSDK = new WebsiteSDK();
             union_path.parent.mkdir(parents=True, exist_ok=True)
             payload = self._canonical_json_bytes(
                 {
-                    "schema": "ghostweb.sdk-shard-union-manifest.v1",
+                    "schema": "sim.sdk-shard-union-manifest.v1",
                     "status": "complete",
                     "manifest_last": True,
                     "required_shard_ids": [

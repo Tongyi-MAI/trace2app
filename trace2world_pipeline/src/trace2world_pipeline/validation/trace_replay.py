@@ -283,8 +283,8 @@ class _PythonPlaywrightSession:
             await self.context.add_init_script(
                 script=(
                     "(() => { try { "
-                    f"window.__ghostwebExecutionContext = {payload}; "
-                    f"localStorage.setItem('ghostweb.execution_context', {value}); "
+                    f"window.__simExecutionContext = {payload}; "
+                    f"localStorage.setItem('sim.execution_context', {value}); "
                     "} catch (e) {} })();"
                 )
             )
@@ -534,8 +534,8 @@ class _PythonPlaywrightSession:
                   const text = String((payload && payload.text) || '');
                   const intent = String((payload && payload.intent) || '');
                   try {
-                    if (typeof window.__ghostwebEnsureObligationInputSurface === 'function') {
-                      window.__ghostwebEnsureObligationInputSurface();
+                    if (typeof window.__simEnsureObligationInputSurface === 'function') {
+                      window.__simEnsureObligationInputSurface();
                     }
                   } catch (error) {}
                   const visible = (node) => {
@@ -611,8 +611,8 @@ class _PythonPlaywrightSession:
                     el.dispatchEvent(new InputEvent('input', {bubbles: true, data: text, inputType: 'insertText'}));
                     el.dispatchEvent(new Event('change', {bubbles: true}));
                     try {
-                      if (typeof window.__ghostwebNoteTypedInput === 'function') {
-                        window.__ghostwebNoteTypedInput(text);
+                      if (typeof window.__simNoteTypedInput === 'function') {
+                        window.__simNoteTypedInput(text);
                       }
                     } catch (error) {}
                     return true;
@@ -622,8 +622,8 @@ class _PythonPlaywrightSession:
                     el.textContent = text;
                     el.dispatchEvent(new InputEvent('input', {bubbles: true, data: text, inputType: 'insertText'}));
                     try {
-                      if (typeof window.__ghostwebNoteTypedInput === 'function') {
-                        window.__ghostwebNoteTypedInput(text);
+                      if (typeof window.__simNoteTypedInput === 'function') {
+                        window.__simNoteTypedInput(text);
                       }
                     } catch (error) {}
                     return true;
@@ -674,7 +674,7 @@ class _PythonPlaywrightSession:
                 }
               }
               const preferred = [
-                '[data-ghostweb-scroll-container]',
+                '[data-sim-scroll-container]',
                 '.app-shell main',
                 '.app-shell [data-scroll-container]',
                 'main',

@@ -868,7 +868,7 @@ def build_materialization_report(
                 continue
             code = _text(issue.get("code"))
             has_contract = bool(typed.get(issue.get("action_id") or ""))
-            if "missing_contract" in code or "missing_ghostweb" in code:
+            if "missing_contract" in code or "missing_sim_" in code or code.endswith("missing_sim"):
                 failure_class = "spec_defect"
             elif has_contract:
                 failure_class = "pagegen_materialization_defect"

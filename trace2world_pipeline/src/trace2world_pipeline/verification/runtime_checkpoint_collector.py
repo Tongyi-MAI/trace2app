@@ -96,7 +96,7 @@ def _merge_runtime_checkpoint_validation(
 ) -> dict[str, Any]:
     if not isinstance(existing, dict) or not isinstance(existing.get("traces"), dict):
         merged: dict[str, Any] = {
-            "format": "ghostweb_checkpoint_runtime_validation",
+            "format": "sim_checkpoint_runtime_validation",
             "schema_revision": 1,
             "traces": {},
         }
@@ -108,7 +108,7 @@ def _merge_runtime_checkpoint_validation(
         if trace_id in update_traces:
             merged.setdefault("traces", {})[trace_id] = update_traces[trace_id]
 
-    merged["format"] = update.get("format") or merged.get("format") or "ghostweb_checkpoint_runtime_validation"
+    merged["format"] = update.get("format") or merged.get("format") or "sim_checkpoint_runtime_validation"
     merged["schema_revision"] = update.get("schema_revision") or merged.get("schema_revision") or 1
     merged["collection_mode"] = {
         "mode": "trace_scoped_merge",
@@ -142,7 +142,7 @@ def _write_runtime_checkpoint_shards(result: dict[str, Any], shard_output_dir: P
     shard_output_dir.mkdir(parents=True, exist_ok=True)
     for trace_id, trace_result in (result.get("traces") or {}).items():
         shard_result = {
-            "format": result.get("format", "ghostweb_checkpoint_runtime_validation"),
+            "format": result.get("format", "sim_checkpoint_runtime_validation"),
             "schema_revision": result.get("schema_revision", 1),
             "traces": {trace_id: trace_result},
         }
@@ -168,10 +168,10 @@ def _find_obligation(obligations: list[dict], trace_id: str, step_index: int) ->
 
 _ACTION_MAP_STATUS_JS = """
 (actionId) => {
-    const map = window.GhostwebCheckpointActionMap;
+    const map = window.SimCheckpointActionMap;
     const entry = map && map.byActionId ? map.byActionId[actionId] : null;
-    const runtimeStore = (window.GhostwebRuntimeState && window.GhostwebRuntimeState.snapshot)
-        ? window.GhostwebRuntimeState.snapshot()
+    const runtimeStore = (window.SimRuntimeState && window.SimRuntimeState.snapshot)
+        ? window.SimRuntimeState.snapshot()
         : null;
     return {
         action_id: actionId,
@@ -670,7 +670,7 @@ def _execute_step(
                 host.scroll_into_view_if_needed(timeout=2000)
                 box = host.bounding_box()
                 gesture_action = str(
-                    host.get_attribute("data-ghostweb-gesture-action") or ""
+                    host.get_attribute("data-sim-gesture-action") or ""
                 ).strip().lower()
                 if box:
                     if gesture_action == "drag":
@@ -1287,34 +1287,34 @@ _SET_EXECUTION_CONTEXT_JS = """
     context = context || {};
     const traceId = context.reference_trace_id || context.task_id || '';
     const actionId = context.action_id || '';
-    try { window.__ghostwebExecutionContext = context; } catch (e) {}
-    try { window.GhostwebActiveTraceId = traceId; } catch (e) {}
-    try { window.__ghostwebActiveTraceId = traceId; } catch (e) {}
-    try { window.GhostwebActiveActionId = actionId; } catch (e) {}
-    try { window.__ghostwebActiveActionId = actionId; } catch (e) {}
-    try { localStorage.setItem('ghostweb.execution_context', JSON.stringify(context)); } catch (e) {}
+    try { window.__simExecutionContext = context; } catch (e) {}
+    try { window.SimActiveTraceId = traceId; } catch (e) {}
+    try { window.__simActiveTraceId = traceId; } catch (e) {}
+    try { window.SimActiveActionId = actionId; } catch (e) {}
+    try { window.__simActiveActionId = actionId; } catch (e) {}
+    try { localStorage.setItem('sim.execution_context', JSON.stringify(context)); } catch (e) {}
     try {
-        if (window.GhostwebRuntimeState && window.GhostwebRuntimeState.setTraceId && traceId) {
-            window.GhostwebRuntimeState.setTraceId(traceId);
+        if (window.SimRuntimeState && window.SimRuntimeState.setTraceId && traceId) {
+            window.SimRuntimeState.setTraceId(traceId);
         }
     } catch (e) {}
     try {
-        if (window.GhostwebCheckpointRuntime && window.GhostwebCheckpointRuntime.setTraceId && traceId) {
-            window.GhostwebCheckpointRuntime.setTraceId(traceId);
+        if (window.SimCheckpointRuntime && window.SimCheckpointRuntime.setTraceId && traceId) {
+            window.SimCheckpointRuntime.setTraceId(traceId);
         }
     } catch (e) {}
     try {
-        if (typeof window.GhostwebMaterializeExecutionContext === 'function') {
-            window.GhostwebMaterializeExecutionContext(context);
+        if (typeof window.SimMaterializeExecutionContext === 'function') {
+            window.SimMaterializeExecutionContext(context);
         }
     } catch (e) {}
     try {
-        if (typeof window.GhostwebProjectSearchTerminalOutcome === 'function') {
-            window.GhostwebProjectSearchTerminalOutcome(null);
+        if (typeof window.SimProjectSearchTerminalOutcome === 'function') {
+            window.SimProjectSearchTerminalOutcome(null);
         }
     } catch (e) {}
     try { if (typeof window.renderState === 'function') window.renderState(); } catch (e) {}
-    try { if (typeof window.GhostwebStationNavSyncNearbyHost === 'function') window.GhostwebStationNavSyncNearbyHost(); } catch (e) {}
+    try { if (typeof window.SimStationNavSyncNearbyHost === 'function') window.SimStationNavSyncNearbyHost(); } catch (e) {}
 }
 """
 
@@ -1332,7 +1332,7 @@ def _execution_context(trace_id: str, step_index: int | None = None) -> dict[str
 
 _CAPTURE_PROJECTION_JS = """
 (context) => {
-    const rt = window.GhostwebCheckpointRuntime;
+    const rt = window.SimCheckpointRuntime;
     if (!rt) return { __bridge_missing: true };
 
     const state = rt.captureState();
@@ -1377,8 +1377,8 @@ _CAPTURE_PROJECTION_JS = """
 
     const page = (location.pathname.split('/').pop() || '');
     const visibleText = (document.body ? document.body.innerText : '').substring(0, 2000);
-    const runtimeStore = (window.GhostwebRuntimeState && window.GhostwebRuntimeState.snapshot)
-        ? window.GhostwebRuntimeState.snapshot()
+    const runtimeStore = (window.SimRuntimeState && window.SimRuntimeState.snapshot)
+        ? window.SimRuntimeState.snapshot()
         : null;
 
     return {
@@ -1399,7 +1399,7 @@ _CAPTURE_PROJECTION_JS = """
 def _capture_runtime_checkpoint(page: Page, trace_id: str = "", step_index: int | None = None) -> dict:
     try:
         try:
-            page.wait_for_function("() => !!window.GhostwebCheckpointRuntime", timeout=2000)
+            page.wait_for_function("() => !!window.SimCheckpointRuntime", timeout=2000)
         except Exception:
             pass
         context = _execution_context(trace_id, step_index)
@@ -1634,7 +1634,7 @@ async def _execute_step_async(
                 await host.scroll_into_view_if_needed(timeout=2000)
                 box = await host.bounding_box()
                 gesture_action = str(
-                    await host.get_attribute("data-ghostweb-gesture-action") or ""
+                    await host.get_attribute("data-sim-gesture-action") or ""
                 ).strip().lower()
                 if box:
                     if gesture_action == "drag":
@@ -1676,7 +1676,7 @@ async def _execute_step_async(
 async def _capture_runtime_checkpoint_async(page, trace_id: str = "", step_index: int | None = None) -> dict:
     try:
         try:
-            await page.wait_for_function("() => !!window.GhostwebCheckpointRuntime", timeout=2000)
+            await page.wait_for_function("() => !!window.SimCheckpointRuntime", timeout=2000)
         except Exception:
             pass
         context = _execution_context(trace_id, step_index)
@@ -1735,7 +1735,7 @@ def collect_runtime_checkpoint_snapshots(
         trace_ids = list(evaluators.keys())
 
     result: dict[str, Any] = {
-        "format": "ghostweb_checkpoint_runtime_validation",
+        "format": "sim_checkpoint_runtime_validation",
         "schema_revision": 1,
         "environment_profile_hash": environment_profile["profile_hash"],
         "platform": environment_profile["platform"],
@@ -2151,7 +2151,7 @@ async def _collect_trace_async(
             await context.close()
 
         shard_result = {
-            "format": "ghostweb_checkpoint_runtime_validation",
+            "format": "sim_checkpoint_runtime_validation",
             "schema_revision": 1,
             "traces": {tid: trace_result},
         }
@@ -2197,7 +2197,7 @@ async def _collect_runtime_checkpoint_snapshots_parallel_async(
             old_shard.unlink()
 
     result: dict[str, Any] = {
-        "format": "ghostweb_checkpoint_runtime_validation",
+        "format": "sim_checkpoint_runtime_validation",
         "schema_revision": 1,
         "environment_profile_hash": environment_profile["profile_hash"],
         "platform": environment_profile["platform"],

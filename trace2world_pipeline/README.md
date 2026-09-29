@@ -144,10 +144,10 @@ their evaluators read back. These identifiers keep their original namespace and
 are deliberately **not** renamed to Trace2World vocabulary — renaming them would
 invalidate every released environment:
 
-- `data-ghostweb-*` DOM attribute namespace (>100k occurrences in the exports)
-- `window.GhostwebRouteExecution`, `window.GhostwebRuntimeState`,
-  `window.GhostwebCheckpointRuntime`, `window.__ghostwebExecutionContext`
-- `ghostweb.*` runtime schema identifiers
+- `data-sim-*` DOM attribute namespace (>100k occurrences in the exports)
+- `window.SimRouteExecution`, `window.SimRuntimeState`,
+  `window.SimCheckpointRuntime`, `window.__simExecutionContext`
+- `sim.*` runtime schema identifiers
 - `phase_consolidation/site_model/` artifact paths and `site_model_*` config keys,
   which appear in exported resource manifests
 

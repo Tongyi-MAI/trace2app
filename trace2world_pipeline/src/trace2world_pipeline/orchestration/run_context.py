@@ -118,7 +118,7 @@ class RunContext:
 
     def to_resume_plan(self) -> dict[str, Any]:
         return {
-            "format": "ghostweb_resume_plan",
+            "format": "sim_resume_plan",
             "schema_revision": 1,
             "execution_effect": "metadata_only",
             "decisions": [decision.to_dict() for decision in self.decisions],

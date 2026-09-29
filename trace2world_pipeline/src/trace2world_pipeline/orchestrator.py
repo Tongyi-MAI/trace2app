@@ -4527,10 +4527,10 @@ class Trace2WorldTraceGenerator:
             legacy_transition_contract_path = os.path.join(site_model_dir, "execution_transition_contracts.json")
             if os.path.exists(legacy_transition_contract_path):
                 _move_to_deprecated(legacy_transition_contract_path, reason="legacy_transition_contract")
-            task_runner_path = os.path.join(self.output_dir, "ghostweb-task-runner.html")
+            task_runner_path = os.path.join(self.output_dir, "sim-task-runner.html")
             if os.path.exists(task_runner_path):
                 moved_path = _move_to_deprecated(task_runner_path, reason="legacy_task_runner")
-                logger.log_info(f"Moved legacy ghostweb-task-runner.html to {moved_path}")
+                logger.log_info(f"Moved legacy sim-task-runner.html to {moved_path}")
             logger.log_info(
                 "Materialized page_execution_contracts.json as a AppSpec semantic view "
                 f"({len(page_execution_contracts.get('pages', []))} pages)"
@@ -7937,7 +7937,7 @@ class Trace2WorldTraceGenerator:
                             "action slot route contract gate failed; "
                             "see phase_consolidation/site_model/action_slot_route_contract_audit.json. "
                             "Every route_action_slot must bind its component host to "
-                            "GhostwebRouteExecution.navigate(target_filename); "
+                            "SimRouteExecution.navigate(target_filename); "
                             "WebsiteSDK.navigateRoute is side-effect only."
                         )
 
@@ -8214,7 +8214,7 @@ class Trace2WorldTraceGenerator:
                 except Exception as exc:
                     logger.log_warning(f"Failed to load dom_binding_contracts artifact: {exc}")
         visible_return_affordance_report: Dict[str, Any] = {
-            "format": "ghostweb_visible_return_affordance_materialization",
+            "format": "sim_visible_return_affordance_materialization",
             "schema_revision": 1,
             "summary": {
                 "declared_fallback_count": 0,
@@ -8358,14 +8358,14 @@ class Trace2WorldTraceGenerator:
                     if page:
                         expected_actions_by_page.setdefault(page, set()).add("fallback_back")
                 action_host_manifest: Dict[str, Any] = {
-                    "format": "ghostweb_action_host_manifest",
+                    "format": "sim_action_host_manifest",
                     "schema_revision": 1,
                     "source": "trace_generator.pagegen_action_host_validator",
                     "result_dir": self.output_dir,
                     "hosts": [],
                 }
                 action_host_validation: Dict[str, Any] = {
-                    "format": "ghostweb_action_host_manifest_validation",
+                    "format": "sim_action_host_manifest_validation",
                     "schema_revision": 1,
                     "source": "trace_generator.pagegen_action_host_validator",
                     "missing_hosts": [],

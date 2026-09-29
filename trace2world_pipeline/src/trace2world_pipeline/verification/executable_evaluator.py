@@ -530,7 +530,7 @@ def compile_executable_evaluator(result_dir: Path) -> dict:
 
 
     manifest = {
-        "format": "ghostweb_executable_evaluator_manifest",
+        "format": "sim_executable_evaluator_manifest",
         "schema_revision": 1,
         "reward_oracle_mode": "runtime_state_payload_projection",
         "source": {

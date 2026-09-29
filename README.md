@@ -225,20 +225,23 @@ import httpx
 
 BASE, TASK = "http://127.0.0.1:6800", "<task_id>"
 with httpx.Client(base_url=BASE, timeout=300) as c:
-    did = c.post("/display/acquire").json()["logical_id"]
-    c.post("/task/init", json={"task_name": TASK, "display_id": did}).raise_for_status()
-    goal = c.get("/task/goal", params={"task_name": TASK, "display_id": did}).json()
-    for _ in range(50):
-        obs = c.get("/screenshot", params={"display_id": did, "return_b64": "true"}).json()
-        action = my_policy(goal, obs["b64_png"])              # pixel-space action dict, see trace2world_env/README.md
-        step = c.post("/step", json={"display_id": did, "action": action}).json()
-        if action["action_type"] in {"answer", "terminate"}:
-            break
-    ev = c.get("/task/eval", params={"task_name": TASK, "display_id": did, "preview": "false"}).json()
-    print("reward =", ev.get("raw_reward", ev.get("score")))
-    c.post("/task/tear_down", json={"task_name": TASK, "display_id": did})
-    c.post("/display/release", params={"display_id": did})
+    episode = c.post("/episodes", json={"task_id": TASK}).json()
+    eid = episode["episode_id"]
+    try:
+        for _ in range(50):
+            obs = c.get(f"/episodes/{eid}/observation").json()
+            action = my_policy(episode["instruction"], obs["screenshot"])  # pixel-space action dict
+            outcome = c.post(f"/episodes/{eid}/actions", json={"action": action}).json()
+            if outcome["done"]:
+                break
+        result = c.post(f"/episodes/{eid}/evaluate", json={"final": True}).json()
+        print("reward =", result["reward"])
+    finally:
+        c.delete(f"/episodes/{eid}")
 ```
+
+`outcome["feedback"]` is the environment's text feedback for the action (`null` when there is none);
+the Python client `trace2world_env.EnvironmentClient` wraps the same calls.
 
 Rewards come from the frozen task evaluator (terminal success and partial final-state credit); the
 source-trace replay that accepts each environment is a separate reviewer and never supplies training
@@ -247,13 +250,12 @@ reward.
 ### 5. Self-check
 
 ```bash
-t2w-smoke --server http://127.0.0.1:6800 \
-          --manifest data/trace2world/environments_manifest.json --output host-smoke.json
+t2w-smoke --server http://127.0.0.1:6800 --output host-smoke.json
 ```
 
-Runs one real browser round-trip per environment (init, screenshot, action, text feedback, evaluator
-reward, tear-down). The full contracts (HTTP API, action space, reward semantics, initial states,
-concurrency) are documented in [`trace2world_env/README.md`](trace2world_env/README.md).
+Runs one short real-browser episode per environment (start, screenshot, rejected action with text
+feedback, evaluation, close). The full contracts (HTTP API, action space, reward semantics, initial
+states, concurrency) are documented in [`trace2world_env/README.md`](trace2world_env/README.md).
 
 ## Building your own environment
 
@@ -293,7 +295,7 @@ trace2app/
 ├── trace2world_env/                 environment host, evaluators, state kernel, bundled agent
 │   ├── README.md                    HTTP API, action space, reward semantics, manifest fields
 │   ├── pyproject.toml               t2w-serve / t2w-rollout / t2w-smoke
-│   └── src/trace2world/
+│   └── src/trace2world_env/
 └── trace2world_pipeline/            environment constructor
     ├── README.md                    stage layout and paper-algorithm mapping
     ├── WORKFLOW.md                  end-to-end construction order with real parameters

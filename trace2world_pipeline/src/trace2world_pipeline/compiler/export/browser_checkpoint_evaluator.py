@@ -181,11 +181,11 @@ function readStorageJson(key) {{
 }}
 function runtimeStateSnapshot() {{
   try {{
-    if (window.GhostwebRuntimeState && typeof window.GhostwebRuntimeState.snapshot === 'function') {{
-      return window.GhostwebRuntimeState.snapshot() || null;
+    if (window.SimRuntimeState && typeof window.SimRuntimeState.snapshot === 'function') {{
+      return window.SimRuntimeState.snapshot() || null;
     }}
   }} catch (error) {{}}
-  return readStorageJson('__ghostweb_runtime_state_v1__');
+  return readStorageJson('__sim_runtime_state_v1__');
 }}
 function valueAtPath(value, path) {{
   const parts = String(path || '').split('.').filter(Boolean);
@@ -281,7 +281,7 @@ function projectionVisible(assertion) {{
     return visibleNodes.some((node) => matchesAssertion(node.getAttribute(String(assertion.attribute)), assertion));
   }}
   if (assertion && assertion.field) {{
-    const runtime = readStorageJson('__ghostweb_runtime_state_v1__') || {{}};
+    const runtime = readStorageJson('__sim_runtime_state_v1__') || {{}};
     const current = valueAtPath(runtime.current_state || runtime.committed_state || runtime, assertion.field);
     if (current !== undefined) return matchesAssertion(current, assertion);
   }}
@@ -353,19 +353,19 @@ function negativeProbeStatus() {{
 }}
 function readEvents() {{
   const carriers = [];
-  const sessionEvents = safeParse(safeStorageGet('__ghostweb_checkpoint_events_v1__'), null);
-  const localEvents = safeParse(safeLocalStorageGet('__ghostweb_checkpoint_events_v1__'), null);
+  const sessionEvents = safeParse(safeStorageGet('__sim_checkpoint_events_v1__'), null);
+  const localEvents = safeParse(safeLocalStorageGet('__sim_checkpoint_events_v1__'), null);
   if (Array.isArray(sessionEvents)) carriers.push(sessionEvents);
   if (Array.isArray(localEvents)) carriers.push(localEvents);
-  if (window.GhostwebCheckpointRuntime && window.GhostwebCheckpointRuntime.eventLog) {{
+  if (window.SimCheckpointRuntime && window.SimCheckpointRuntime.eventLog) {{
     try {{
-      const runtimeEvents = window.GhostwebCheckpointRuntime.eventLog();
+      const runtimeEvents = window.SimCheckpointRuntime.eventLog();
       if (Array.isArray(runtimeEvents)) carriers.push(runtimeEvents);
     }} catch (error) {{}}
   }}
   try {{
-    if (window.GhostwebRuntimeState && typeof window.GhostwebRuntimeState.snapshot === 'function') {{
-      const snapshot = window.GhostwebRuntimeState.snapshot() || {{}};
+    if (window.SimRuntimeState && typeof window.SimRuntimeState.snapshot === 'function') {{
+      const snapshot = window.SimRuntimeState.snapshot() || {{}};
       if (Array.isArray(snapshot.event_log)) carriers.push(snapshot.event_log);
       if (Array.isArray(snapshot.events)) carriers.push(snapshot.events);
     }}
@@ -612,7 +612,7 @@ function executeNegativeProbe(entry) {{
   const fields = probeFields(spec, entry.rule || {{}});
   if (!fields.length) return {{...result, status: 'unverified', reason: 'mutation_field_unbound'}};
   fields.forEach((field) => {{
-    const direct = Object.prototype.hasOwnProperty.call(mutate, field) ? mutate[field] : '__ghostweb_negative_probe_wrong__';
+    const direct = Object.prototype.hasOwnProperty.call(mutate, field) ? mutate[field] : '__sim_negative_probe_wrong__';
     mutateEventField(mutated, field, direct, remove);
   }});
   const rejected = !validateEvent(checkpointId, mutated).valid;
@@ -764,7 +764,7 @@ const checkpointEventTimeline = matching.map((event, eventIndex) => ({{
   event_type: String(valueAt(event, 'event_type') || valueAt(event, 'type') || ''),
 }})).filter((row) => REQUIRED.includes(row.checkpoint_id));
 const terminalSuccess = missing.length === 0 && !evaluatorInvalid;
-window.__ghostweb_last_eval_result__ = {{
+window.__sim_last_eval_result__ = {{
   task_id: TASK_ID,
   required: REQUIRED,
   missing,

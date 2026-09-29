@@ -434,14 +434,14 @@ def validate_pagegen_prompt_boundary(payload: Dict[str, Any]) -> Dict[str, Any]:
             binding_source = str(slot.get("binding_source") or "")
             shell_family_id = str(slot.get("shell_family_id") or "")
             shell_slot_key = str(slot.get("shell_slot_key") or "")
-            if executor and executor != "GhostwebRouteExecution.navigate":
+            if executor and executor != "SimRouteExecution.navigate":
                 violations.append(
                     {
                         "code": "route_action_slot.invalid_executor",
                         "severity": "blocking",
                         "path": f"{path}.executor",
                         "key": "executor",
-                        "expected": "GhostwebRouteExecution.navigate",
+                        "expected": "SimRouteExecution.navigate",
                         "actual": executor,
                     }
                 )

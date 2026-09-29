@@ -98,7 +98,7 @@ def _event_names(event: dict) -> list[str]:
     checkpoint_id = event.get("checkpoint_id")
     if checkpoint_id:
         names.append(str(checkpoint_id))
-        names.append(f"ghostweb:checkpoint:{checkpoint_id}")
+        names.append(f"sim:checkpoint:{checkpoint_id}")
     return list(dict.fromkeys(names))
 
 
@@ -292,7 +292,7 @@ def run_evaluator(
 
         required_event = outcome.get("required_event", "")
 
-        outcome_event_key = f"ghostweb:checkpoint:{outcome_id}" if not required_event else required_event
+        outcome_event_key = f"sim:checkpoint:{outcome_id}" if not required_event else required_event
         outcome_events = event_index.get(outcome_event_key, [])
         outcome_event_verified = len(outcome_events) > 0
         if not outcome_event_verified:

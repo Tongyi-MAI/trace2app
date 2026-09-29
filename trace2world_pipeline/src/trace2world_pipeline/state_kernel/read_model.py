@@ -75,7 +75,7 @@ def compiled_read_model_to_init_data(
     if expected_candidate_count != len(candidates):
         raise ValueError("search read-model count mismatch")
     manifest = {
-        "format": "ghostweb.read_model_sqlite_migration_manifest.v1",
+        "format": "sim.read_model_sqlite_migration_manifest.v1",
         "schema_revision": 1,
         "runtime_authority": "world.sqlite",
         "parallel_json_runtime_allowed": False,

@@ -19,28 +19,28 @@ _ANCHOR_HOST_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
-_DATA_GHOSTWEB_ACTION_RE = re.compile(
-    r'\bdata-ghostweb-action\s*=\s*"[^"]*"'
+_DATA_SIM_ACTION_RE = re.compile(
+    r'\bdata-sim-action\s*=\s*"[^"]*"'
 )
-_DATA_GHOSTWEB_TARGET_RE = re.compile(
-    r'\bdata-ghostweb-target\s*=\s*"[^"]*"'
+_DATA_SIM_TARGET_RE = re.compile(
+    r'\bdata-sim-target\s*=\s*"[^"]*"'
 )
-_DATA_GHOSTWEB_ACTION_ID_RE = re.compile(
-    r'\bdata-ghostweb-action-id\s*=\s*"[^"]*"'
+_DATA_SIM_ACTION_ID_RE = re.compile(
+    r'\bdata-sim-action-id\s*=\s*"[^"]*"'
 )
 
 _HREF_RE = re.compile(r'\bhref\s*=\s*"([^"]*)"')
 
 _INLINE_ROUTE_JS_RE = re.compile(
     r"""(?:onclick|onmousedown|onmouseup)\s*=\s*"[^"]*"""
-    r"""GhostwebRouteExecution\.(?:navigate|returnBack|goBack)\s*\("""
+    r"""SimRouteExecution\.(?:navigate|returnBack|goBack)\s*\("""
     r"""[^"]*" """,
     re.VERBOSE,
 )
 
 _PAGE_LOCAL_ROUTE_EXECUTION_RE = re.compile(
-    r'<script[^>]*>(?:(?!data-ghostweb-runtime)[\s\S])*'
-    r'window\.GhostwebRouteExecution\s*=\s*\{[\s\S]*?</script>',
+    r'<script[^>]*>(?:(?!data-sim-runtime)[\s\S])*'
+    r'window\.SimRouteExecution\s*=\s*\{[\s\S]*?</script>',
     re.DOTALL,
 )
 _ROUTE_RUNTIME_SCRIPT_RE = re.compile(
@@ -52,11 +52,11 @@ _ROUTE_MANIFEST_SCRIPT_RE = re.compile(
     re.IGNORECASE,
 )
 _ROUTE_RUNTIME_OBLIGATION_RE = re.compile(
-    r"GhostwebRouteExecution\.|data-ghostweb-(?:action|target|route-action)\s*=",
+    r"SimRouteExecution\.|data-sim-(?:action|target|route-action)\s*=",
     re.IGNORECASE,
 )
 _SCRIPT_REFERENCING_ROUTE_RUNTIME_RE = re.compile(
-    r"<script\b(?:(?!</script>).)*GhostwebRouteExecution\.(?:(?!</script>).)*</script>",
+    r"<script\b(?:(?!</script>).)*SimRouteExecution\.(?:(?!</script>).)*</script>",
     re.IGNORECASE | re.DOTALL,
 )
 _TAG_WITH_DATA_ELEMENT_ALIASES_RE = re.compile(
@@ -65,45 +65,45 @@ _TAG_WITH_DATA_ELEMENT_ALIASES_RE = re.compile(
 )
 _MATERIALIZED_ROUTE_SHELL_RE = re.compile(
     r'\s*<nav\b'
-    r'(?=[^>]*\bclass\s*=\s*["\'][^"\']*\bghostweb-route-shell\b[^"\']*["\'])'
-    r'(?=[^>]*\bdata-ghostweb-materialized\s*=\s*["\']route_contract["\'])'
+    r'(?=[^>]*\bclass\s*=\s*["\'][^"\']*\bsim-route-shell\b[^"\']*["\'])'
+    r'(?=[^>]*\bdata-sim-materialized\s*=\s*["\']route_contract["\'])'
     r'[^>]*>[\s\S]*?</nav>\s*',
     re.IGNORECASE,
 )
 _DECLARED_RETURN_HOST_RE = re.compile(
-    r'\bdata-ghostweb-action\s*=\s*["\'](?:history_back|returnBack)["\']'
-    r'|\bdata-ghostweb-route-action\s*=\s*["\']default_back["\']',
+    r'\bdata-sim-action\s*=\s*["\'](?:history_back|returnBack)["\']'
+    r'|\bdata-sim-route-action\s*=\s*["\']default_back["\']',
     re.IGNORECASE,
 )
 _SCRIPT_BLOCK_RE = re.compile(r"<script\b[^>]*>[\s\S]*?</script>", re.IGNORECASE)
 
 _CANONICAL_ROUTE_RUNTIME_SCRIPTS = """\
-<script data-ghostweb-runtime="route-manifest" src="../../phase_sdk_generation/runtime/route_manifest.js"></script>
-<script data-ghostweb-runtime="route-execution" src="../../phase_sdk_generation/runtime/route_runtime.js"></script>"""
+<script data-sim-runtime="route-manifest" src="../../phase_sdk_generation/runtime/route_manifest.js"></script>
+<script data-sim-runtime="route-execution" src="../../phase_sdk_generation/runtime/route_runtime.js"></script>"""
 
 _SHARED_CLICK_LISTENER_JS = """\
-<script data-ghostweb-runtime="route-materializer">
+<script data-sim-runtime="route-materializer">
 (function() {
   document.addEventListener("click", function(event) {
-    var host = event.target.closest("[data-ghostweb-action]");
+    var host = event.target.closest("[data-sim-action]");
     if (!host) return;
-    var action = host.getAttribute("data-ghostweb-action");
+    var action = host.getAttribute("data-sim-action");
     if (action === "navigate") {
       event.preventDefault();
-      var target = host.getAttribute("data-ghostweb-target");
-      if (target && window.GhostwebRouteExecution && window.GhostwebRouteExecution.navigate) {
-        window.GhostwebRouteExecution.navigate(target, {
-          mode: host.getAttribute("data-ghostweb-history-mode") || "push"
+      var target = host.getAttribute("data-sim-target");
+      if (target && window.SimRouteExecution && window.SimRouteExecution.navigate) {
+        window.SimRouteExecution.navigate(target, {
+          mode: host.getAttribute("data-sim-history-mode") || "push"
         });
       }
     }
     if (action === "history_back") {
       event.preventDefault();
-      var actionId = host.getAttribute("data-ghostweb-action-id") || "fallback_back";
-      if (window.GhostwebRouteExecution && window.GhostwebRouteExecution.returnBack) {
-        window.GhostwebRouteExecution.returnBack(actionId);
-      } else if (window.GhostwebRouteExecution && window.GhostwebRouteExecution.goBack) {
-        window.GhostwebRouteExecution.goBack();
+      var actionId = host.getAttribute("data-sim-action-id") || "fallback_back";
+      if (window.SimRouteExecution && window.SimRouteExecution.returnBack) {
+        window.SimRouteExecution.returnBack(actionId);
+      } else if (window.SimRouteExecution && window.SimRouteExecution.goBack) {
+        window.SimRouteExecution.goBack();
       }
     }
   });
@@ -163,8 +163,8 @@ def _enable_authoritative_route_host(attrs_str: str) -> str:
         attrs,
         flags=re.IGNORECASE,
     )
-    if _attr_value(attrs, "data-ghostweb-click-contract-kind") == "noninteractive":
-        attrs = _remove_attr(attrs, "data-ghostweb-click-contract-kind")
+    if _attr_value(attrs, "data-sim-click-contract-kind") == "noninteractive":
+        attrs = _remove_attr(attrs, "data-sim-click-contract-kind")
     return attrs
 
 
@@ -262,7 +262,7 @@ def _find_action_slot_host_by_label_or_target(html: str, slot: Dict[str, Any]) -
     if is_shell_slot and shell_slot:
         for match in _PAIR_HOST_RE.finditer(html or ""):
             attrs = match.group("attrs") or ""
-            if _attr_value(attrs, "data-ghostweb-shell-slot") != shell_slot:
+            if _attr_value(attrs, "data-sim-shell-slot") != shell_slot:
                 continue
             return {
                 "tag": match.group("tag"),
@@ -275,13 +275,13 @@ def _find_action_slot_host_by_label_or_target(html: str, slot: Dict[str, Any]) -
         attrs = match.group("attrs") or ""
         body = match.group("body") or ""
         text = _visible_text(body)
-        existing_shell_slot = _attr_value(attrs, "data-ghostweb-shell-slot")
+        existing_shell_slot = _attr_value(attrs, "data-sim-shell-slot")
         if is_shell_slot and shell_slot and existing_shell_slot and existing_shell_slot != shell_slot:
             continue
         target_matches = bool(target_filename and target_filename in attrs)
         label_matches = bool(label and (label in text or label in attrs))
         href = _attr_value(attrs, "href").strip()
-        declared_target = _attr_value(attrs, "data-ghostweb-target").strip()
+        declared_target = _attr_value(attrs, "data-sim-target").strip()
         placeholder_target = not declared_target and href in {
             "",
             "#",
@@ -305,7 +305,7 @@ def _find_action_slot_host_by_label_or_target(html: str, slot: Dict[str, Any]) -
     best: Optional[Tuple[int, Dict[str, Any]]] = None
     for match in _PAIR_HOST_RE.finditer(html or ""):
         attrs = match.group("attrs") or ""
-        existing_shell_slot = _attr_value(attrs, "data-ghostweb-shell-slot")
+        existing_shell_slot = _attr_value(attrs, "data-sim-shell-slot")
         if is_shell_slot and shell_slot and existing_shell_slot and existing_shell_slot != shell_slot:
             continue
         body = match.group("body") or ""
@@ -388,17 +388,17 @@ def _materialize_missing_shell_route_host(html: str, slot: Dict[str, Any]) -> st
         )
 
     fragment = (
-        f'\n<nav class="ghostweb-route-shell ghostweb-route-shell-{_escape_attr(family_class)}" '
-        f'data-ghostweb-shell-family="{_escape_attr(shell_family)}" '
-        f'data-ghostweb-materialized="route_contract" '
+        f'\n<nav class="sim-route-shell sim-route-shell-{_escape_attr(family_class)}" '
+        f'data-sim-shell-family="{_escape_attr(shell_family)}" '
+        f'data-sim-materialized="route_contract" '
         f'style="{_escape_attr(shell_style)}" aria-label="Shared navigation">\n'
         f'  <a href="{_escape_attr(target_filename)}" '
         f'data-element-id="{_escape_attr(component_id)}" '
-        f'data-ghostweb-action="navigate" '
-        f'data-ghostweb-target="{_escape_attr(target_filename)}" '
-        f'data-ghostweb-action-id="{_escape_attr(action_slot_id)}" '
-        f'data-ghostweb-history-mode="{_escape_attr(history_mode)}" '
-        f'data-ghostweb-shell-slot="{_escape_attr(shell_slot)}" '
+        f'data-sim-action="navigate" '
+        f'data-sim-target="{_escape_attr(target_filename)}" '
+        f'data-sim-action-id="{_escape_attr(action_slot_id)}" '
+        f'data-sim-history-mode="{_escape_attr(history_mode)}" '
+        f'data-sim-shell-slot="{_escape_attr(shell_slot)}" '
         f'style="{_escape_attr(host_style)}">{_escape_text(label)}</a>\n'
         "</nav>\n"
     )
@@ -410,7 +410,7 @@ def _materialize_missing_shell_route_host(html: str, slot: Dict[str, Any]) -> st
 
 def _visible_return_component_id(source_filename: str) -> str:
     token = re.sub(r"[^A-Za-z0-9_]+", "_", str(source_filename or "")).strip("_")
-    return f"ghostweb_route_return__{token or 'page'}"
+    return f"sim_route_return__{token or 'page'}"
 
 
 def _materialize_missing_visible_return_host(
@@ -427,11 +427,11 @@ def _materialize_missing_visible_return_host(
     component_id = _visible_return_component_id(source_filename)
     fragment = (
         '\n<button type="button" '
-        'class="ghostweb-visible-return-affordance" '
+        'class="sim-visible-return-affordance" '
         f'data-element-id="{_escape_attr(component_id)}" '
-        'data-ghostweb-materialized="visible_return_affordance" '
-        'data-ghostweb-action="history_back" '
-        'data-ghostweb-action-id="fallback_back" '
+        'data-sim-materialized="visible_return_affordance" '
+        'data-sim-action="history_back" '
+        'data-sim-action-id="fallback_back" '
         'data-history-back="true" '
         'aria-label="Return to previous page" '
         'title="Return to previous page" '
@@ -474,7 +474,7 @@ def materialize_visible_return_affordances(
             "source_filename": str(source_filename),
             "target_filename": target_filename,
             "action_id": "fallback_back",
-            "executor": "GhostwebRouteExecution.returnBack",
+            "executor": "SimRouteExecution.returnBack",
             "component_id": _visible_return_component_id(str(source_filename)),
         }
         if not source_path.is_file():
@@ -500,7 +500,7 @@ def materialize_visible_return_affordances(
     existing = sum(row["status"] == "existing_declared_return_host" for row in bindings)
     missing = sum(row["status"] in {"source_page_missing", "target_page_missing"} for row in bindings)
     return {
-        "format": "ghostweb_visible_return_affordance_materialization",
+        "format": "sim_visible_return_affordance_materialization",
         "schema_revision": 1,
         "source": "frontend.route_materializer.materialize_visible_return_affordances",
         "summary": {
@@ -671,13 +671,13 @@ def _build_materialization_bindings(
 
             new_attrs = matched_host["attrs_str"]
             if action:
-                new_attrs = _inject_attr(new_attrs, "data-ghostweb-action", action)
+                new_attrs = _inject_attr(new_attrs, "data-sim-action", action)
             if action == "history_back":
                 new_attrs = _inject_attr(new_attrs, "data-history-back", "true")
             elif target_filename:
-                new_attrs = _inject_attr(new_attrs, "data-ghostweb-target", target_filename)
+                new_attrs = _inject_attr(new_attrs, "data-sim-target", target_filename)
             if step_id:
-                new_attrs = _inject_attr(new_attrs, "data-ghostweb-action-id", step_id)
+                new_attrs = _inject_attr(new_attrs, "data-sim-action-id", step_id)
 
             new_attrs = _enable_authoritative_route_host(new_attrs)
 
@@ -732,9 +732,9 @@ def _build_materialization_bindings(
             host = host_records.get(cid)
             materialized_identity = False
             if cid in processed_targets and host:
-                current_action = _attr_value(host["attrs_str"], "data-ghostweb-action")
+                current_action = _attr_value(host["attrs_str"], "data-sim-action")
                 current_target = (
-                    _attr_value(host["attrs_str"], "data-ghostweb-target")
+                    _attr_value(host["attrs_str"], "data-sim-target")
                     or _attr_value(host["attrs_str"], "href")
                 )
                 if current_action == "history_back" or (
@@ -757,7 +757,7 @@ def _build_materialization_bindings(
                     "source_filename": source_filename,
                     "host_selector": "",
                     "target_filename": target_filename,
-                    "executor": slot.get("executor", "GhostwebRouteExecution.navigate"),
+                    "executor": slot.get("executor", "SimRouteExecution.navigate"),
                     "status": "host_not_found",
                     "reason": f"no action slot host candidate for {cid} in {source_filename}",
                     "source": "action_slot_registry",
@@ -769,7 +769,7 @@ def _build_materialization_bindings(
                     "source_filename": source_filename,
                     "host_selector": f'[data-element-id="{cid}"]',
                     "target_filename": "",
-                    "executor": slot.get("executor", "GhostwebRouteExecution.navigate"),
+                    "executor": slot.get("executor", "SimRouteExecution.navigate"),
                     "status": "target_missing",
                     "reason": f"action slot {slot_action_id} has no target_filename",
                     "source": "action_slot_registry",
@@ -782,13 +782,13 @@ def _build_materialization_bindings(
             slot_action = _action_from_executor(
                 str(matching_route_contract.get("executor") or slot.get("executor") or "")
             ) or "navigate"
-            new_attrs = _inject_attr(new_attrs, "data-ghostweb-action", slot_action)
+            new_attrs = _inject_attr(new_attrs, "data-sim-action", slot_action)
             if slot_action == "history_back":
                 new_attrs = _inject_attr(new_attrs, "data-history-back", "true")
-                new_attrs = _remove_attr(new_attrs, "data-ghostweb-target")
+                new_attrs = _remove_attr(new_attrs, "data-sim-target")
             else:
-                new_attrs = _inject_attr(new_attrs, "data-ghostweb-target", target_filename)
-            new_attrs = _inject_attr(new_attrs, "data-ghostweb-action-id", slot_action_id)
+                new_attrs = _inject_attr(new_attrs, "data-sim-target", target_filename)
+            new_attrs = _inject_attr(new_attrs, "data-sim-action-id", slot_action_id)
             new_attrs = _enable_authoritative_route_host(new_attrs)
             new_attrs = _strip_inline_route_js(new_attrs)
 
@@ -809,7 +809,7 @@ def _build_materialization_bindings(
                 "source_filename": source_filename,
                 "host_selector": f'[data-element-id="{cid}"]',
                 "target_filename": target_filename,
-                "executor": slot.get("executor", "GhostwebRouteExecution.navigate"),
+                "executor": slot.get("executor", "SimRouteExecution.navigate"),
                 "status": "bound",
                 "reason": "bound_by_label_or_target" if materialized_identity else "",
                 "source": "action_slot_registry",

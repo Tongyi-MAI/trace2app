@@ -156,7 +156,7 @@ class ArtifactIndex:
     def write(self, *, refresh_filesystem_summary: bool = True) -> Path:
         self.index_path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
-            "format": "ghostweb_artifact_index",
+            "format": "sim_artifact_index",
             "version": 1,
             "artifacts": sorted(self._records.values(), key=lambda item: str(item.get("artifact_id", ""))),
             "summary": self._summary(refresh_filesystem=refresh_filesystem_summary),

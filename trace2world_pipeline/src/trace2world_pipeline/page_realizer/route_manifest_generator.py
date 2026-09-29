@@ -151,7 +151,7 @@ def build_route_manifest_from_data(
                 })
 
     return {
-        "format": "ghostweb_route_manifest",
+        "format": "sim_route_manifest",
         "version": 1,
         "pages": manifest_pages,
         "runtime_projections": runtime_projections,
@@ -176,7 +176,7 @@ def build_route_manifest(
 
 def write_route_manifest_js(manifest: Dict[str, Any], output_path: str) -> None:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    js_content = "window.GhostwebRouteManifest = " + json.dumps(manifest, indent=2, ensure_ascii=False) + ";\n"
+    js_content = "window.SimRouteManifest = " + json.dumps(manifest, indent=2, ensure_ascii=False) + ";\n"
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(js_content)
 

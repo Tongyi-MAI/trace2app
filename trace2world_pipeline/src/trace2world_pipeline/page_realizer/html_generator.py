@@ -3849,7 +3849,7 @@ Return one complete HTML document only.
     _JS_UNESCAPED_ATTR_RE = re.compile(
         r"""(?P<open>["'])"""
         r"""[^"']*"""
-        r"""data-ghostweb-click-contract-kind="""
+        r"""data-sim-click-contract-kind="""
         r"""(?P=open)"""
         r"""noninteractive"""
         r"""(?P=open)""",
@@ -3873,12 +3873,12 @@ Return one complete HTML document only.
                     "severity": "critical",
                     "message": (
                         "JS string contains unescaped HTML attribute quotes "
-                        "(data-ghostweb-click-contract-kind=\"noninteractive\" "
+                        "(data-sim-click-contract-kind=\"noninteractive\" "
                         "inside a JS string). Escape the inner quotes with "
                         "backslash or switch to single-quoted JS strings."
                     ),
                     "selector_hint": "<script>",
-                    "evidence": "data-ghostweb-click-contract-kind=\"noninteractive\" inside JS string literal",
+                    "evidence": "data-sim-click-contract-kind=\"noninteractive\" inside JS string literal",
                 })
         return issues
 
@@ -4450,10 +4450,10 @@ Return one complete HTML document only.
         root = contract.get("root_attribute")
         if isinstance(root, dict) and root.get("name") and root.get("value"):
             required.append((str(root["name"]), str(root["value"]), "page hydration root"))
-        scalar_attribute = str(contract.get("scalar_attribute") or "data-ghostweb-field")
-        collection_attribute = str(contract.get("collection_attribute") or "data-ghostweb-collection")
+        scalar_attribute = str(contract.get("scalar_attribute") or "data-sim-field")
+        collection_attribute = str(contract.get("collection_attribute") or "data-sim-collection")
         template_attribute = str(
-            contract.get("collection_template_attribute") or "data-ghostweb-collection-template"
+            contract.get("collection_template_attribute") or "data-sim-collection-template"
         )
         for binding in contract.get("field_bindings") or []:
             if not isinstance(binding, dict) or not str(binding.get("path") or "").strip():
@@ -4513,7 +4513,7 @@ Return one complete HTML document only.
                 continue
             template_body = template_match.group("body")
             item_attribute = str(
-                contract.get("collection_item_attribute") or "data-ghostweb-item-field"
+                contract.get("collection_item_attribute") or "data-sim-item-field"
             )
             duplicate_binding = False
             for opening_tag in re.findall(r"<[^!/][^>]*>", template_body):
@@ -4642,11 +4642,11 @@ Return one complete HTML document only.
                 re.IGNORECASE | re.DOTALL,
             ),
             re.compile(
-                r"<(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>[^>]*\bdata-ghostweb-target\s*=\s*['\"](?P<target>[^'\"]+?\.html(?:[?#][^'\"]*)?)['\"][^>]*)>(?P<label>.*?)</(?P=tag)>",
+                r"<(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>[^>]*\bdata-sim-target\s*=\s*['\"](?P<target>[^'\"]+?\.html(?:[?#][^'\"]*)?)['\"][^>]*)>(?P<label>.*?)</(?P=tag)>",
                 re.IGNORECASE | re.DOTALL,
             ),
             re.compile(
-                r"GhostwebRouteExecution\.navigate\(\s*['\"](?P<target>[^'\"]+?\.html(?:[?#][^'\"]*)?)['\"]\s*\)",
+                r"SimRouteExecution\.navigate\(\s*['\"](?P<target>[^'\"]+?\.html(?:[?#][^'\"]*)?)['\"]\s*\)",
                 re.IGNORECASE,
             ),
             re.compile(
@@ -4871,7 +4871,7 @@ Return one complete HTML document only.
                         "message": (
                             "Render the visible action slot route host with the exact "
                             "component_id as data-element-id or data-element-aliases, "
-                            "then bind it through GhostwebRouteExecution.navigate(target_filename)."
+                            "then bind it through SimRouteExecution.navigate(target_filename)."
                         ),
                         "selector_hint": f'[data-element-id="{component_id}"]',
                         "evidence": json.dumps(
@@ -4890,7 +4890,7 @@ Return one complete HTML document only.
                                 "component_id": component_id,
                                 "target_filename": target_filename,
                                 "control_label": slot.get("control_label") or slot.get("label"),
-                                "executor": "GhostwebRouteExecution.navigate",
+                                "executor": "SimRouteExecution.navigate",
                                 "sdk_side_effect": "WebsiteSDK.navigateRoute",
                             },
                             ensure_ascii=False,
@@ -4912,15 +4912,15 @@ Return one complete HTML document only.
         for pattern, label in patterns:
             if re.search(pattern, html_content or ""):
                 wrapped = re.search(
-                    r"GhostwebRouteExecution\.returnBack",
+                    r"SimRouteExecution\.returnBack",
                     html_content or "",
                 )
                 if not wrapped:
                     issues.append({
                         "code": "pagegen_raw_back_runtime_bypass",
                         "message": (
-                            f"Raw {label} detected without GhostwebRouteExecution.returnBack() wrapper. "
-                            "Back navigation must use GhostwebRouteExecution.returnBack(action_id)."
+                            f"Raw {label} detected without SimRouteExecution.returnBack() wrapper. "
+                            "Back navigation must use SimRouteExecution.returnBack(action_id)."
                         ),
                         "selector_hint": "script",
                         "evidence": label,
@@ -5978,7 +5978,7 @@ Design spec: {json.dumps(page_design_dict, ensure_ascii=False)}""")
                 "Use trace_hit_points in dom_obligations as approximate screenshot tap-point hints for disambiguation only; never render coordinate values.",
                 "Use pagegen_render_view.asset_slots only for screenshot-backed visual media. Render generic controls, badges, prices, ratings, status markers, and text-only labels with HTML/CSS/Lucide.",
                 "Only initial_layout_screenshots define initial visible DOM. State/runtime/source-host screenshots define hidden or runtime-active state and JS transitions only.",
-                "When pagegen_render_view.hydration_dom_contract has field_bindings, put its exact root attribute on the single owning page shell. Every field_bindings row is mandatory even when its sample value is null or visually secondary: for every scalar, rich_text, or boolean_state row, put data-ghostweb-field with the exact unrenamed path on the visible value host. For every collection row, put data-ghostweb-collection with the exact path on the visible list container and include one real HTML <template> element whose data-ghostweb-collection-template value is that same exact path, not a div or custom component name; inside that template, include a visible repeated-item host with data-ghostweb-item-field for every exact item_fields entry. Before returning HTML, enumerate the contract rows and verify each exact attribute and required template tag exists. Runtime hydration replaces the children of scalar, rich_text, boolean_state, and repeated-item value hosts: those binding hosts must therefore be leaf hosts relative to every other formal binding. Never put data-ghostweb-field on a data-ghostweb-collection host or on an ancestor of another data-ghostweb-field, data-ghostweb-collection, data-ghostweb-item-field, data-action-id, or search binding. A repeated-row action wrapper may contain child data-ghostweb-item-field value hosts, but the wrapper itself must not carry data-ghostweb-item-field. Do not add data-ghostweb-collection attributes for decorative/static lists that are absent from the hydration contract, and do not replace required bindings with static sample-only text.",
+                "When pagegen_render_view.hydration_dom_contract has field_bindings, put its exact root attribute on the single owning page shell. Every field_bindings row is mandatory even when its sample value is null or visually secondary: for every scalar, rich_text, or boolean_state row, put data-sim-field with the exact unrenamed path on the visible value host. For every collection row, put data-sim-collection with the exact path on the visible list container and include one real HTML <template> element whose data-sim-collection-template value is that same exact path, not a div or custom component name; inside that template, include a visible repeated-item host with data-sim-item-field for every exact item_fields entry. Before returning HTML, enumerate the contract rows and verify each exact attribute and required template tag exists. Runtime hydration replaces the children of scalar, rich_text, boolean_state, and repeated-item value hosts: those binding hosts must therefore be leaf hosts relative to every other formal binding. Never put data-sim-field on a data-sim-collection host or on an ancestor of another data-sim-field, data-sim-collection, data-sim-item-field, data-action-id, or search binding. A repeated-row action wrapper may contain child data-sim-item-field value hosts, but the wrapper itself must not carry data-sim-item-field. Do not add data-sim-collection attributes for decorative/static lists that are absent from the hydration contract, and do not replace required bindings with static sample-only text.",
                 "If hydration_dom_contract.retry_required_exact_attributes is present, every listed name=value pair is a machine-reported failure from the prior provider attempt and must be corrected in the returned complete HTML. Re-emit every field_bindings row as an exact attribute checklist, including rows that passed previously; fixing one missing binding must never remove or rename another required binding. If no existing visible value host fits, add a visible metadata/stat row for the required value rather than omitting it. Do not omit a binding merely because another nearby element displays a related value.",
                 "When pagegen_render_view.search_dom_contract.required is true, the single visible search combobox inside the admitted search overlay must carry the exact input_attribute name=value and data-action-id=query_action_host_authority_id, and the same overlay must contain exactly one visible-capable results container carrying the exact results_attribute name=value immediately below the input. Keep that container empty initially; the shared SDK materializes Data Lake-backed result rows and binds the declared result action host. Do not add a page-local search dataset, query handler, result ranking, or independent search-results route.",
                 "Every operation whose action_host.visible_affordance_required is true must have a visible interactive host carrying its exact action_host_authority_id as data-action-id, except hosts explicitly materialized by the shared runtime. A close action host must also have a stable accessible name such as aria-label and a non-zero clickable box; an icon alone is insufficient.",
@@ -6035,7 +6035,7 @@ Design spec: {json.dumps(page_design_dict, ensure_ascii=False)}""")
             )
             if _has_wheel_picker:
                 pagegen_environment_input["pagegen_contract"]["rules"].append(
-                    "For render_projection overlay_contract.template_id=wheel_time_picker or wheel_picker, PageGen owns the visible layout, color, style, column count/grouping, and copy of the overlay. Render the screenshot-faithful host, but keep the generic runtime contract: the root has data-ghostweb-template set to the overlay_contract.template_id and data-ghostweb-wheel-trigger; the root must be an app-shell-scoped absolute overlay, not nested as normal content inside a scrollable main/list; the visible opener either uses that trigger id or data-ghostweb-opens-template matching the template id / data-wheel-open; each visible wheel column host has data-wheel-column-host set to the matching overlay_contract.columns[].id, role=\"spinbutton\", and tabindex=\"0\"; use hour for an hour/immediate-departure time column even if the visible label says time/出发时间. data-wheel-track must be attached to the visible movable list itself, not to an empty placeholder; each visible option inside that track has data-wheel-option, data-wheel-column, data-wheel-index, and data-wheel-value. Generic wheel_picker columns such as year/month must preserve the declared column ids and must not be rewritten as date/hour/minute. Prefer screenshot-faithful visible option labels and active defaults; the injected runtime can preserve those defaults and augment missing overlay_contract values for later interaction. If the visual design uses a separate centered selected-value display outside data-wheel-track, mark it data-wheel-selected-display=\"<column_id>\" so the runtime can keep it synchronized. Close controls use data-wheel-close; confirm controls use data-wheel-confirm. Do not write page-local wheel-picker JavaScript; the injected runtime supplies the wheel drag, wheel, keyboard, state commit, and navigation mechanism. CRITICAL alignment rule: every wheel column must have exactly 2 empty spacer divs (data-wheel-option with empty data-wheel-value) BEFORE the initially-selected option and at least 2 option divs AFTER it, so that all columns' selected items align on the same row and sit inside the centered highlight bar. Without these spacers the selected row drifts out of the highlight band and columns appear misaligned."
+                    "For render_projection overlay_contract.template_id=wheel_time_picker or wheel_picker, PageGen owns the visible layout, color, style, column count/grouping, and copy of the overlay. Render the screenshot-faithful host, but keep the generic runtime contract: the root has data-sim-template set to the overlay_contract.template_id and data-sim-wheel-trigger; the root must be an app-shell-scoped absolute overlay, not nested as normal content inside a scrollable main/list; the visible opener either uses that trigger id or data-sim-opens-template matching the template id / data-wheel-open; each visible wheel column host has data-wheel-column-host set to the matching overlay_contract.columns[].id, role=\"spinbutton\", and tabindex=\"0\"; use hour for an hour/immediate-departure time column even if the visible label says time/出发时间. data-wheel-track must be attached to the visible movable list itself, not to an empty placeholder; each visible option inside that track has data-wheel-option, data-wheel-column, data-wheel-index, and data-wheel-value. Generic wheel_picker columns such as year/month must preserve the declared column ids and must not be rewritten as date/hour/minute. Prefer screenshot-faithful visible option labels and active defaults; the injected runtime can preserve those defaults and augment missing overlay_contract values for later interaction. If the visual design uses a separate centered selected-value display outside data-wheel-track, mark it data-wheel-selected-display=\"<column_id>\" so the runtime can keep it synchronized. Close controls use data-wheel-close; confirm controls use data-wheel-confirm. Do not write page-local wheel-picker JavaScript; the injected runtime supplies the wheel drag, wheel, keyboard, state commit, and navigation mechanism. CRITICAL alignment rule: every wheel column must have exactly 2 empty spacer divs (data-wheel-option with empty data-wheel-value) BEFORE the initially-selected option and at least 2 option divs AFTER it, so that all columns' selected items align on the same row and sit inside the centered highlight bar. Without these spacers the selected row drifts out of the highlight band and columns appear misaligned."
                 )
             pagegen_environment_input = self._strip_empty_recursive(pagegen_environment_input)
             from trace2world_pipeline.page_realizer.pagegen_prompt_boundary import validate_pagegen_prompt_boundary
@@ -6166,7 +6166,7 @@ Design spec: {json.dumps(page_design_dict, ensure_ascii=False)}""")
                 "For tap/click obligations with `gesture.type == \"tap\"`, the visible actionable element for the intent MUST cover `gesture.hit_point` in that viewport, so the reference tap lands on the actual button/card/input rather than a surrounding inert container. "
                 "If the semantic component is visually present but offset, adjust the real layout or tappable box to include that point; do not solve it with an invisible overlay. "
                 "Hard obligation targets override the default passive/static visual-only policy: the relevant visible component must be actionable. "
-                "For navigation obligations, use `GhostwebRouteExecution.navigate(expected_filename)` or the provided route execution runtime instead of raw `history.back()` or uncontracted `window.location.href`. "
+                "For navigation obligations, use `SimRouteExecution.navigate(expected_filename)` or the provided route execution runtime instead of raw `history.back()` or uncontracted `window.location.href`. "
                 "For same-page tap obligations where `expected_filename` equals the current filename, the hit surface may focus/toggle/open inline UI but must not navigate away. "
                 "For scroll obligations, preserve a real scrollable region and do not block pointer/wheel/touch events with overlays. "
                 "The `command` field is validation evidence from the reference viewport, not visible UI text.\n"
@@ -6244,7 +6244,7 @@ Design spec: {json.dumps(page_design_dict, ensure_ascii=False)}""")
                 "`reachable_materialized_page` obligations are intentionally omitted from this compact prompt contract. "
                 "Do not synthesize 'more entry', sibling-page, or route-index components for sibling Materialized Pages. "
                 "Only wire navigation when a visible control/item already exists in the selected screenshots or explicit page actions. "
-                "Route navigation is provided by shared runtime files. Include `<script src=\"../../phase_sdk_generation/runtime/route_manifest.js\"></script>` and `<script src=\"../../phase_sdk_generation/runtime/route_runtime.js\"></script>` before </body>. Do NOT write inline GhostwebRouteExecution implementation code — the shared runtime provides navigate(), goBack(), openOverlay(), closeOverlay(). Back controls must call `GhostwebRouteExecution.goBack()` or use `data-ghostweb-route-action=\"default_back\"`; ordinary page navigation calls `GhostwebRouteExecution.navigate(target_filename)`. For overlays/modals, use `data-ghostweb-overlay=\"overlay_id\"` on the overlay container and trigger open via `GhostwebRouteExecution.openOverlay('overlay_id')`, close via `GhostwebRouteExecution.closeOverlay()`. The runtime syncs overlay visibility from URL hash automatically. "
+                "Route navigation is provided by shared runtime files. Include `<script src=\"../../phase_sdk_generation/runtime/route_manifest.js\"></script>` and `<script src=\"../../phase_sdk_generation/runtime/route_runtime.js\"></script>` before </body>. Do NOT write inline SimRouteExecution implementation code — the shared runtime provides navigate(), goBack(), openOverlay(), closeOverlay(). Back controls must call `SimRouteExecution.goBack()` or use `data-sim-route-action=\"default_back\"`; ordinary page navigation calls `SimRouteExecution.navigate(target_filename)`. For overlays/modals, use `data-sim-overlay=\"overlay_id\"` on the overlay container and trigger open via `SimRouteExecution.openOverlay('overlay_id')`, close via `SimRouteExecution.closeOverlay()`. The runtime syncs overlay visibility from URL hash automatically. "
                 "If `query_state_contract` is present, search inputs must hydrate from URL query aliases such as `q`/`query`, display the matching query's suggestions or related items while the query is active, and submit to the matching query-specific target instead of a generic search page. "
                 "If `query_state_contract.hydration.render_preview_panel` is false, do not render an extra preview/suggestion panel outside the observed page layout; use only the visible result/list surfaces required by screenshots, content, or L0 obligations. "
                 "If `draft_state_contract` is present instead of `query_state_contract`, this is a compose/draft/form page, not a search page. Do not hydrate from URL query aliases; do not render search suggestion panels; do not treat the text input as a search query. Use the `draft_ref` to manage draft state through WebsiteSDK, and navigate to `submit_targets[].target_filename` on submit/next-step. "
@@ -6460,20 +6460,20 @@ This contract is authoritative for runtime state:
 - WebsiteSDK call signatures are positional. Use the exact parameter order from SDK Interfaces; do not pass `{...}` as a single object unless that exact method declares one object parameter.
 - Navigation: relative .html paths with query params (detail.html?id=123)
 {parameter_fallback_rule}
-- Back/close/up-level controls MUST use `GhostwebRouteExecution.returnBack(action_id)` where action_id is the return_operation action_id from the navigation contract. If a return_operation is declared in page_environment_spec or route_action_slots for this back surface, bind the visible host with `data-ghostweb-action="returnBack"` and `data-ghostweb-action-id="<return_action_id>"`. Do NOT use raw `history.back()`, ad-hoc `goBack()` target guessing, or page-local `window.location.href` fallback for back/close controls. The runtime stack owner (GhostwebRouteExecution) resolves the correct target.
-- If no return_operation contract exists for a back surface, use `GhostwebRouteExecution.returnBack('fallback_back')` which triggers cold-start fallback resolution.
+- Back/close/up-level controls MUST use `SimRouteExecution.returnBack(action_id)` where action_id is the return_operation action_id from the navigation contract. If a return_operation is declared in page_environment_spec or route_action_slots for this back surface, bind the visible host with `data-sim-action="returnBack"` and `data-sim-action-id="<return_action_id>"`. Do NOT use raw `history.back()`, ad-hoc `goBack()` target guessing, or page-local `window.location.href` fallback for back/close controls. The runtime stack owner (SimRouteExecution) resolves the correct target.
+- If no return_operation contract exists for a back surface, use `SimRouteExecution.returnBack('fallback_back')` which triggers cold-start fallback resolution.
 - Explicit forward navigation targets from task continuations, site navigation targets, or named route actions still beat return operations when the action is not a generic back/close action.
 - Loop event binding: store item id in data attribute, read via event.currentTarget.dataset.id
 - VALID filenames: {', '.join(sorted(valid_fns))}
 - href to unlisted filename = BUG. Use javascript:void(0) if no valid target
 - Only create navigation handlers for controls present in route_action_slots, action_slot_route_contract, route_affordances_final, explicit Navigation Out, task continuations with page_navigation, or page_environment_spec route/transitions authority.
-- A visible nav/control without a route contract must remain visual-only, current-page inactive, and passive/static. Do not emit `data-ghostweb-click-contract-kind="noninteractive"` from PageGen; runtime actionability infers unsupported visual affordances by reverse selection.
+- A visible nav/control without a route contract must remain visual-only, current-page inactive, and passive/static. Do not emit `data-sim-click-contract-kind="noninteractive"` from PageGen; runtime actionability infers unsupported visual affordances by reverse selection.
 - Never infer a target by matching visible label text to a filename, page title, or site_pages entry.
 - If global_navigation is empty, do not synthesize fallback global navigation from visible footer/header labels.
 - Preserve visible persistent footer/header nav from screenshots as layout, but wire only destinations with explicit route authority.
 - Only elements explicitly listed as navigable may navigate. Do NOT infer navigation from generic page descriptions, repeated content cards, notification entries, or visually clickable chrome.
 - A single rendered component instance/card/media region must have at most one primary navigation target. If multiple route actions mention similar text but different target filenames, do not stack invisible absolute anchors or split one image/card into multiple hidden hotspots. Use separate visible controls only when the screenshots show distinct visible controls; otherwise choose the single matching action and keep the other target unrendered.
-- Components/texts listed as non-navigable in Interaction Policy MUST remain static or inline-only. Do not add hrefs, click handlers, or `data-ghostweb-click-contract-kind="noninteractive"` markers. Runtime actionability tells the agent that unsupported visual affordances are not interactive by reverse selection.
+- Components/texts listed as non-navigable in Interaction Policy MUST remain static or inline-only. Do not add hrefs, click handlers, or `data-sim-click-contract-kind="noninteractive"` markers. Runtime actionability tells the agent that unsupported visual affordances are not interactive by reverse selection.
 - Runtime/post-commit task values must not be baked into initial DOM labels, fallback arrays, or data-element-id strings. For mutable collection rows, bind generic row actions to the row id from WebsiteSDK data; use the record's current display value only as visible row content.
 - Cart/product quantity values from add/remove/update transitions are post-click projections. Initial product rows must not show quantity badges, decrement controls, or nonzero cart counts unless `page_environment_spec.initial_state` explicitly declares them.
 - Detail pages must hydrate visible fields from the selected WebsiteSDK record (support both flat records and wrapper shapes such as record/item/<entity>). If the record is missing, use the explicit contract fallback or blank UI text; never choose another SDK record or hardcode a task-created/post-commit record as the default detail content.
@@ -6496,14 +6496,14 @@ This contract is authoritative for runtime state:
 
 ## Inline JavaScript Rules (STRICT)
 Inline JS is RESTRICTED to these categories ONLY:
-1. **Event wiring**: addEventListener / onclick that call WebsiteSDK.method(), GhostwebRouteExecution.navigate(), or GhostwebRouteExecution.returnBack()
-2. **Navigation**: GhostwebRouteExecution.navigate(target_filename) for forward navigation, GhostwebRouteExecution.returnBack(action_id) for back/close/up-level, URL parameter reading
+1. **Event wiring**: addEventListener / onclick that call WebsiteSDK.method(), SimRouteExecution.navigate(), or SimRouteExecution.returnBack()
+2. **Navigation**: SimRouteExecution.navigate(target_filename) for forward navigation, SimRouteExecution.returnBack(action_id) for back/close/up-level, URL parameter reading
 3. **UI state toggle**: classList.toggle/add/remove, show/hide elements, tab switching
 4. **State hydration for interaction contracts**: SDK getter calls needed to prefill fields or detail text only when `interaction_contract.hydration.required=true`
 
-FORBIDDEN inline — must use WebsiteSDK methods or GhostwebRouteExecution instead:
-- Raw `history.back()` — use GhostwebRouteExecution.returnBack() instead
-- Raw `window.location.href` for back/close navigation — use GhostwebRouteExecution.returnBack() instead
+FORBIDDEN inline — must use WebsiteSDK methods or SimRouteExecution instead:
+- Raw `history.back()` — use SimRouteExecution.returnBack() instead
+- Raw `window.location.href` for back/close navigation — use SimRouteExecution.returnBack() instead
 - Ad-hoc `goBack()` functions that guess back targets from filenames or breadcrumbs
 - Price calculation, total computation
 - Form validation, constraint checking

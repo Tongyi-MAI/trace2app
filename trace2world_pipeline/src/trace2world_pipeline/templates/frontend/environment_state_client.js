@@ -1,8 +1,8 @@
 "use strict";
 
 (function (root) {
-  var SESSION_SID_KEY = "ghostweb.state_kernel.sid";
-  var CLIENT_INSTANCE_KEY = "ghostweb.state_kernel.client_instance";
+  var SESSION_SID_KEY = "sim.state_kernel.sid";
+  var CLIENT_INSTANCE_KEY = "sim.state_kernel.client_instance";
 
   function createClientInstanceId() {
     try {
@@ -73,7 +73,7 @@
     try { root.sessionStorage.setItem(SESSION_SID_KEY, this.sid); } catch (_error) {}
     this.stateVersion = bootstrap.state_version;
     this.sequenceKey = [
-      "ghostweb.state_kernel.sequence",
+      "sim.state_kernel.sequence",
       this.sid,
       this.stateVersion.episode_epoch
     ].join(":");
@@ -104,7 +104,7 @@
     this.stateVersion = bootstrap.state_version;
     if (previousEpoch !== this.stateVersion.episode_epoch) {
       this.sequenceKey = [
-        "ghostweb.state_kernel.sequence",
+        "sim.state_kernel.sequence",
         this.sid,
         this.stateVersion.episode_epoch,
         this.clientInstanceId
@@ -174,7 +174,7 @@
     this.stateVersion = result.state_version;
     this.bootstrapState = result.state || {};
     this.sequenceKey = [
-      "ghostweb.state_kernel.sequence",
+      "sim.state_kernel.sequence",
       this.sid,
       this.stateVersion.episode_epoch,
       this.clientInstanceId
@@ -192,6 +192,6 @@
     );
   };
 
-  root.GhostwebEnvironmentStateClient = EnvironmentStateClient;
-  root.GhostwebEnvironmentState = root.GhostwebEnvironmentState || new EnvironmentStateClient();
+  root.SimEnvironmentStateClient = EnvironmentStateClient;
+  root.SimEnvironmentState = root.SimEnvironmentState || new EnvironmentStateClient();
 })(typeof window !== "undefined" ? window : globalThis);

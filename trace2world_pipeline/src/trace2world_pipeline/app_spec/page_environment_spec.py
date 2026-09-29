@@ -12763,7 +12763,7 @@ def _norm_artifact_text(value: Any) -> str:
 
 
 _QUERY_STATE_RUNTIME_SCRIPT_RE = re.compile(
-    r'<script\b(?=[^>]*\bdata-ghostweb-runtime=["\']query-state["\'])[^>]*>(?P<body>.*?)</script>',
+    r'<script\b(?=[^>]*\bdata-sim-runtime=["\']query-state["\'])[^>]*>(?P<body>.*?)</script>',
     re.IGNORECASE | re.DOTALL,
 )
 _QUERY_STATE_CONTRACT_RE = re.compile(r"\bconst\s+CONTRACT\s*=\s*(?P<payload>\{.*?\});\s*const\s+states\b", re.DOTALL)
@@ -12812,9 +12812,9 @@ def _visible_search_input_values(html_text: str) -> List[str]:
     return _dedupe(values, limit=16)
 
 
-def _html_without_ghostweb_runtime_scripts(html_text: str) -> str:
+def _html_without_sim_runtime_scripts(html_text: str) -> str:
     return re.sub(
-        r'<script\b(?=[^>]*\bdata-ghostweb-runtime=["\'][^"\']+["\'])[^>]*>.*?</script>',
+        r'<script\b(?=[^>]*\bdata-sim-runtime=["\'][^"\']+["\'])[^>]*>.*?</script>',
         "",
         str(html_text or ""),
         flags=re.IGNORECASE | re.DOTALL,
@@ -13303,7 +13303,7 @@ def _stateful_collection_replacement_contexts(html_text: str, page_env: Dict[str
     collection_tokens = _page_environment_preserve_collection_tokens(page_env)
     if not collection_tokens:
         return contexts
-    text = _html_without_ghostweb_runtime_scripts(html_text)
+    text = _html_without_sim_runtime_scripts(html_text)
     pattern = re.compile(
         r"\.(?:innerHTML|textContent)\s*=\s*['\"]\s*['\"]|\.replaceChildren\s*\(",
         re.IGNORECASE,

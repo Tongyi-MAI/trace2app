@@ -194,9 +194,9 @@ def run_contract_instrumentation(
         )
     evaluators = compile_evaluators(tasks, matrix, terminal_verified) if generate_evaluators else None
     environment_state_binding = None
-    if isinstance(evaluator_state_view, dict) and evaluator_state_view.get("format") == "ghostweb_evaluator_state_view":
+    if isinstance(evaluator_state_view, dict) and evaluator_state_view.get("format") == "sim_evaluator_state_view":
         environment_state_binding = {
-            "format": "ghostweb_environment_state_evaluator_binding",
+            "format": "sim_environment_state_evaluator_binding",
             "schema_revision": 1,
             "state_source": "finalized_environment_state_snapshot",
             "evaluation_handle_fields": ["sid", "episode_epoch", "revision", "snapshot_id", "state_hash"],
@@ -366,7 +366,7 @@ def build_semantic_checkpoint_plan_stub(
             },
         })
     return {
-        "format": "ghostweb_semantic_checkpoint_plan",
+        "format": "sim_semantic_checkpoint_plan",
         "schema_revision": 1,
         "source": "contract_instrumentation.semantic_planner_boundary",
         "planner_mode": "llm_disabled_stub" if not enabled else "llm_requested_stub",
@@ -872,7 +872,7 @@ def _semantic_checkpoint_plan_from_draft(
         })
 
     return {
-        "format": "ghostweb_semantic_checkpoint_plan",
+        "format": "sim_semantic_checkpoint_plan",
         "schema_revision": 1,
         "source": "contract_instrumentation.semantic_planner_draft_ingestion",
         "planner_mode": "llm_draft_artifact",
@@ -960,7 +960,7 @@ def load_terminal_policy_candidates_from_rewritten_root(terminal_contract_root: 
         )
 
     return {
-        "format": "ghostweb_terminal_policy_candidates",
+        "format": "sim_terminal_policy_candidates",
         "schema_revision": 1,
         "source": "rewritten_trace_terminal_contract",
         "real_preprocess_rerun": True,
@@ -1084,7 +1084,7 @@ def verify_terminal_policies(
             verified_row["reference_oracle_admission_refresh"] = refresh
         verified[task_id] = verified_row
     return {
-        "format": "ghostweb_terminal_policy_verified",
+        "format": "sim_terminal_policy_verified",
         "schema_revision": 1,
         "source": "terminal_policy_verifier.contract_instrumentation",
         "trace_policies": verified,
@@ -1306,7 +1306,7 @@ def compile_checkpoint_matrix(
         trace_reports[task_id] = report
 
     matrix = {
-        "format": "ghostweb_checkpoint_matrix",
+        "format": "sim_checkpoint_matrix",
         "schema_revision": 1,
         "source": "contract_instrumentation.checkpoint_matrix_compiler",
         "stable_key": "trace_id|checkpoint_id|checkpoint_kind|expected_state_id",
@@ -1322,7 +1322,7 @@ def compile_checkpoint_matrix(
         },
     }
     report = {
-        "format": "ghostweb_checkpoint_matrix_validation_report",
+        "format": "sim_checkpoint_matrix_validation_report",
         "schema_revision": 1,
         "source": "contract_instrumentation.checkpoint_matrix_compiler",
         "trace_count": len(tasks),
@@ -1380,7 +1380,7 @@ def compile_checkpoint_matrix_from_bundle(
         }
 
     matrix = {
-        "format": "ghostweb_checkpoint_matrix",
+        "format": "sim_checkpoint_matrix",
         "schema_revision": 2,
         "source": "instrumentation_contract_bundle.materialized_checkpoint_matrix",
         "authority_bundle_ref": "phase_page_environment/semantic_api/09_instrumentation_contract_bundle/instrumentation_contract_bundle.json",
@@ -1400,7 +1400,7 @@ def compile_checkpoint_matrix_from_bundle(
         },
     }
     report = {
-        "format": "ghostweb_checkpoint_matrix_validation_report",
+        "format": "sim_checkpoint_matrix_validation_report",
         "schema_revision": 2,
         "source": "instrumentation_contract_bundle.materialized_checkpoint_matrix",
         "authority_bundle_ref": matrix["authority_bundle_ref"],
@@ -1657,7 +1657,7 @@ def _bundle_event(cp: dict[str, Any]) -> str:
     assertions = cp.get("runtime_event_assertions") or []
     if assertions and isinstance(assertions[0], dict) and assertions[0].get("event"):
         return str(assertions[0]["event"])
-    return f"ghostweb:checkpoint:{cp.get('checkpoint_id', '')}"
+    return f"sim:checkpoint:{cp.get('checkpoint_id', '')}"
 
 
 def _payload_fields_from_bundle_assertions(
@@ -1750,7 +1750,7 @@ def compile_runtime_state_schema(matrix: dict[str, Any]) -> dict[str, Any]:
         })
 
     schema = {
-        "format": "ghostweb_runtime_state_schema",
+        "format": "sim_runtime_state_schema",
         "schema_revision": 1,
         "source": "contract_instrumentation.runtime_state_schema_compiler",
         "checkpoint_matrix_ref": "phase_post_processing/instrumentation/checkpoint_matrix.json",
@@ -2005,7 +2005,7 @@ def compile_runtime_event_bindings(matrix: dict[str, Any], runtime_manifest: dic
             "checkpoint_kind": row["checkpoint_kind"],
             "supervision": row["supervision"],
             "source_steps": list(row.get("source_steps") or []),
-            "event": row.get("event", f"ghostweb:checkpoint:{row['checkpoint_id']}"),
+            "event": row.get("event", f"sim:checkpoint:{row['checkpoint_id']}"),
             "source_action_ids": action_ids,
             "action_aliases": action_aliases,
             "payload_fields": row.get("payload_fields") or _default_payload_fields(row),
@@ -2036,7 +2036,7 @@ def compile_runtime_event_bindings(matrix: dict[str, Any], runtime_manifest: dic
             "binding_status": "static_contract_bound",
         })
     return {
-        "format": "ghostweb_runtime_event_bindings",
+        "format": "sim_runtime_event_bindings",
         "schema_revision": 1,
         "source": "contract_instrumentation.runtime_event_binding",
         "runtime_bridge_status": _runtime_bridge_status(runtime_manifest),
@@ -2183,7 +2183,7 @@ def compile_evaluators(tasks: list[dict[str, Any]], matrix: dict[str, Any], term
             "negative_conditions": _negative_conditions(rows, policy),
         })
     return {
-        "format": "ghostweb_contract_evaluators",
+        "format": "sim_contract_evaluators",
         "schema_revision": 1,
         "source": "contract_instrumentation.checkpoint_evaluator",
         "evaluator_count": len(evaluators),
@@ -2235,7 +2235,7 @@ def compile_test_logic(matrix: dict[str, Any], terminal_verified: dict[str, Any]
             "runtime_bridge_status": matrix.get("runtime_bridge_status", "unknown"),
         }
     return {
-        "format": "ghostweb_instrumentation_test_logic",
+        "format": "sim_instrumentation_test_logic",
         "schema_revision": 1,
         "source": "contract_instrumentation.test_logic_generator",
         "trace_flows": flows,
@@ -2257,7 +2257,7 @@ def build_source_env_provenance(output_dir: Path, source_env_dir: Path) -> dict[
             "mtime": datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat(),
         })
     return {
-        "format": "ghostweb_instrumentation_source_env_provenance",
+        "format": "sim_instrumentation_source_env_provenance",
         "schema_revision": 1,
         "source_env_dir": str(source_env_dir),
         "output_dir": str(output_dir),
@@ -2272,7 +2272,7 @@ def build_instrumented_business_logic(output_dir: Path, bindings: dict[str, Any]
     original = (output_dir / "phase_sdk_generation/runtime/business_logic.js").read_text()
     contract_json = json.dumps(
         {
-            "format": "ghostweb_static_instrumentation_contract",
+            "format": "sim_static_instrumentation_contract",
             "runtime_bridge_status": matrix.get("runtime_bridge_status"),
             "binding_count": bindings["summary"]["binding_count"],
             "checkpoint_count": matrix["summary"]["checkpoint_count"],
@@ -2283,10 +2283,10 @@ def build_instrumented_business_logic(output_dir: Path, bindings: dict[str, Any]
     return (
         original
         + "\n\n"
-        + "/* Ghostweb static checkpoint contract generated by contract_instrumentation. */\n"
+        + "/* Static checkpoint contract generated by contract_instrumentation. */\n"
         + "(function(){\n"
         + "  var root = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : {});\n"
-        + f"  root.GhostwebStaticInstrumentationContract = {contract_json};\n"
+        + f"  root.SimStaticInstrumentationContract = {contract_json};\n"
         + "})();\n"
     )
 
@@ -2426,7 +2426,7 @@ def _compile_from_semantic_obligations(
                 "source_action_ids": [f"{task_id}:step{s}" for s in source_steps],
                 "write_read_closed": bool(state_refs),
             },
-            "event": f"ghostweb:checkpoint:{checkpoint_id}",
+            "event": f"sim:checkpoint:{checkpoint_id}",
             "payload_fields": payload_fields,
             "reward_weight": 0.3 if supervision == "outcome" else 0.1,
             "blocking": bool(sto.get("blocking", True)),
@@ -2841,7 +2841,7 @@ def _compile_generic_trace_matrix(
                 "source_action_ids": [rstep.get("action_id", "")],
                 "write_read_closed": True,
             },
-            "event": f"ghostweb:checkpoint:{cp_id}",
+            "event": f"sim:checkpoint:{cp_id}",
             "payload_fields": ["trace_id", "checkpoint_id", "page", "source_steps"],
             "reward_weight": 0.05,
             "blocking": False,
@@ -2879,7 +2879,7 @@ def _compile_generic_trace_matrix(
                 "source_action_ids": [step["action_id"] for step in group_steps],
                 "write_read_closed": bool(state_refs),
             },
-            "event": f"ghostweb:checkpoint:{checkpoint_id}",
+            "event": f"sim:checkpoint:{checkpoint_id}",
             "payload_fields": ["trace_id", "checkpoint_id", "operation_intent", "source_steps"],
             "reward_weight": 0.1,
             "blocking": True,
@@ -2943,7 +2943,7 @@ def _compile_generic_trace_matrix(
         },
         "forbidden_events": policy.get("forbidden_terminal_events", []),
         "required_mock_state": policy.get("required_mock_state", []),
-        "event": f"ghostweb:checkpoint:{outcome_id}",
+        "event": f"sim:checkpoint:{outcome_id}",
         "payload_fields": ["trace_id", "checkpoint_id", "terminal_policy", "source_steps"],
         "reward_weight": 0.3,
         "blocking": True,
@@ -3010,7 +3010,7 @@ def _route_checkpoint(task_id: str, step: dict[str, Any]) -> dict[str, Any]:
             "source_action_ids": [step.get("action_id", "")],
             "write_read_closed": True,
         },
-        "event": "ghostweb:checkpoint:cp_route_ready",
+        "event": "sim:checkpoint:cp_route_ready",
         "payload_fields": ["trace_id", "checkpoint_id", "page", "source_steps"],
         "reward_weight": 0.1,
         "blocking": True,
@@ -3794,8 +3794,8 @@ def _compile_test_flows_js(test_logic: dict[str, Any]) -> str:
     return (
         '"use strict";\n'
         "// Generated static test-flow contract. Playwright runner consumes the JSON artifact.\n"
-        f"window.GhostwebGeneratedTestFlows = {payload};\n"
-        "if (typeof module !== 'undefined' && module.exports) module.exports = window.GhostwebGeneratedTestFlows;\n"
+        f"window.SimGeneratedTestFlows = {payload};\n"
+        "if (typeof module !== 'undefined' && module.exports) module.exports = window.SimGeneratedTestFlows;\n"
     )
 
 

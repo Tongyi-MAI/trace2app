@@ -172,7 +172,7 @@ def materialize_sqlite_databases(
         conn.execute("INSERT INTO schema_migrations(version,migration_hash) VALUES (?,?)", (1, canonical_hash(STATE_SCHEMA)))
         conn.commit()
     return {
-        "format": "ghostweb_sqlite_materialization_report",
+        "format": "sim_sqlite_materialization_report",
         "schema_revision": 1,
         "world_db": str(world_path),
         "state_template": str(state_path),
