@@ -1,0 +1,560 @@
+{
+  "source_kind": "unmarked raw observations; context_raw retained for text-only steps",
+  "input_manifest_sha256": "725658ce36bd959756f8f50dec6bf154f25495b9400dd8e10e8ec6b5704ffa8b",
+  "apps": 20,
+  "rollouts": 100,
+  "observation_frames": 970,
+  "fps": 24,
+  "width": 1920,
+  "height": 1080,
+  "tiles": [
+    {
+      "app": "dewu",
+      "task": "aug_dewu_10",
+      "frames": 7
+    },
+    {
+      "app": "weibo",
+      "task": "task_20260114_095809_442310",
+      "frames": 11
+    },
+    {
+      "app": "didi",
+      "task": "task_20260112_174232_754678",
+      "frames": 18
+    },
+    {
+      "app": "58tc",
+      "task": "task_20260202_110744_614237",
+      "frames": 11
+    },
+    {
+      "app": "dewu",
+      "task": "task_20260120_142800_433798",
+      "frames": 7
+    },
+    {
+      "app": "railway12306",
+      "task": "task_20260112_095702_827083",
+      "frames": 13
+    },
+    {
+      "app": "damai",
+      "task": "task_20260113_154309_894712",
+      "frames": 5
+    },
+    {
+      "app": "autohome",
+      "task": "aug_task_autohome_20260812_v2_005",
+      "frames": 7
+    },
+    {
+      "app": "xianyu",
+      "task": "task_20260203_150212_020888",
+      "frames": 6
+    },
+    {
+      "app": "kfc",
+      "task": "kfc_aug_012_flash_sale_rank_safe_boundary",
+      "frames": 7
+    },
+    {
+      "app": "kugou",
+      "task": "task_20260206_112903_117022",
+      "frames": 10
+    },
+    {
+      "app": "dingtalk",
+      "task": "task_20260202_090747_559266",
+      "frames": 6
+    },
+    {
+      "app": "dongchedi",
+      "task": "task_20260121_172437_205186",
+      "frames": 6
+    },
+    {
+      "app": "netease_music",
+      "task": "task_20260120_142157_125021",
+      "frames": 5
+    },
+    {
+      "app": "bilibili",
+      "task": "task_20260114_161012_961760",
+      "frames": 11
+    },
+    {
+      "app": "dingdongmaicai",
+      "task": "task_20260204_102833_583115",
+      "frames": 8
+    },
+    {
+      "app": "ximalaya",
+      "task": "task_20260129_152656_813258",
+      "frames": 11
+    },
+    {
+      "app": "youdao_dictionary",
+      "task": "task_20260209_171335_149717",
+      "frames": 5
+    },
+    {
+      "app": "xiaohongshu",
+      "task": "task_20260116_134446_346602",
+      "frames": 7
+    },
+    {
+      "app": "toutiao",
+      "task": "task_20260202_093727_676574",
+      "frames": 11
+    },
+    {
+      "app": "ximalaya",
+      "task": "task_aug_ximalaya_018",
+      "frames": 11
+    },
+    {
+      "app": "dingtalk",
+      "task": "task_20260203_094002_164928",
+      "frames": 8
+    },
+    {
+      "app": "dewu",
+      "task": "task_20260120_110624_037101",
+      "frames": 10
+    },
+    {
+      "app": "xianyu",
+      "task": "task_20260203_170341_420729",
+      "frames": 9
+    },
+    {
+      "app": "bilibili",
+      "task": "task_20260115_153704_301824",
+      "frames": 10
+    },
+    {
+      "app": "xiaohongshu",
+      "task": "task_20260114_143047_610471",
+      "frames": 10
+    },
+    {
+      "app": "dingdongmaicai",
+      "task": "task_20260204_101102_882583",
+      "frames": 5
+    },
+    {
+      "app": "kugou",
+      "task": "task_20260205_162702_664111",
+      "frames": 6
+    },
+    {
+      "app": "kfc",
+      "task": "kfc_aug_006_nearby_store_dinein_draft",
+      "frames": 14
+    },
+    {
+      "app": "damai",
+      "task": "damai_aug_012",
+      "frames": 11
+    },
+    {
+      "app": "meituan",
+      "task": "deal_03",
+      "frames": 8
+    },
+    {
+      "app": "weibo",
+      "task": "weibo_aug_11",
+      "frames": 10
+    },
+    {
+      "app": "autohome",
+      "task": "task_20260206_160449_730749",
+      "frames": 16
+    },
+    {
+      "app": "dongchedi",
+      "task": "task_20260121_102653_137083",
+      "frames": 5
+    },
+    {
+      "app": "railway12306",
+      "task": "railway_aug_020",
+      "frames": 6
+    },
+    {
+      "app": "58tc",
+      "task": "task_20260203_142558_333536",
+      "frames": 10
+    },
+    {
+      "app": "didi",
+      "task": "didi_aug_019",
+      "frames": 7
+    },
+    {
+      "app": "toutiao",
+      "task": "task_20260202_093909_298137",
+      "frames": 5
+    },
+    {
+      "app": "netease_music",
+      "task": "task_20260120_145512_939291",
+      "frames": 8
+    },
+    {
+      "app": "youdao_dictionary",
+      "task": "task_20260209_173014_220221",
+      "frames": 10
+    },
+    {
+      "app": "youdao_dictionary",
+      "task": "task_20260209_155219_912059",
+      "frames": 9
+    },
+    {
+      "app": "damai",
+      "task": "damai_aug_006",
+      "frames": 5
+    },
+    {
+      "app": "meituan",
+      "task": "task_20260116_230731_855587",
+      "frames": 14
+    },
+    {
+      "app": "netease_music",
+      "task": "task_20260120_110231_021461",
+      "frames": 5
+    },
+    {
+      "app": "xiaohongshu",
+      "task": "task_20260114_141135_458599",
+      "frames": 6
+    },
+    {
+      "app": "bilibili",
+      "task": "bili_aug_018_duration_bucket_conditional_save",
+      "frames": 14
+    },
+    {
+      "app": "didi",
+      "task": "task_20260114_152956_237686",
+      "frames": 8
+    },
+    {
+      "app": "railway12306",
+      "task": "task_20260203_131541_077930",
+      "frames": 12
+    },
+    {
+      "app": "dongchedi",
+      "task": "task_20260121_105553_058090",
+      "frames": 9
+    },
+    {
+      "app": "dingdongmaicai",
+      "task": "task_20260204_130349_297722",
+      "frames": 5
+    },
+    {
+      "app": "meituan",
+      "task": "show_02",
+      "frames": 20
+    },
+    {
+      "app": "toutiao",
+      "task": "aug_toutiao_019",
+      "frames": 13
+    },
+    {
+      "app": "ximalaya",
+      "task": "task_aug_ximalaya_010",
+      "frames": 11
+    },
+    {
+      "app": "autohome",
+      "task": "task_20260206_164033_774896",
+      "frames": 7
+    },
+    {
+      "app": "kugou",
+      "task": "aug_task_20260811_005",
+      "frames": 12
+    },
+    {
+      "app": "58tc",
+      "task": "task_20260204_142546_433652",
+      "frames": 8
+    },
+    {
+      "app": "weibo",
+      "task": "task_20260115_155144_999191",
+      "frames": 5
+    },
+    {
+      "app": "kfc",
+      "task": "task_20260209_103850_421267",
+      "frames": 16
+    },
+    {
+      "app": "dingtalk",
+      "task": "task_20260203_141855_524707",
+      "frames": 10
+    },
+    {
+      "app": "xianyu",
+      "task": "task_20260203_111156_540129",
+      "frames": 10
+    },
+    {
+      "app": "ximalaya",
+      "task": "task_aug_ximalaya_015",
+      "frames": 12
+    },
+    {
+      "app": "xianyu",
+      "task": "task_20260203_154053_272351",
+      "frames": 5
+    },
+    {
+      "app": "meituan",
+      "task": "task_20260119_095023_168735",
+      "frames": 17
+    },
+    {
+      "app": "toutiao",
+      "task": "task_20260130_130328_220396",
+      "frames": 9
+    },
+    {
+      "app": "didi",
+      "task": "didi_aug_018",
+      "frames": 8
+    },
+    {
+      "app": "dingtalk",
+      "task": "task_20260202_102536_294691",
+      "frames": 9
+    },
+    {
+      "app": "kfc",
+      "task": "task_20260209_104920_241044",
+      "frames": 7
+    },
+    {
+      "app": "dongchedi",
+      "task": "task_20260119_164701_749422",
+      "frames": 10
+    },
+    {
+      "app": "weibo",
+      "task": "task_20260115_150651_925416",
+      "frames": 11
+    },
+    {
+      "app": "kugou",
+      "task": "task_20260205_110144_243430",
+      "frames": 5
+    },
+    {
+      "app": "youdao_dictionary",
+      "task": "task_20260209_112719_550481",
+      "frames": 13
+    },
+    {
+      "app": "autohome",
+      "task": "task_20260206_165443_192103",
+      "frames": 6
+    },
+    {
+      "app": "dingdongmaicai",
+      "task": "dd_aug_010",
+      "frames": 18
+    },
+    {
+      "app": "dewu",
+      "task": "task_20260119_144940_748034",
+      "frames": 7
+    },
+    {
+      "app": "railway12306",
+      "task": "railway_aug_018",
+      "frames": 6
+    },
+    {
+      "app": "xiaohongshu",
+      "task": "task_20260116_141630_449123",
+      "frames": 11
+    },
+    {
+      "app": "netease_music",
+      "task": "task_20260120_141018_154951",
+      "frames": 7
+    },
+    {
+      "app": "damai",
+      "task": "task_20260114_093928_616604",
+      "frames": 6
+    },
+    {
+      "app": "bilibili",
+      "task": "bili_aug_001_food_duration_collection",
+      "frames": 14
+    },
+    {
+      "app": "58tc",
+      "task": "task_20260203_140521_440535",
+      "frames": 5
+    },
+    {
+      "app": "dingtalk",
+      "task": "task_20260202_104621_961544",
+      "frames": 11
+    },
+    {
+      "app": "kfc",
+      "task": "kfc_aug_003_story_category_favorite_revisit",
+      "frames": 18
+    },
+    {
+      "app": "railway12306",
+      "task": "railway_aug_007",
+      "frames": 13
+    },
+    {
+      "app": "toutiao",
+      "task": "aug_toutiao_018",
+      "frames": 8
+    },
+    {
+      "app": "xiaohongshu",
+      "task": "xhs_aug_018",
+      "frames": 14
+    },
+    {
+      "app": "meituan",
+      "task": "flashbuy_07",
+      "frames": 10
+    },
+    {
+      "app": "netease_music",
+      "task": "task_20260119_145942_915035",
+      "frames": 11
+    },
+    {
+      "app": "xianyu",
+      "task": "task_20260203_170026_596389",
+      "frames": 8
+    },
+    {
+      "app": "damai",
+      "task": "damai_aug_002",
+      "frames": 8
+    },
+    {
+      "app": "weibo",
+      "task": "weibo_aug_18",
+      "frames": 10
+    },
+    {
+      "app": "autohome",
+      "task": "task_20260206_162001_503043",
+      "frames": 18
+    },
+    {
+      "app": "youdao_dictionary",
+      "task": "task_20260209_105055_656813",
+      "frames": 17
+    },
+    {
+      "app": "58tc",
+      "task": "task_20260202_145519_002639",
+      "frames": 9
+    },
+    {
+      "app": "didi",
+      "task": "task_20260130_102102_061868",
+      "frames": 7
+    },
+    {
+      "app": "dewu",
+      "task": "task_20260119_160020_571141",
+      "frames": 17
+    },
+    {
+      "app": "bilibili",
+      "task": "bili_aug_029_dance_comprehensive_share_draft",
+      "frames": 18
+    },
+    {
+      "app": "kugou",
+      "task": "task_20260206_142203_761694",
+      "frames": 5
+    },
+    {
+      "app": "dongchedi",
+      "task": "task_20260119_145642_622175",
+      "frames": 11
+    },
+    {
+      "app": "dingdongmaicai",
+      "task": "task_20260204_101811_827542",
+      "frames": 6
+    },
+    {
+      "app": "ximalaya",
+      "task": "task_aug_ximalaya_020",
+      "frames": 15
+    }
+  ],
+  "artifacts": {
+    "montage.mp4": {
+      "bytes": 8313586,
+      "sha256": "6cb4052f29aa01e4158280c5b70c6cac61c9e1cf1b0e1c287c6055a10f98c1ee"
+    },
+    "montage.webm": {
+      "bytes": 6830497,
+      "sha256": "9f799f9578f12d194c40e7e7030f1699b9fdadb4e41813933ec4640d70a544cf"
+    },
+    "poster.jpg": {
+      "bytes": 224119,
+      "sha256": "2e35b6aa2944c2a5b12c3cf516ce23dd65d53afb849a0c388e6a50a995295a9a"
+    }
+  },
+  "anchor": {
+    "tile_index": 50,
+    "app": "meituan",
+    "task": "show_02",
+    "task_label": "Talk-show tickets · compare 3 venues",
+    "source": "evaluation raw observations",
+    "trajectory_sha256": "a13b5c78278cc575ef6d461f0ecf37abb06f73a046e98e0e5d3ea080c0617abe",
+    "source_terminal_success": true,
+    "source_reward": 1.0,
+    "steps": 20,
+    "frame_sha256": [
+      "1e294c3d2c1dc920250668ef108ac88c85c48c06e5cc87307d0d9fccd8742807",
+      "f26bb49ffe7ca8358f349b178fcb05f8ba4bcdcafda09d1ab85faec24800c123",
+      "452bf9798ef6810d8b27b588074ad5fb19d4951cf67c951a979c4f69030e6d3f",
+      "a86a899b0e610d8a4d97035beb6484ffec2b1dfc59bab7ef9cd0b293379e30ed",
+      "a86a899b0e610d8a4d97035beb6484ffec2b1dfc59bab7ef9cd0b293379e30ed",
+      "6f79efd8f7612760280ad5cd4529840e5f5a3b39722a6efd0d6a08e2c4cb5d66",
+      "b915ec70dbf8e0f5be4531f861bb8bce1665eb6ccdd071fdccecec913f59c8e0",
+      "76425fd9a71fc2c01569e82defa5b36c27fcdbe533c3d1927767f2f4c1ba780d",
+      "904caff0a8fb502d051ddb7967e23e06ea140b37d7f053100e900e8763816d52",
+      "6f79efd8f7612760280ad5cd4529840e5f5a3b39722a6efd0d6a08e2c4cb5d66",
+      "91839a8c81ce62ca19a85cf87567f80559086c390593b3b5384fd7ff12d40ab9",
+      "6f79efd8f7612760280ad5cd4529840e5f5a3b39722a6efd0d6a08e2c4cb5d66",
+      "8d667705c722efbf5cee6e1fa06ddf50f9e5cb8f9f9c50c750f25f104474cee2",
+      "6f79efd8f7612760280ad5cd4529840e5f5a3b39722a6efd0d6a08e2c4cb5d66",
+      "91839a8c81ce62ca19a85cf87567f80559086c390593b3b5384fd7ff12d40ab9",
+      "2c853bf4860bc5ab39a737b00f25380fdffbf42a5b306236a2c84647c54900a5",
+      "621e98cddec25ec079dec75bce8a9cb6fdba0de8bc3425fbc29a1a0a262dad66",
+      "85a1310851d5c098a3c90261e84d37b51df8ce0bfb3a43c5d246bbc8d05ee051",
+      "ab6349cc121594e1cd138f249465c06d839d07a0e074fbbafb688e2852c102b0",
+      "ac83f94140c4fccfcab44bf03f08c63114601dfd6a50ce5fa51722f45453f06e"
+    ],
+    "playback_seconds_per_step": 1.06
+  }
+}

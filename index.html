@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trace2World: Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training</title>
+<meta name="description" content="Trace2World reconciles partial real-app traces into one source-linked app model, builds it as a resettable browser environment, and accepts it only by independent replay of every source workflow. 50 environments from 1,570 traces.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%233337a8'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-size='24' font-weight='700' fill='white' text-anchor='middle'%3ET2W%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<nav class="topnav" id="topnav">
+  <div class="topnav-inner">
+    <a class="brand" href="#top">Trace2World</a>
+    <div class="navlinks">
+      <a href="#overview">Overview</a>
+      <a href="#problem">Problem</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
+      <a href="#environments">Environments</a>
+      <a href="#source-trace">Source trace</a>
+      <a href="#cases">Cases</a>
+      <a href="#release">Release</a>
+      <a href="#citation">Citation</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow">Semantic commitment before implementation, source acceptance afterward</p>
+    <h1><span class="t2w">Trace2World</span></h1>
+    <p class="subtitle">Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training</p>
+
+    <div class="authors">
+      <span>Zezhou Wang<sup>1,2*</sup></span>
+      <span>Hanzhang Zhou<sup>2&Dagger;</sup></span>
+      <span>Panrong Tong<sup>2</sup></span>
+      <span>Quyu Kong<sup>2</sup></span>
+      <span>Pengxiang Li<sup>2</sup></span>
+      <span>Steven Hoi<sup>2</sup></span>
+      <span>Zhuzhong Qian<sup>1&dagger;</sup></span>
+      <span>Yue Wang<sup>2&dagger;&Dagger;</sup></span>
+    </div>
+    <div class="affils">
+      <span><sup>1</sup>Nanjing University</span>
+      <span><sup>2</sup>Alibaba Token Hub, Alibaba Group</span>
+    </div>
+    <div class="notes">
+      <span><sup>*</sup>Work was done during internship at Alibaba Token Hub, Alibaba Group.</span>
+      <span><sup>&dagger;</sup>Corresponding authors.</span>
+      <span><sup>&Dagger;</sup>Project leads.</span>
+    </div>
+
+    <div class="buttons">
+      <a class="btn disabled" aria-disabled="true" title="The preprint is being prepared">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        Paper <small>coming soon</small></a>
+      <a class="btn" href="https://github.com/Tongyi-MAI/app2world">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+        Code</a>
+      <a class="btn" href="https://huggingface.co/datasets/LEONW24/Trace2World">
+        <span class="emoji" aria-hidden="true">&#129303;</span>
+        Environments</a>
+      <a class="btn" href="#citation">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h4v4H8v3H5v-3.5C5 8.5 6 7 7 7zm9 0h4v4h-3v3h-3v-3.5C14 8.5 15 7 16 7z" fill="currentColor"/></svg>
+        BibTeX</a>
+    </div>
+    <div class="hero-video" id="hero-video">
+      <video id="montage" muted loop playsinline preload="metadata" poster="assets/video/poster.jpg" aria-label="Montage of one hundred real agent rollouts across twenty reconstructed apps: the camera starts on one phone, pulls back to a wall of environments that keep playing, and returns.">
+        <source src="assets/video/montage.webm" type="video/webm">
+        <source src="assets/video/montage.mp4" type="video/mp4">
+      </video>
+      <button class="vid-toggle" id="vid-toggle" aria-label="Pause video" title="Pause / play">
+        <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+        <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+      </button>
+      <p class="hero-video-cap"><b>One resettable world per app, built by us from real traces.</b> Every tile is a real, unedited
+        policy rollout inside a Trace2World environment: 100 rollouts across 20 reconstructed apps, each playing its own
+        unmarked observation sequence.</p>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="stats" aria-label="Headline numbers">
+  <div class="wrap stat-grid">
+    <div class="stat"><div class="num">1,570</div><div class="lbl">real-app source traces</div></div>
+    <div class="stat"><div class="num">50</div><div class="lbl">resettable environments<br>across 10 domains</div></div>
+    <div class="stat"><div class="num">91.1%</div><div class="lbl">Workflow fidelity<br><span class="vs">vs 59.8% strongest existing route</span></div></div>
+    <div class="stat"><div class="num">94.0%</div><div class="lbl">of simulated gain kept on real devices<br><span class="vs">vs 54.7% with self-validation</span></div></div>
+    <div class="stat"><div class="num">61.1%</div><div class="lbl">Trace2World-Bench success, learner-guided<br><span class="vs">vs 56.9% static generation</span></div></div>
+    <div class="stat"><div class="num">+16.3</div><div class="lbl">points on a 100-task<br>real-device panel</div></div>
+  </div>
+</section>
+
+<section class="teaser-section" aria-label="Teaser figure">
+  <div class="wrap">
+    <figure class="teaser">
+      <img src="assets/img/teaser.webp" width="2200" height="1500" alt="Panel (a): the real Meituan home next to CUA-Gym, PhoneWorld, GUI-GENESIS and Trace2World reconstructions, and the icons of all 50 apps. Panel (b): a 20-step rollout of an augmented Meituan task." data-zoom>
+      <figcaption><b>Fifty real apps rebuilt from traces into faithful, resettable worlds.</b>
+        (a) From the same Meituan traces, topic-, task-, and screen-level construction (our CUA-Gym,
+        PhoneWorld, and GUI-GENESIS reimplementations) each yield a different Home; Trace2World reproduces the real one.
+        Right: all 50 apps. (b) One world, many tasks: a 20-step rollout of an augmented task no source trace
+        performs; three stages replay observed support, three add a state check, a derived instance, and order checks.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="overview" class="section">
+  <div class="wrap narrow">
+    <h2>Abstract</h2>
+    <p>Scaling GUI reinforcement learning requires environments that preserve real-app behavior. Yet coupling
+    behavior inference with coding can turn partial traces into runnable mocks with incorrect state
+    transitions. We introduce <b>Trace2World</b>, which separates global behavior reconstruction from
+    implementation. It reconciles traces into a shared, source-linked app model, then compiles an executable
+    environment. Independent replay of source workflows localizes mismatches for bounded implementation
+    repair. Validated worlds then support learner-adaptive task and environment augmentation within
+    source-supported behavior. From 1,570 traces, Trace2World constructs 50 environments. On 200 workflows
+    across ten apps, 91.1% are reproduced end to end, versus 59.8% for the strongest matched task-local
+    baseline. Source-grounded validation retains 94.0% of simulated training gains on real devices, versus
+    54.7% under self-validation. Learner guidance raises benchmark success from 56.9% to 61.1%. Training in
+    Trace2World further improves the model by 20.2 points on our benchmark, 5.4&ndash;16.2 points across four
+    external GUI benchmarks, and 16.3 points on 100 real-device tasks. Reliable reconstruction separates what
+    behavior source evidence supports from whether the implementation preserves it. The code and resources
+    are released.</p>
+  </div>
+</section>
+
+<section id="problem" class="section alt">
+  <div class="wrap">
+    <h2>Automating implementation does not automate reconstruction</h2>
+    <p class="lead narrow">Existing routes hand coding agents both the code and the semantics: CUA-Gym codes mocks
+    from topic specifications, GUI-GENESIS codes a task-local site from one trace, and PhoneWorld codes
+    mocks from recovered screen types and transitions. None asks which shared identities, initial states,
+    data, guards, or conflicting effects the traces actually support. Two failures follow.</p>
+
+    <div class="problem-grid">
+      <div class="problem-cards">
+        <article class="card">
+          <h3><span class="tag">1</span>Structural reconstruction is not semantic reconstruction</h3>
+          <p>Each trace observes one path from one initial state. Xi'an and Beijing may share a Home page with
+          different city values, while one control can have state-dependent effects. A transition graph cannot
+          identify the state condition behind an effect, so coding before reconciliation hardens one
+          interpretation into an app. Across our matched builds, routes reach <b>50.4&ndash;94.8%</b> of endpoints
+          yet preserve only <b>16.7&ndash;59.8%</b> of source workflows.</p>
+        </article>
+        <article class="card">
+          <h3><span class="tag">2</span>A runnable app cannot certify its own fidelity</h3>
+          <p>An implementation and the tests derived from the same interpretation can agree while both diverge
+          from the source. In Meituan, tapping <i>Disable quick pay</i> opens a confirmation without changing the
+          saved setting. Our PhoneWorld-style reconstruction disables it immediately yet passes a final-value
+          check, rewarding a policy for a transition the real app does not perform.</p>
+        </article>
+        <blockquote class="question">Which app semantics do partial traces actually support, and what evidence may
+        accept an implementation of them?</blockquote>
+      </div>
+      <figure class="side-fig">
+        <img src="assets/img/choice_boundary.webp" width="820" height="1444" loading="lazy" alt="Real Meituan quick-pay flow confirms before saving; a PhoneWorld-style build saves on tap; both end disabled." data-zoom>
+        <figcaption><b>Same terminal value, wrong transition.</b> The source confirms before saving; our
+        PhoneWorld-style build saves on tap. Both end disabled, so a final-value check passes both.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="method" class="section">
+  <div class="wrap">
+    <h2>Method</h2>
+    <p class="lead narrow">Trace2World answers with two boundaries. It fixes app semantics from source evidence
+    <em>before</em> any code is written, and accepts an implementation only by independent replay of the source
+    workflows <em>afterward</em>. Learner feedback then decides which supported tasks are practiced, never what
+    the app means.</p>
+
+    <figure class="wide">
+      <img src="assets/img/overview.webp" width="2200" height="940" loading="lazy" alt="Trace2World pipeline: real app traces, reconcile and index app semantics, build a standalone environment checked by source replay, and learner-guided tasks." data-zoom>
+      <figcaption><b>Semantic commitment before implementation, source acceptance afterward.</b>
+      Trace2World reconciles partial traces into one source-linked model of shared pages, entities, state, and effects,
+      indexed as a semantic inventory; unresolved behavior remains non-executable. A builder implements the fixed
+      model, and source replay checks recorded workflows. Failures return to code repair or semantic
+      reconciliation; learner-guided tasks are composed from the validated inventory.</figcaption>
+    </figure>
+
+    <div class="steps">
+      <article class="step">
+        <div class="step-num">1</div>
+        <h3>Reconcile app semantics across traces</h3>
+        <p>Two observations may differ because they show different pages, different values of the same state,
+        or one entity on different surfaces. Trace2World matches repeated pages, action hosts, and entities using
+        containment, routes, lifecycle, and observed transitions, then separates stable structure from mutable
+        state and reusable data. Each effect links to the source step that shows its precondition and result;
+        if no observed condition explains a conflict, the conflict stays unresolved instead of being guessed.</p>
+      </article>
+      <article class="step">
+        <div class="step-num">2</div>
+        <h3>Index a frozen semantic inventory</h3>
+        <p>Supported relations become a source-linked inventory of canonical surfaces, hosts, entities, state and
+        data fields, legal actions, guards, effects, and observable outcomes, plus an information-dependency
+        graph. Indexing adds no behavior. Traces are reconciled in bounded shards: across all 50 apps the
+        largest model-visible call is 33.2K tokens under a 40K-token budget, with 99.1% audited semantic
+        coverage.</p>
+      </article>
+      <article class="step">
+        <div class="step-num">3</div>
+        <h3>Build, then validate against the source</h3>
+        <p>The builder implements the supported model as a standalone DOM-backed browser app with a central
+        state kernel; unsupported controls stay visible but inert. A read-only checker replays every recorded
+        workflow from reset and compares information, intermediate effects, and terminal state with the
+        source, without seeing the builder's model, verifier, or repair log. Implementation errors are repaired
+        (up to three waves); semantic mismatches return to reconciliation. No human QA is needed for acceptance.</p>
+      </article>
+      <article class="step">
+        <div class="step-num">4</div>
+        <h3>Generate learner-guided tasks</h3>
+        <p>The validated inventory becomes the task-authoring substrate. Generation may compose relations or
+        rebind observed entities and initial states, but cannot add a surface, field, guard, transition, or
+        dependency. A fixed stronger solver filters unsolvable candidates, and four current-learner attempts
+        keep tasks whose reward varies (SD&nbsp;&gt;&nbsp;0.1). One semantic reconstruction is amortized across
+        many tasks.</p>
+      </article>
+    </div>
+
+    <div class="two-col">
+      <figure>
+        <img src="assets/img/contract_slice.webp" width="1000" height="934" loading="lazy" alt="Two Meituan traces with Xi'an and Beijing share one Home page specification; city is reset state selected by task id." data-zoom>
+        <figcaption><b>Two traces, one Home page.</b> Xi'an and Beijing are supported initial values of the
+        same city state field. The task selects a reset value; subsequent behavior uses the shared page and
+        state-dependent action rules.</figcaption>
+      </figure>
+      <div class="callouts">
+        <div class="callout">
+          <h4>What the model commits to</h4>
+          <p>Every supported interaction has a page and control, an action and guard, state or data reads and
+          writes, a destination, and a visible postcondition. The same rule serves multiple workflows without
+          copying a task-specific page.</p>
+        </div>
+        <div class="callout">
+          <h4>What the builder may change</h4>
+          <p>Rendering, routes, and storage. Source traces determine the app model; the builder cannot invent
+          app behavior. Compilation checks show that the app <em>runs</em>, source replay checks that it
+          <em>matches</em>.</p>
+        </div>
+        <div class="callout">
+          <h4>Cost is not the reason it wins</h4>
+          <p>Trace2World reconciles with GPT-5.2 and implements with GPT-5.5; compared builders receive GPT-5.5 in
+          every role they define. A Trace2World seed build averages an estimated 3.6 hours and 1,160 model calls per
+          app, below GUI-GENESIS-style (5.9 h, 2,415 calls) and near PhoneWorld-style (5.0 h, 1,118 calls).</p>
+        </div>
+      </div>
+    </div>
+
+    <figure class="wide">
+      <img src="assets/img/augmentation.webp" width="2200" height="1245" loading="lazy" alt="Learner-guided task generation loop over a frozen semantic inventory: learner gaps, supported task generation, validation and selection, training." data-zoom>
+      <figcaption><b>Learner-guided tasks from a frozen semantic inventory.</b> Task generation queries the
+      validated inventory rather than re-inferring the app: supported surfaces, fields, actions, and dependencies
+      compose a harder food-delivery task; learner gaps guide which patterns to sample, and source, GUI, solver,
+      and learner-signal checks screen candidates. Implementation repair fills supported paths without changing
+      the inventory.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="results" class="section alt">
+  <div class="wrap">
+    <h2>Results</h2>
+
+    <h3 class="sub">End-to-end reconstruction fidelity</h3>
+    <p class="narrow">All conditions use the same 200-workflow, ten-app set. Direct Agent, CUA-Gym, PhoneWorld-style,
+    and GUI-GENESIS-style are reimplemented on the same substrate, tools, runtime, and recordings. A blinded
+    reviewer compares anonymous executions with source recordings and assigns pass/fail to six diagnostics;
+    <b>Workflow</b> requires all six, <b>Reach</b> only the endpoint.</p>
+
+    <div class="results-grid">
+      <div class="chart" role="img" aria-label="Reach versus Workflow per method">
+        <div class="chart-legend"><span class="key reach"></span>Reach <span class="key wf"></span>Workflow</div>
+        <div class="bar-row"><span class="name">Direct + traces</span><div class="bars"><div class="bar reach" style="--v:53.6"><em>53.6</em></div><div class="bar wf" style="--v:16.7"><em>16.7</em></div></div></div>
+        <div class="bar-row"><span class="name">CUA-Gym + traces</span><div class="bars"><div class="bar reach" style="--v:50.4"><em>50.4</em></div><div class="bar wf" style="--v:19.9"><em>19.9</em></div></div></div>
+        <div class="bar-row"><span class="name">PhoneWorld-style</span><div class="bars"><div class="bar reach" style="--v:57.0"><em>57.0</em></div><div class="bar wf" style="--v:22.4"><em>22.4</em></div></div></div>
+        <div class="bar-row"><span class="name">GUI-GENESIS-style</span><div class="bars"><div class="bar reach" style="--v:94.8"><em>94.8</em></div><div class="bar wf" style="--v:59.8"><em>59.8</em></div></div></div>
+        <div class="bar-row ours"><span class="name">Trace2World</span><div class="bars"><div class="bar reach" style="--v:98.0"><em>98.0</em></div><div class="bar wf" style="--v:91.1"><em>91.1</em></div></div></div>
+        <p class="chart-note">Endpoint reach hides semantic failure: every existing route reaches endpoints it cannot preserve.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="rtable">
+          <caption>Workflow fidelity and its six diagnostics (%). Ten-app macro means over 200 paired workflows.</caption>
+          <thead>
+            <tr><th rowspan="2">Method</th><th>Overall</th><th colspan="2">Structure</th><th colspan="3">State</th><th>Data</th></tr>
+            <tr><th>Workflow</th><th>Reach</th><th>Surface</th><th>State</th><th>Effect</th><th>Terminal</th><th>Data</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Direct w/o traces</td><td>5.2</td><td>28.4</td><td>14.8</td><td>22.7</td><td>15.0</td><td>15.9</td><td>12.8</td></tr>
+            <tr><td>Direct + traces</td><td>16.7</td><td>53.6</td><td>35.3</td><td>41.2</td><td>34.6</td><td>33.7</td><td>31.7</td></tr>
+            <tr><td>CUA-Gym w/o traces</td><td>8.2</td><td>34.4</td><td>20.0</td><td>29.0</td><td>22.6</td><td>21.5</td><td>19.6</td></tr>
+            <tr><td>CUA-Gym + traces</td><td>19.9</td><td>50.4</td><td>37.5</td><td>38.0</td><td>35.0</td><td>35.3</td><td>35.0</td></tr>
+            <tr><td>PhoneWorld-style</td><td>22.4</td><td>57.0</td><td>39.3</td><td>46.8</td><td>41.5</td><td>39.8</td><td>38.5</td></tr>
+            <tr><td>GUI-GENESIS-style</td><td>59.8</td><td>94.8</td><td>83.9</td><td>76.6</td><td>77.0</td><td>79.4</td><td>78.4</td></tr>
+            <tr class="ours"><td>Trace2World</td><td>91.1</td><td>98.0</td><td>93.7</td><td>93.3</td><td>93.8</td><td>93.7</td><td>94.1</td></tr>
+            <tr class="group"><td colspan="8">Control (not our method)</td></tr>
+            <tr class="control"><td>Self-validation</td><td>79.1</td><td>98.5</td><td>90.4</td><td>87.0</td><td>85.0</td><td>88.0</td><td>89.1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="narrow note">The task-local GUI-GENESIS-style build reaches 94.8% but passes 59.8%, with the State
+    that workflows share at 76.6%; Trace2World reaches 98.0% and passes 91.1%. The ordering is not explained by a
+    stronger constructor or reviewer bias: blind human relabeling agrees with the automated reviewer on 90.2% of
+    the same 1,200 packets, moves every route by only 1.4&ndash;3.8&nbsp;pp, and keeps Trace2World 29.9&nbsp;pp
+    above GUI-GENESIS-style and 12.8&nbsp;pp above self-validation.</p>
+
+    <figure class="wide compact">
+      <img src="assets/img/trace_scaling.webp" width="1800" height="457" loading="lazy" alt="Route recovery, evidence selection and Workflow fidelity under Low, Mid and Full trace budgets." data-zoom>
+      <figcaption><b>More source evidence expands the semantic inventory without collapsing fidelity.</b>
+      From Low to Full, 100&rarr;290 traces expand supported routes 270&rarr;512 and visual obligations
+      553&rarr;1,076, while Workflow moves from 92.6% to 91.1%. Across all 1,570 source workflows, 74.6% pass
+      source replay on the first attempt and all close within the three-wave automated repair cap, without human QA.</figcaption>
+    </figure>
+
+    <h3 class="sub">Source-grounded validation decides how much gain transfers</h3>
+    <div class="results-grid flip">
+      <div class="narrow-col">
+        <p>The self-validation control changes only the validation evidence under the same construction stages
+        and inputs. Replacing source-trace validation with self-validation lowers Workflow from 91.1% to 79.1%
+        while Reach stays near 98%. Independent source rechecks reject 22/160 (13.8%) self-accepted executions
+        versus 1/176 (0.6%) source-accepted ones.</p>
+        <p>On a shared 100-task, 20-app real-device panel, source validation retains <b>94.0%</b> of its
+        16.7-pp simulated gain on real devices (15.7&nbsp;pp), versus <b>54.7%</b> of 17.7&nbsp;pp under
+        self-validation (9.7&nbsp;pp). With training matched and simulated gains nearly equal, the rise in
+        simulation-only passes from 10.0% to 18.3% locates the loss in behavior the simulator accepts but the
+        device rejects.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="rtable">
+          <caption>Real-device transfer: gains over base on 100 paired tasks from 20 apps (pp; three-seed mean &plusmn; SD).</caption>
+          <thead>
+            <tr><th rowspan="2">Metric</th><th colspan="2">Matched stage-1 source</th><th>Stage 3</th></tr>
+            <tr><th>Self-validation</th><th>Source-trace validation</th><th>Ours</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Real gain</td><td>9.7 &plusmn; 2.1</td><td>15.7 &plusmn; 1.5</td><td>16.3 &plusmn; 2.1</td></tr>
+            <tr><td>Sim. gain</td><td>17.7 &plusmn; 1.5</td><td>16.7 &plusmn; 2.1</td><td>18.7 &plusmn; 1.5</td></tr>
+            <tr class="hl"><td>Real / sim gain</td><td>54.7%</td><td><b>94.0%</b></td><td>87.5%</td></tr>
+            <tr><td>Sim-only pass</td><td>18.3%</td><td>10.0%</td><td>10.7%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3 class="sub">Learner-guided task generation</h3>
+    <p class="narrow">Four branches fork from the stage-1 policy for the same 20 RL iterations, environment revisions,
+    sampler, and evaluator. Across the two batches, 76.8/75.3% of guided tasks carry learning signal versus
+    47.9/44.0% for the static control. At iteration 52, Trace2World-Bench SR is <b>61.1%</b> guided, 56.9% static,
+    55.3% entity rebinding, and 52.2% seed continuation. Budget does not substitute for feedback: training on all
+    validated candidates for 54 iterations reaches 57.8%.</p>
+    <figure class="wide compact">
+      <img src="assets/img/task_supply.webp" width="1800" height="505" loading="lazy" alt="Selected tasks with learning signal per branch and Trace2World-Bench SR/PR over RL iterations." data-zoom>
+      <figcaption><b>Learner-guided task supply.</b> (a) Selected tasks with/without learning signal (four-attempt
+      reward SD &gt; 0.1). (b, c) Trace2World-Bench SR/PR for iteration- and rollout-matched continuations. Error bars show
+      three-seed SD.</figcaption>
+    </figure>
+
+    <h3 class="sub">Downstream policy performance</h3>
+    <p class="narrow">Qwen3.5-9B is trained with DAPO across three frozen stages: 1,280 seed tasks, then two 384-task
+    learner-guided batches (Ours). No task from the four external suites enters task generation, screening, RL,
+    or checkpoint selection. Our final policy gains 20.2&nbsp;pp SR on Trace2World-Bench, 13.6&nbsp;pp on apps excluded from policy
+    training, and 24.7&nbsp;pp on evaluation-only two-app tasks although every training task is single-app.</p>
+    <div class="table-wrap scroll">
+      <table class="rtable dense">
+        <caption>Trace2World-Bench and MobileGym (MG) report SR / PR; AndroidWorld (AW) and AndroidDaily (AD) report SR;
+        MobileWorld (MW) reports GUI-only SR@50, all in percent.</caption>
+        <thead>
+          <tr><th rowspan="2">Model</th><th colspan="5">Trace2World-Bench (SR / PR)</th><th rowspan="2">MG<br>SR / PR</th><th rowspan="2">AW<br>SR</th><th rowspan="2">MW<br>SR@50</th><th rowspan="2">AD<br>SR</th></tr>
+          <tr><th>Entity repl.</th><th>Held-out workflow</th><th>Cross-app</th><th>Unseen apps</th><th>Overall</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group"><td colspan="10">Proprietary models</td></tr>
+          <tr><td>Gemini 3.1 Pro</td><td>75.1 / 82.2</td><td>69.0 / 76.2</td><td>58.0 / 67.0</td><td>65.7 / 71.9</td><td>68.9 / 76.1</td><td>31.3 / 44.6</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+          <tr><td>GPT-5.5</td><td>74.5 / 82.5</td><td>68.3 / 76.8</td><td>57.3 / 66.3</td><td>66.1 / 73.8</td><td>68.4 / 76.7</td><td>&ndash;</td><td>&ndash;</td><td>62.4</td><td>&ndash;</td></tr>
+          <tr><td>Qwen3.7-Plus</td><td>76.3 / 83.4</td><td>70.6 / 78.4</td><td>59.0 / 67.8</td><td>68.8 / 76.4</td><td>70.6 / 78.3</td><td>32.8 / 46.0</td><td>81.0</td><td>62.3</td><td>79.8</td></tr>
+          <tr class="group"><td colspan="10">Open-source GUI agents</td></tr>
+          <tr><td>UI-TARS-1.5-7B</td><td>54.4 / 66.0</td><td>45.2 / 58.5</td><td>30.3 / 44.2</td><td>39.6 / 50.8</td><td>45.1 / 57.7</td><td>13.8 / 26.3</td><td>30.0</td><td>&ndash;</td><td>&ndash;</td></tr>
+          <tr><td>MAI-UI-8B</td><td>66.3 / 76.9</td><td>58.1 / 69.8</td><td>45.0 / 57.5</td><td>51.9 / 62.7</td><td>57.8 / 69.2</td><td>21.5 / &ndash;</td><td>70.7</td><td>27.5</td><td>&ndash;</td></tr>
+          <tr><td>UI-Venus-2-9B</td><td>64.2 / 75.0</td><td>56.8 / 67.5</td><td>44.7 / 56.0</td><td>52.8 / 61.4</td><td>56.8 / 67.2</td><td>52.7 / &ndash;</td><td>80.2</td><td>65.8</td><td>&ndash;</td></tr>
+          <tr class="group"><td colspan="10">Controlled Trace2World environment training (Qwen3.5-9B)</td></tr>
+          <tr><td>Base policy</td><td>49.2 / 63.5</td><td>40.2 / 55.1</td><td>26.0 / 41.3</td><td>39.2 / 52.6</td><td>40.9 / 55.4</td><td>9.0 / 19.7</td><td>57.8</td><td>18.5</td><td>47.2</td></tr>
+          <tr><td>Stage-1 policy</td><td>57.0 / 72.6</td><td>48.6 / 65.1</td><td>35.3 / 52.0</td><td>44.3 / 58.9</td><td>48.7 / 64.6</td><td>15.8 / 28.4</td><td>60.1</td><td>21.9</td><td>51.9</td></tr>
+          <tr class="ours"><td>Ours</td><td>68.4 / 78.9</td><td>62.4 / 71.8</td><td>50.7 / 60.5</td><td>52.8 / 63.7</td><td>61.1 / 71.1</td><td>25.2 / 40.7</td><td>63.2</td><td>27.4</td><td>58.3</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="environments" class="section">
+  <div class="wrap">
+    <h2>Fifty environments, ten domains</h2>
+    <p class="lead narrow">All 50 apps provide construction traces and all 50 are reconstructed. Forty apps supply
+    policy-training tasks; ten held-out apps, one per domain, supply construction traces but no seed, candidate,
+    screening, or RL-update task. Collection follows a quota fixed before construction: 50 traces for each of the
+    19 apps with at least three independent service lines, 20 for each of the other 31 (950 + 620 = 1,570).
+    Every environment is a browser reimplementation with synthetic content; it connects to no real service.</p>
+
+    <div class="table-wrap scroll">
+      <table class="rtable roster">
+        <thead><tr><th>Domain</th><th>Policy-training apps (40)</th><th>Held-out eval app (10)</th></tr></thead>
+        <tbody>
+          <tr><td>Social &amp; community</td><td>WeChat &middot; QQ &middot; Weibo &middot; Xiaohongshu</td><td>Zhihu</td></tr>
+          <tr><td>News &amp; short video</td><td>Kuaishou &middot; Bilibili &middot; Toutiao &middot; Tencent News</td><td>Douyin</td></tr>
+          <tr><td>Long video &amp; audio</td><td>iQIYI &middot; Youku &middot; NetEase Cloud Music &middot; Kugou Music &middot; Ximalaya</td><td>QQ Music</td></tr>
+          <tr><td>Commerce &amp; resale</td><td>Taobao &middot; JD &middot; Xianyu &middot; Dewu</td><td>Pinduoduo</td></tr>
+          <tr><td>Local services &amp; food</td><td>Meituan &middot; Dianping &middot; Dingdong Maicai &middot; KFC &middot; Hema</td><td>Ele.me</td></tr>
+          <tr><td>Mobility, travel &amp; tickets</td><td>Amap &middot; Ctrip &middot; Didi &middot; Railway 12306 &middot; Damai</td><td>Taopiaopiao</td></tr>
+          <tr><td>Auto, housing &amp; jobs</td><td>58Tongcheng &middot; Autohome &middot; Dongchedi &middot; BOSS Zhipin</td><td>Beike</td></tr>
+          <tr><td>Work, learning &amp; search</td><td>Feishu &middot; WPS Office &middot; Baidu &middot; DingTalk &middot; Youdao Dictionary &middot; Baidu Netdisk</td><td>Tencent Meeting</td></tr>
+          <tr><td>Payment &amp; logistics</td><td>Alipay &middot; SF Express</td><td>Cainiao</td></tr>
+          <tr><td>Health &amp; fitness</td><td>Boohee Health</td><td>Keep</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Generated-app home screens</h3>
+    <p class="narrow">Default states of twenty formal browser environments (the human-audit roster), captured in
+    fresh browsers at a common viewport with no task-specific initialization. Click to enlarge.</p>
+    <div class="homes" id="homes"></div>
+
+    <h3 class="sub">Trace2World-Bench</h3>
+    <p class="narrow">One frozen evaluation view over the portfolio: 1,044 tasks, disjoint from every optimization
+    batch, with SR averaged over three attempts per task.</p>
+    <div class="bench">
+      <div class="bench-item"><div class="num">256</div><div>Entity replacement<small>training-side workflow skeletons, new entities</small></div></div>
+      <div class="bench-item"><div class="num">512</div><div>Held-out workflow<small>20% signature split (320 seed + 192 aug.)</small></div></div>
+      <div class="bench-item"><div class="num">100</div><div>Cross-app<small>10 app pairs, return-dependent A&rarr;B&rarr;A</small></div></div>
+      <div class="bench-item"><div class="num">176</div><div>Unseen apps<small>10 apps excluded from policy training</small></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="source-trace" class="section alt">
+  <div class="wrap">
+    <h2>A source trace, end to end</h2>
+    <p class="lead narrow">Each environment is reconstructed from recorded traces of the real app. This is one of the
+    1,570: twenty steps in Meituan, from the home screen to the Flash-buy order page. Every frame is the original
+    screenshot with the recorded action marked, and its caption describes that action. A source trace is construction
+    evidence, so it carries no task checks and no reward.</p>
+
+    <div class="strace" id="strace">
+      <div class="strace-head">
+        <div class="traj-kicker"><span id="strace-app"></span> &middot; <span id="strace-title"></span> &middot; <span id="strace-count"></span></div>
+        <p class="goal-en" id="strace-goal-en"></p>
+        <details class="goal-zh"><summary>Task instruction (zh)</summary><p id="strace-goal-zh"></p></details>
+        <details class="goal-zh"><summary>Source</summary><p id="strace-source"></p></details>
+      </div>
+      <ol class="strace-frames" id="strace-frames" aria-label="Source trace frames"></ol>
+      <p class="strace-hint">Click a frame to enlarge it.</p>
+    </div>
+  </div>
+</section>
+
+<section id="cases" class="section">
+  <div class="wrap">
+    <h2>Case studies: step through two tasks</h2>
+    <p class="lead narrow">Two tasks in reconstructed environments: a 22-step Bilibili task within one app, and a
+    Railway 12306 → Didi → Railway 12306 task whose return to the train order depends on the fare read in Didi.
+    Step through each frame with its rationale and the task checks met so far.</p>
+    <p class="case-evidence narrow">The Bilibili task shows the marked observations and step rationale of an evaluation
+    rollout; frames with incorrect media bindings are replaced by marked replay captures from the repaired publication
+    package, and the last frame is its visible outcome. The Railway–Didi task presents the appendix's marked sequence with
+    synthesized step rationale and eight ordered task checks.</p>
+
+    <div class="tabs apps" role="tablist" aria-label="Choose a task" id="traj-tabs"></div>
+
+    <div class="traj" id="traj">
+      <div class="traj-head">
+        <div class="traj-goal">
+          <div class="traj-kicker"><span id="traj-app"></span> &middot; <span id="traj-title"></span></div>
+          <p class="goal-en" id="traj-goal-en"></p>
+          <details class="goal-zh"><summary>Task instruction (zh)</summary><p id="traj-goal-zh"></p></details>
+          <details class="goal-zh"><summary>Source &amp; verification</summary><p id="traj-source"></p></details>
+        </div>
+        <div class="traj-attempts" id="traj-attempts"></div>
+      </div>
+
+      <div class="traj-body">
+        <div class="traj-screen">
+          <p class="screen-label"><span id="traj-observation">Original observation</span> <span id="traj-mark-label">Current action marked</span></p>
+          <div class="phone">
+            <img id="traj-img" alt="" data-zoom>
+          </div>
+          <div class="traj-nav">
+            <button class="pbtn" id="traj-prev" aria-label="Previous step">&#8249;</button>
+            <div class="traj-steps" id="traj-steps"></div>
+            <button class="pbtn" id="traj-next" aria-label="Next step">&#8250;</button>
+          </div>
+          <div class="traj-controls">
+            <button class="play" id="traj-play" aria-label="Auto-play"><span class="i-play">&#9654;</span><span class="i-pause">&#10074;&#10074;</span> <span id="traj-play-lbl">Play</span></button>
+            <span class="traj-pos" id="traj-pos" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="traj-panel">
+          <div class="panel-block">
+            <div class="panel-lbl"><span id="traj-thinking-label">Step rationale</span> <span class="panel-sub">step <span id="traj-n"></span></span></div>
+            <div class="think" id="traj-think"></div>
+          </div>
+          <div class="panel-block grow">
+            <div class="panel-lbl"><span id="traj-verify-label">Verification</span> <span class="panel-sub" id="traj-cp-count"></span></div>
+            <p class="verification-time" id="traj-verification-time"></p>
+            <p class="verification-note" id="traj-verification"></p>
+            <p class="cp-legend"><span>○ Not met</span><span>✓ Met</span><span>+ Newly met</span><span>− Lost this step</span></p>
+            <ol class="cps" id="traj-cps"></ol>
+            <div class="reward" id="traj-reward-row"><span>Verification reward</span><div class="reward-bar"><div id="traj-reward"></div></div><b id="traj-reward-num"></b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="release" class="section alt">
+  <div class="wrap">
+    <h2>What is released</h2>
+    <p class="lead narrow">Trace2World is released as an environment-construction resource, not as a benchmark alone: the
+    source evidence, the reconstructed environments, the training-task supply, the evaluation sets, and the fidelity
+    records of the paper. Code lives on GitHub; the environments live in a Hugging Face dataset.</p>
+    <div class="table-wrap scroll">
+      <table class="rtable release">
+        <thead><tr><th>Component</th><th>Scale</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td>Source traces</td><td>1,570 traces / 50 apps</td><td>construction evidence; external fidelity authority</td></tr>
+          <tr><td>Construction pipeline</td><td>one shared pipeline</td><td>trace &rarr; reconciled app specification &rarr; environment</td></tr>
+          <tr><td>Environment portfolio</td><td>50 apps / 10 domains</td><td>resettable GUI RL substrate with state and evaluator manifests</td></tr>
+          <tr><td>Environment host</td><td>one process, all apps</td><td>serve, step, evaluate (<code>t2w-serve</code>, <code>t2w-rollout</code>, <code>t2w-smoke</code>)</td></tr>
+          <tr><td>Training-task supply</td><td>1,280 seed + 768 learner-guided</td><td>policy optimization</td></tr>
+          <tr><td>Trace2World-Bench</td><td>1,044 tasks</td><td>frozen policy evaluation</td></tr>
+          <tr><td>Fidelity study</td><td>200 workflows / 10 apps</td><td>reconstruction correctness, reviewer labels, human adjudication</td></tr>
+          <tr><td>Real-device panel</td><td>100 tasks / 20 apps</td><td>paired sim-to-real evidence</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Quick start</h3>
+    <div class="code-block">
+      <button class="copy" data-copy="quickstart">Copy</button>
+<pre id="quickstart"><code>git clone https://github.com/Tongyi-MAI/app2world.git && cd app2world
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install ./trace2world_env huggingface_hub && playwright install chromium
+
+python scripts/download_environments.py            # -> data/trace2world, verified against the manifest
+t2w-serve --environments-dir data/trace2world \
+          --state-root /tmp/t2w-state --host 127.0.0.1 --port 6800
+t2w-rollout --server http://127.0.0.1:6800 --task-id &lt;task_id&gt; \
+            --llm-base-url http://&lt;model-host&gt;:&lt;port&gt;/v1 --model &lt;served-model-name&gt; \
+            --output trajectory.json</code></pre>
+    </div>
+    <p class="narrow note">One process hosts the whole portfolio; every task starts from a task-conditioned initial
+    state and is fully reset between episodes. Rewards come from the frozen task evaluator; the source-trace
+    validation that certifies each environment is a separate reviewer and never supplies training reward. See the
+    <a href="https://github.com/Tongyi-MAI/app2world#readme">repository README</a> for the HTTP API, action space,
+    and the constructor (<code>t2w-construct</code>) that builds an environment from a trace set.</p>
+  </div>
+</section>
+
+<section id="citation" class="section">
+  <div class="wrap">
+    <h2>Citation</h2>
+    <p class="narrow" style="text-align:center">The preprint is being prepared; the entry will be updated with the arXiv identifier.</p>
+    <div class="code-block">
+      <button class="copy" data-copy="bibtex">Copy</button>
+<pre id="bibtex"><code>@article{wang2026trace2world,
+  title   = {Trace2World: Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training},
+  author  = {Wang, Zezhou and Zhou, Hanzhang and Tong, Panrong and Kong, Quyu and
+             Li, Pengxiang and Hoi, Steven and Qian, Zhuzhong and Wang, Yue},
+  journal = {arXiv preprint},
+  year    = {2026}
+}</code></pre>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap narrow">
+    <p><b>Ethics and scope.</b> Source traces were collected by consenting operators from accounts they control,
+    with consent covering research use and public release, and every recording was reviewed for credentials,
+    personal identifiers, private communications, precise locations, payment or order information, and third-party
+    personal data before release. The environments are isolated browser reimplementations with synthetic content;
+    application names and screenshots identify the systems studied and do not imply affiliation or endorsement.</p>
+    <p class="small">Code: MIT License. Environments: terms on the Hugging Face dataset card.
+    Some illustration icons were designed by Freepik from Flaticon.</p>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" aria-label="Close">&times;</button>
+  <img id="lightbox-img" alt="">
+</div>
+
+<script src="assets/js/source_trace.js"></script>
+<script src="assets/js/cases.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
