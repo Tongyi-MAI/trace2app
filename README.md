@@ -43,10 +43,9 @@ support learner-adaptive task and environment augmentation within source-support
 
 This repository is the **code** half of the release: the environment host / evaluators / bundled agent
 ([`trace2world_env/`](trace2world_env)) and the environment constructor
-([`trace2world_pipeline/`](trace2world_pipeline)). The **data** half, the environments and the source
-traces they were built from, is the Hugging Face project dataset
-[`LEONW24/Trace2World`](https://huggingface.co/datasets/LEONW24/Trace2World) (`environments/` and
-`traces/`); the download scripts below pull and verify it.
+([`trace2world_pipeline/`](trace2world_pipeline)). The **data** half, the environments, is the gated Hugging Face project
+dataset [`LEONW24/Trace2World`](https://huggingface.co/datasets/LEONW24/Trace2World) (`environments/`);
+the download script below pulls and verifies it. The source traces are not distributed.
 
 ## Method
 
@@ -119,7 +118,7 @@ evaluation sets, and the fidelity records of the paper.
 
 | Component | Scale | Role | Where |
 |---|---|---|---|
-| Source traces | 1,570 traces / 50 apps | construction evidence; external fidelity authority | [`LEONW24/Trace2World`](https://huggingface.co/datasets/LEONW24/Trace2World) `traces/`: source recordings, action records, instructions, terminal contracts, collection metadata |
+| Source traces | 1,570 traces / 50 apps | construction evidence; external fidelity authority | not distributed |
 | Construction pipeline | one shared pipeline | trace → reconciled specification → environment | this repo, [`trace2world_pipeline/`](trace2world_pipeline): preprocessing, reconciliation, compilation, validation and repair |
 | Environment portfolio | 50 apps / 10 domains | resettable GUI RL substrate | [`LEONW24/Trace2World`](https://huggingface.co/datasets/LEONW24/Trace2World) `environments/`: standalone packages with state and evaluator manifests |
 | Environment host | one process, all apps | serve, step, evaluate | this repo, [`trace2world_env/`](trace2world_env): `t2w-serve`, `t2w-rollout`, `t2w-smoke` |
@@ -170,8 +169,8 @@ three attempts per task):
 ### 1. Install
 
 ```bash
-git clone https://github.com/LEON-gittech/Trace2World.git
-cd Trace2World
+git clone https://github.com/Tongyi-MAI/app2world.git
+cd app2world
 
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install ./trace2world_env huggingface_hub
@@ -180,6 +179,10 @@ playwright install chromium
 ```
 
 ### 2. Download the environments
+
+Access to the dataset is gated and reviewed manually: request access on the
+[dataset page](https://huggingface.co/datasets/LEONW24/Trace2World), then authenticate with
+`huggingface-cli login` (or `export HF_TOKEN=...`) once approved.
 
 ```bash
 python scripts/download_environments.py        # -> data/trace2world, verified against the manifest
@@ -261,8 +264,7 @@ environment and repairs the package while the app model stays frozen.
 ```bash
 pip install ./trace2world_pipeline && playwright install chromium
 export OPENAI_API_KEY='...'          # any OpenAI-compatible endpoint; see trace2world_pipeline/README.md
-python scripts/download_reference_traces.py --environments kfc   # -> data/trace2world/traces/kfc
-t2w-construct --config <config.json> --trace-dirs data/trace2world/traces/kfc --output-dir <result_dir>
+t2w-construct --config <config.json> --trace-dirs <trace_dir> [...] --output-dir <result_dir>
 t2w-verify    --config <verify_config.json>
 t2w-close     --result-dir <result_dir> --ledger <ledger.json> --operators <module>:<factory>
 t2w-export-environment --result-dir <result_dir> --package-dir <environment_dir>
@@ -270,20 +272,19 @@ t2w-export-environment --result-dir <result_dir> --package-dir <environment_dir>
 
 The stage-by-stage mapping to the paper's algorithms, the external services it calls, and the real
 parameters used for the release are in [`trace2world_pipeline/README.md`](trace2world_pipeline/README.md)
-and [`trace2world_pipeline/WORKFLOW.md`](trace2world_pipeline/WORKFLOW.md). Because the source traces of
-every environment are released, each environment can be rebuilt from its inputs.
+and [`trace2world_pipeline/WORKFLOW.md`](trace2world_pipeline/WORKFLOW.md). The constructor runs on any
+trace set recorded in the same format; the source traces of the released environments are not distributed.
 
 ## Repository layout
 
 ```text
-Trace2World/
+app2world/
 ├── README.md
 ├── LICENSE                          MIT (code); see the dataset card for the data terms
 ├── CITATION.cff
 ├── assets/                          figures used in this README
 ├── scripts/
 │   ├── download_environments.py     pull + verify the environments from the Hub
-│   ├── download_reference_traces.py pull + verify the source traces (all or selected apps)
 │   └── verify_environments.py       SHA-256 / task-count check of a release directory
 ├── trace2world_env/                 environment host, evaluators, state kernel, bundled agent
 │   ├── README.md                    HTTP API, action space, reward semantics, manifest fields
@@ -298,7 +299,7 @@ Trace2World/
 
 `data/trace2world/` is the local checkout of
 [`LEONW24/Trace2World`](https://huggingface.co/datasets/LEONW24/Trace2World) created by the download
-scripts; `data/` is git-ignored.
+script; `data/` is git-ignored.
 
 ## Ethics and scope
 

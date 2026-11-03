@@ -28,4 +28,6 @@ scripts/build_cross_app_case.py
 scripts/build_project_cases.py
 scripts/build_project_montage.py
 scripts/check_project_page.py
+scripts/curate_site_cases.py
 scripts/polish_case_panel.py
+scripts/refresh_bilibili_panel.py

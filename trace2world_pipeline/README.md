@@ -10,8 +10,7 @@ Hugging Face dataset
 [`LEONW24/Trace2World`](https://huggingface.co/datasets/LEONW24/Trace2World) (`environments/`)
 and are hosted and evaluated by the sibling package
 `trace2world_env`. The reference traces they were
-built from are in
-the same dataset under `traces/`.
+built from are not distributed.
 This package is the construction path only.
 
 ## Install
