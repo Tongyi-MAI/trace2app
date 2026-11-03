@@ -41,5 +41,9 @@ preferred-citation:
   - family-names: Wang
     given-names: Yue
   year: 2026
-  journal: "arXiv preprint"
-  notes: "arXiv identifier to be added once the preprint is public."
+  journal: "arXiv preprint arXiv:2610.30792"
+  url: "https://arxiv.org/abs/2610.30792"
+  identifiers:
+  - type: other
+    value: "arXiv:2610.30792"
+    description: "arXiv eprint (cs.LG)"

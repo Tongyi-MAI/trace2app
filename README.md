@@ -4,8 +4,8 @@
 
 # Trace2World: Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training
 
-[![arXiv](https://img.shields.io/badge/arXiv-coming%20soon-b31b1b.svg)](#citation)
-[![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Environments%20%2B%20Source%20Traces-yellow)](https://huggingface.co/datasets/LEONW24/Trace2World)
+[![arXiv](https://img.shields.io/badge/arXiv-2610.30792-b31b1b.svg)](https://arxiv.org/abs/2610.30792)
+[![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Environments-yellow)](https://huggingface.co/datasets/LEONW24/Trace2World)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](trace2world_env/pyproject.toml)
 
@@ -313,19 +313,19 @@ studied, without implying affiliation or endorsement.
 
 ## Citation
 
-The preprint is being prepared; the entry below will be updated with the arXiv identifier.
-
 ```bibtex
-@article{wang2026trace2world,
-  title   = {Trace2World: Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training},
-  author  = {Wang, Zezhou and Zhou, Hanzhang and Tong, Panrong and Kong, Quyu and
-             Li, Pengxiang and Hoi, Steven and Qian, Zhuzhong and Wang, Yue},
-  journal = {arXiv preprint},
-  year    = {2026}
+@misc{wang2026trace2worldreconstructingappworlds,
+      title={Trace2World: Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training},
+      author={Zezhou Wang and Hanzhang Zhou and Panrong Tong and Quyu Kong and Pengxiang Li and Steven Hoi and Zhuzhong Qian and Yue Wang},
+      year={2026},
+      eprint={2610.30792},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2610.30792},
 }
 ```
 
 ## License
 
-The code in this repository is released under the [MIT License](LICENSE). The environments and source
-traces are distributed under the terms stated on the Hugging Face dataset card.
+The code in this repository is released under the [MIT License](LICENSE). The environments are
+distributed under the terms stated on the Hugging Face dataset card.
