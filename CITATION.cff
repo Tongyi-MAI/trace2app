@@ -19,7 +19,7 @@ authors:
 - family-names: Wang
   given-names: Yue
 year: 2026
-repository-code: "https://github.com/Tongyi-MAI/app2world"
+repository-code: "https://github.com/Tongyi-MAI/trace2app"
 preferred-citation:
   type: article
   title: "Trace2World: Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training"

@@ -169,8 +169,8 @@ three attempts per task):
 ### 1. Install
 
 ```bash
-git clone https://github.com/Tongyi-MAI/app2world.git
-cd app2world
+git clone https://github.com/Tongyi-MAI/trace2app.git
+cd trace2app
 
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install ./trace2world_env huggingface_hub
@@ -278,7 +278,7 @@ trace set recorded in the same format; the source traces of the released environ
 ## Repository layout
 
 ```text
-app2world/
+trace2app/
 ├── README.md
 ├── LICENSE                          MIT (code); see the dataset card for the data terms
 ├── CITATION.cff
