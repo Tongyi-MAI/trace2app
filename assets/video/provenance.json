@@ -1,7 +1,7 @@
 {
   "source_kind": "unmarked raw observations; context_raw retained for text-only steps",
-  "input_manifest_sha256": "725658ce36bd959756f8f50dec6bf154f25495b9400dd8e10e8ec6b5704ffa8b",
-  "apps": 20,
+  "artifact_scope": "Trace2World release: 1,570 source traces and 50 reconstructed apps",
+  "apps": 50,
   "rollouts": 100,
   "observation_frames": 970,
   "fps": 24,
@@ -511,12 +511,12 @@
   ],
   "artifacts": {
     "montage.mp4": {
-      "bytes": 8313586,
-      "sha256": "6cb4052f29aa01e4158280c5b70c6cac61c9e1cf1b0e1c287c6055a10f98c1ee"
+      "bytes": 7129962,
+      "sha256": "e58e4f1b388d003dda7d32d3da6f5e956c4ce20b3b00e662d719ebea5e72c983"
     },
     "montage.webm": {
-      "bytes": 6830497,
-      "sha256": "9f799f9578f12d194c40e7e7030f1699b9fdadb4e41813933ec4640d70a544cf"
+      "bytes": 6590945,
+      "sha256": "e2c4813cf9e4a8db4c31dddd250e2b893c839501b1f276548999d3d3aa8a86df"
     },
     "poster.jpg": {
       "bytes": 224119,
