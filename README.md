@@ -5,7 +5,7 @@
 # Trace2World: Reconstructing App Worlds from Real Interaction Traces for Scalable GUI Agent Training
 
 [![arXiv](https://img.shields.io/badge/arXiv-2610.30792-b31b1b.svg)](https://arxiv.org/abs/2610.30792)
-[![Project Page](https://img.shields.io/badge/Project-Page-3337a8.svg)](https://leon-gittech.github.io/Trace2World/)
+[![Project Page](https://img.shields.io/badge/Project-Page-3337a8.svg)](https://tongyi-mai.github.io/trace2app/)
 [![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Environments-yellow)](https://huggingface.co/datasets/LEONW24/Trace2World)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](trace2world_env/pyproject.toml)
@@ -45,7 +45,7 @@ support learner-adaptive task and environment augmentation within source-support
 This repository is the **code** half of the release: the environment host / evaluators / bundled agent
 ([`trace2world_env/`](trace2world_env)) and the environment constructor
 ([`trace2world_pipeline/`](trace2world_pipeline)).
-The [**project page**](https://leon-gittech.github.io/Trace2World/) is the third entry point: the montage of
+The [**project page**](https://tongyi-mai.github.io/trace2app/) is the third entry point: the montage of
 reconstructed worlds, the method and results, a source trace followed end to end, the case studies, and the
 application gallery. The **data** half, the environments, is the gated Hugging Face project
 dataset [`LEONW24/Trace2World`](https://huggingface.co/datasets/LEONW24/Trace2World) (`environments/`);
@@ -331,7 +331,7 @@ studied, without implying affiliation or endorsement.
 
 ## Project page
 
-<https://leon-gittech.github.io/Trace2World/> - overview, method and results, case studies, the fifty-app
+<https://tongyi-mai.github.io/trace2app/> - overview, method and results, case studies, the fifty-app
 gallery, and the BibTeX entry.
 
 ## License
