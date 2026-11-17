@@ -1,277 +1,53 @@
 {
-  "source_kind": "unmarked raw observations; context_raw retained for text-only steps",
+  "source_kind": "unmarked raw screenshots from the released reference traces; no per-step annotation drawn",
   "artifact_scope": "Trace2World release: 1,570 source traces and 50 reconstructed apps",
-  "apps": 50,
-  "rollouts": 100,
-  "observation_frames": 970,
+  "tiles_count": 100,
+  "apps_in_wall": 20,
+  "observation_frames": 912,
   "fps": 24,
   "width": 1920,
   "height": 1080,
+  "caption": "50 reconstructed apps · 1,570 source traces (no rollout count or qualifier by design)",
   "tiles": [
     {
-      "app": "dewu",
-      "task": "aug_dewu_10",
+      "app": "58tongcheng",
+      "task": "task_20260130_143029_373101",
       "frames": 7
     },
     {
-      "app": "weibo",
-      "task": "task_20260114_095809_442310",
-      "frames": 11
-    },
-    {
-      "app": "didi",
-      "task": "task_20260112_174232_754678",
-      "frames": 18
-    },
-    {
-      "app": "58tc",
-      "task": "task_20260202_110744_614237",
-      "frames": 11
-    },
-    {
-      "app": "dewu",
-      "task": "task_20260120_142800_433798",
-      "frames": 7
-    },
-    {
-      "app": "railway12306",
-      "task": "task_20260112_095702_827083",
-      "frames": 13
-    },
-    {
-      "app": "damai",
-      "task": "task_20260113_154309_894712",
-      "frames": 5
-    },
-    {
-      "app": "autohome",
-      "task": "aug_task_autohome_20260812_v2_005",
-      "frames": 7
-    },
-    {
-      "app": "xianyu",
-      "task": "task_20260203_150212_020888",
-      "frames": 6
-    },
-    {
-      "app": "kfc",
-      "task": "kfc_aug_012_flash_sale_rank_safe_boundary",
-      "frames": 7
-    },
-    {
-      "app": "kugou",
-      "task": "task_20260206_112903_117022",
-      "frames": 10
-    },
-    {
-      "app": "dingtalk",
-      "task": "task_20260202_090747_559266",
-      "frames": 6
-    },
-    {
-      "app": "dongchedi",
-      "task": "task_20260121_172437_205186",
-      "frames": 6
-    },
-    {
-      "app": "netease_music",
-      "task": "task_20260120_142157_125021",
-      "frames": 5
-    },
-    {
-      "app": "bilibili",
-      "task": "task_20260114_161012_961760",
-      "frames": 11
-    },
-    {
-      "app": "dingdongmaicai",
-      "task": "task_20260204_102833_583115",
-      "frames": 8
-    },
-    {
-      "app": "ximalaya",
-      "task": "task_20260129_152656_813258",
-      "frames": 11
-    },
-    {
-      "app": "youdao_dictionary",
-      "task": "task_20260209_171335_149717",
-      "frames": 5
-    },
-    {
-      "app": "xiaohongshu",
-      "task": "task_20260116_134446_346602",
-      "frames": 7
-    },
-    {
-      "app": "toutiao",
-      "task": "task_20260202_093727_676574",
-      "frames": 11
-    },
-    {
-      "app": "ximalaya",
-      "task": "task_aug_ximalaya_018",
-      "frames": 11
-    },
-    {
-      "app": "dingtalk",
-      "task": "task_20260203_094002_164928",
-      "frames": 8
-    },
-    {
-      "app": "dewu",
-      "task": "task_20260120_110624_037101",
-      "frames": 10
-    },
-    {
-      "app": "xianyu",
-      "task": "task_20260203_170341_420729",
+      "app": "58tongcheng",
+      "task": "task_20260202_145337_673169",
       "frames": 9
     },
     {
-      "app": "bilibili",
-      "task": "task_20260115_153704_301824",
-      "frames": 10
-    },
-    {
-      "app": "xiaohongshu",
-      "task": "task_20260114_143047_610471",
-      "frames": 10
-    },
-    {
-      "app": "dingdongmaicai",
-      "task": "task_20260204_101102_882583",
-      "frames": 5
-    },
-    {
-      "app": "kugou",
-      "task": "task_20260205_162702_664111",
-      "frames": 6
-    },
-    {
-      "app": "kfc",
-      "task": "kfc_aug_006_nearby_store_dinein_draft",
-      "frames": 14
-    },
-    {
-      "app": "damai",
-      "task": "damai_aug_012",
-      "frames": 11
-    },
-    {
-      "app": "meituan",
-      "task": "deal_03",
-      "frames": 8
-    },
-    {
-      "app": "weibo",
-      "task": "weibo_aug_11",
-      "frames": 10
-    },
-    {
-      "app": "autohome",
-      "task": "task_20260206_160449_730749",
-      "frames": 16
-    },
-    {
-      "app": "dongchedi",
-      "task": "task_20260121_102653_137083",
-      "frames": 5
-    },
-    {
-      "app": "railway12306",
-      "task": "railway_aug_020",
-      "frames": 6
-    },
-    {
-      "app": "58tc",
-      "task": "task_20260203_142558_333536",
-      "frames": 10
-    },
-    {
-      "app": "didi",
-      "task": "didi_aug_019",
-      "frames": 7
-    },
-    {
-      "app": "toutiao",
-      "task": "task_20260202_093909_298137",
-      "frames": 5
-    },
-    {
-      "app": "netease_music",
-      "task": "task_20260120_145512_939291",
-      "frames": 8
-    },
-    {
-      "app": "youdao_dictionary",
-      "task": "task_20260209_173014_220221",
-      "frames": 10
-    },
-    {
-      "app": "youdao_dictionary",
-      "task": "task_20260209_155219_912059",
-      "frames": 9
-    },
-    {
-      "app": "damai",
-      "task": "damai_aug_006",
-      "frames": 5
-    },
-    {
-      "app": "meituan",
-      "task": "task_20260116_230731_855587",
-      "frames": 14
-    },
-    {
-      "app": "netease_music",
-      "task": "task_20260120_110231_021461",
-      "frames": 5
-    },
-    {
-      "app": "xiaohongshu",
-      "task": "task_20260114_141135_458599",
-      "frames": 6
-    },
-    {
-      "app": "bilibili",
-      "task": "bili_aug_018_duration_bucket_conditional_save",
-      "frames": 14
-    },
-    {
-      "app": "didi",
-      "task": "task_20260114_152956_237686",
-      "frames": 8
-    },
-    {
-      "app": "railway12306",
-      "task": "task_20260203_131541_077930",
+      "app": "58tongcheng",
+      "task": "task_20260202_164619_934112",
       "frames": 12
     },
     {
-      "app": "dongchedi",
-      "task": "task_20260121_105553_058090",
-      "frames": 9
+      "app": "58tongcheng",
+      "task": "task_20260203_143944_416976",
+      "frames": 10
     },
     {
-      "app": "dingdongmaicai",
-      "task": "task_20260204_130349_297722",
-      "frames": 5
+      "app": "58tongcheng",
+      "task": "task_20260204_142845_312852",
+      "frames": 8
     },
     {
-      "app": "meituan",
-      "task": "show_02",
-      "frames": 20
+      "app": "autohome",
+      "task": "task_20260129_173256_638835",
+      "frames": 7
     },
     {
-      "app": "toutiao",
-      "task": "aug_toutiao_019",
-      "frames": 13
+      "app": "autohome",
+      "task": "task_20260206_142141_863324",
+      "frames": 10
     },
     {
-      "app": "ximalaya",
-      "task": "task_aug_ximalaya_010",
-      "frames": 11
+      "app": "autohome",
+      "task": "task_20260206_160306_581451",
+      "frames": 10
     },
     {
       "app": "autohome",
@@ -279,29 +55,364 @@
       "frames": 7
     },
     {
-      "app": "kugou",
-      "task": "aug_task_20260811_005",
+      "app": "autohome",
+      "task": "task_20260206_171148_200618",
+      "frames": 8
+    },
+    {
+      "app": "bilibili",
+      "task": "task_20260113_142911_369654",
       "frames": 12
     },
     {
-      "app": "58tc",
-      "task": "task_20260204_142546_433652",
+      "app": "bilibili",
+      "task": "task_20260114_141735_630930",
+      "frames": 8
+    },
+    {
+      "app": "bilibili",
+      "task": "task_20260115_091721_249802",
+      "frames": 11
+    },
+    {
+      "app": "bilibili",
+      "task": "task_20260115_174836_621202",
+      "frames": 11
+    },
+    {
+      "app": "bilibili",
+      "task": "task_20260119_153138_424288",
+      "frames": 7
+    },
+    {
+      "app": "damai",
+      "task": "task_20260113_111304_015541",
+      "frames": 7
+    },
+    {
+      "app": "damai",
+      "task": "task_20260114_092356_179768",
+      "frames": 6
+    },
+    {
+      "app": "damai",
+      "task": "task_20260114_134420_830208",
+      "frames": 7
+    },
+    {
+      "app": "damai",
+      "task": "task_20260116_105945_798208",
+      "frames": 8
+    },
+    {
+      "app": "damai",
+      "task": "task_20260116_144111_737582",
+      "frames": 8
+    },
+    {
+      "app": "dewu",
+      "task": "task_20260115_120743_480730",
+      "frames": 7
+    },
+    {
+      "app": "dewu",
+      "task": "task_20260119_100024_453389",
+      "frames": 8
+    },
+    {
+      "app": "dewu",
+      "task": "task_20260119_160020_571141",
+      "frames": 12
+    },
+    {
+      "app": "dewu",
+      "task": "task_20260120_110624_037101",
+      "frames": 8
+    },
+    {
+      "app": "dewu",
+      "task": "task_20260121_122001_312884",
+      "frames": 10
+    },
+    {
+      "app": "didi",
+      "task": "task_20260112_163601_463590",
+      "frames": 12
+    },
+    {
+      "app": "didi",
+      "task": "task_20260113_100143_642319",
+      "frames": 8
+    },
+    {
+      "app": "didi",
+      "task": "task_20260114_174324_829658",
+      "frames": 12
+    },
+    {
+      "app": "didi",
+      "task": "task_20260119_180819_600933",
+      "frames": 11
+    },
+    {
+      "app": "didi",
+      "task": "task_20260130_161028_909582",
+      "frames": 12
+    },
+    {
+      "app": "dingdong_maicai",
+      "task": "task_20260202_132505_418772",
+      "frames": 7
+    },
+    {
+      "app": "dingdong_maicai",
+      "task": "task_20260203_101846_887185",
+      "frames": 9
+    },
+    {
+      "app": "dingdong_maicai",
+      "task": "task_20260204_101102_882583",
+      "frames": 6
+    },
+    {
+      "app": "dingdong_maicai",
+      "task": "task_20260204_103129_855005",
+      "frames": 6
+    },
+    {
+      "app": "dingdong_maicai",
+      "task": "task_20260204_132123_149598",
+      "frames": 8
+    },
+    {
+      "app": "dingtalk",
+      "task": "task_20260130_130321_213099",
+      "frames": 8
+    },
+    {
+      "app": "dingtalk",
+      "task": "task_20260202_100150_222926",
+      "frames": 10
+    },
+    {
+      "app": "dingtalk",
+      "task": "task_20260202_173819_311890",
+      "frames": 8
+    },
+    {
+      "app": "dingtalk",
+      "task": "task_20260203_105840_541261",
+      "frames": 12
+    },
+    {
+      "app": "dingtalk",
+      "task": "task_20260206_152445_533205",
+      "frames": 12
+    },
+    {
+      "app": "dongchedi",
+      "task": "task_20260119_122947_317278",
+      "frames": 7
+    },
+    {
+      "app": "dongchedi",
+      "task": "task_20260119_174322_061615",
+      "frames": 7
+    },
+    {
+      "app": "dongchedi",
+      "task": "task_20260120_173622_138730",
+      "frames": 6
+    },
+    {
+      "app": "dongchedi",
+      "task": "task_20260121_140809_722362",
+      "frames": 7
+    },
+    {
+      "app": "dongchedi",
+      "task": "task_20260121_173145_667905",
+      "frames": 6
+    },
+    {
+      "app": "kfc",
+      "task": "task_20260209_102050_884097",
+      "frames": 12
+    },
+    {
+      "app": "kfc",
+      "task": "task_20260209_113834_717043",
+      "frames": 10
+    },
+    {
+      "app": "kfc",
+      "task": "task_20260209_144359_993735",
+      "frames": 12
+    },
+    {
+      "app": "kfc",
+      "task": "task_20260209_164006_943273",
+      "frames": 12
+    },
+    {
+      "app": "kfc",
+      "task": "task_20260209_172501_760347",
+      "frames": 12
+    },
+    {
+      "app": "meituan",
+      "task": "task_20260113_144340_533398",
+      "frames": 12
+    },
+    {
+      "app": "meituan",
+      "task": "task_20260115_095413_510007",
+      "frames": 7
+    },
+    {
+      "app": "meituan",
+      "task": "task_20260113_141225_912198",
+      "frames": 20
+    },
+    {
+      "app": "meituan",
+      "task": "task_20260116_212607_159648",
+      "frames": 12
+    },
+    {
+      "app": "meituan",
+      "task": "task_20260121_110501_675272",
+      "frames": 12
+    },
+    {
+      "app": "kugou_music",
+      "task": "task_20260205_105512_201479",
+      "frames": 5
+    },
+    {
+      "app": "kugou_music",
+      "task": "task_20260205_110713_108725",
+      "frames": 12
+    },
+    {
+      "app": "kugou_music",
+      "task": "task_20260206_112335_354242",
+      "frames": 7
+    },
+    {
+      "app": "kugou_music",
+      "task": "task_20260206_145107_661534",
+      "frames": 12
+    },
+    {
+      "app": "kugou_music",
+      "task": "task_20260206_164906_880483",
+      "frames": 8
+    },
+    {
+      "app": "netease_cloud_music",
+      "task": "task_20260115_135212_899419",
+      "frames": 6
+    },
+    {
+      "app": "netease_cloud_music",
+      "task": "task_20260115_164615_997154",
+      "frames": 6
+    },
+    {
+      "app": "netease_cloud_music",
+      "task": "task_20260119_145942_915035",
+      "frames": 9
+    },
+    {
+      "app": "netease_cloud_music",
+      "task": "task_20260120_140350_703731",
+      "frames": 8
+    },
+    {
+      "app": "netease_cloud_music",
+      "task": "task_20260120_151531_287337",
+      "frames": 12
+    },
+    {
+      "app": "railway_12306",
+      "task": "task_20260109_174550_379287",
+      "frames": 10
+    },
+    {
+      "app": "railway_12306",
+      "task": "task_20260112_104255_041574",
+      "frames": 12
+    },
+    {
+      "app": "railway_12306",
+      "task": "task_20260112_145735_666350",
+      "frames": 12
+    },
+    {
+      "app": "railway_12306",
+      "task": "task_20260202_142119_051612",
+      "frames": 10
+    },
+    {
+      "app": "railway_12306",
+      "task": "task_20260204_132323_814212",
+      "frames": 12
+    },
+    {
+      "app": "toutiao",
+      "task": "task_20260130_101328_993817",
+      "frames": 7
+    },
+    {
+      "app": "toutiao",
+      "task": "task_20260130_143241_223542",
+      "frames": 8
+    },
+    {
+      "app": "toutiao",
+      "task": "task_20260202_093727_676574",
+      "frames": 7
+    },
+    {
+      "app": "toutiao",
+      "task": "task_20260202_123954_182971",
+      "frames": 9
+    },
+    {
+      "app": "toutiao",
+      "task": "task_20260206_135405_382390",
       "frames": 8
     },
     {
       "app": "weibo",
-      "task": "task_20260115_155144_999191",
-      "frames": 5
+      "task": "task_20260112_092550_603770",
+      "frames": 11
     },
     {
-      "app": "kfc",
-      "task": "task_20260209_103850_421267",
-      "frames": 16
-    },
-    {
-      "app": "dingtalk",
-      "task": "task_20260203_141855_524707",
+      "app": "weibo",
+      "task": "task_20260114_095809_442310",
       "frames": 10
+    },
+    {
+      "app": "weibo",
+      "task": "task_20260114_155343_811092",
+      "frames": 8
+    },
+    {
+      "app": "weibo",
+      "task": "task_20260115_130228_312360",
+      "frames": 12
+    },
+    {
+      "app": "weibo",
+      "task": "task_20260120_115141_369084",
+      "frames": 11
+    },
+    {
+      "app": "xianyu",
+      "task": "task_20260112_154334_073078",
+      "frames": 9
     },
     {
       "app": "xianyu",
@@ -309,252 +420,144 @@
       "frames": 10
     },
     {
-      "app": "ximalaya",
-      "task": "task_aug_ximalaya_015",
+      "app": "xianyu",
+      "task": "task_20260203_163049_511141",
       "frames": 12
     },
     {
       "app": "xianyu",
-      "task": "task_20260203_154053_272351",
-      "frames": 5
-    },
-    {
-      "app": "meituan",
-      "task": "task_20260119_095023_168735",
-      "frames": 17
-    },
-    {
-      "app": "toutiao",
-      "task": "task_20260130_130328_220396",
-      "frames": 9
-    },
-    {
-      "app": "didi",
-      "task": "didi_aug_018",
+      "task": "task_20260204_104641_563933",
       "frames": 8
-    },
-    {
-      "app": "dingtalk",
-      "task": "task_20260202_102536_294691",
-      "frames": 9
-    },
-    {
-      "app": "kfc",
-      "task": "task_20260209_104920_241044",
-      "frames": 7
-    },
-    {
-      "app": "dongchedi",
-      "task": "task_20260119_164701_749422",
-      "frames": 10
-    },
-    {
-      "app": "weibo",
-      "task": "task_20260115_150651_925416",
-      "frames": 11
-    },
-    {
-      "app": "kugou",
-      "task": "task_20260205_110144_243430",
-      "frames": 5
-    },
-    {
-      "app": "youdao_dictionary",
-      "task": "task_20260209_112719_550481",
-      "frames": 13
-    },
-    {
-      "app": "autohome",
-      "task": "task_20260206_165443_192103",
-      "frames": 6
-    },
-    {
-      "app": "dingdongmaicai",
-      "task": "dd_aug_010",
-      "frames": 18
-    },
-    {
-      "app": "dewu",
-      "task": "task_20260119_144940_748034",
-      "frames": 7
-    },
-    {
-      "app": "railway12306",
-      "task": "railway_aug_018",
-      "frames": 6
-    },
-    {
-      "app": "xiaohongshu",
-      "task": "task_20260116_141630_449123",
-      "frames": 11
-    },
-    {
-      "app": "netease_music",
-      "task": "task_20260120_141018_154951",
-      "frames": 7
-    },
-    {
-      "app": "damai",
-      "task": "task_20260114_093928_616604",
-      "frames": 6
-    },
-    {
-      "app": "bilibili",
-      "task": "bili_aug_001_food_duration_collection",
-      "frames": 14
-    },
-    {
-      "app": "58tc",
-      "task": "task_20260203_140521_440535",
-      "frames": 5
-    },
-    {
-      "app": "dingtalk",
-      "task": "task_20260202_104621_961544",
-      "frames": 11
-    },
-    {
-      "app": "kfc",
-      "task": "kfc_aug_003_story_category_favorite_revisit",
-      "frames": 18
-    },
-    {
-      "app": "railway12306",
-      "task": "railway_aug_007",
-      "frames": 13
-    },
-    {
-      "app": "toutiao",
-      "task": "aug_toutiao_018",
-      "frames": 8
-    },
-    {
-      "app": "xiaohongshu",
-      "task": "xhs_aug_018",
-      "frames": 14
-    },
-    {
-      "app": "meituan",
-      "task": "flashbuy_07",
-      "frames": 10
-    },
-    {
-      "app": "netease_music",
-      "task": "task_20260119_145942_915035",
-      "frames": 11
     },
     {
       "app": "xianyu",
-      "task": "task_20260203_170026_596389",
+      "task": "task_20260205_144754_357254",
       "frames": 8
     },
     {
-      "app": "damai",
-      "task": "damai_aug_002",
+      "app": "xiaohongshu",
+      "task": "task_20260113_145047_103421",
       "frames": 8
     },
     {
-      "app": "weibo",
-      "task": "weibo_aug_18",
-      "frames": 10
+      "app": "xiaohongshu",
+      "task": "task_20260114_110316_538009",
+      "frames": 8
     },
     {
-      "app": "autohome",
-      "task": "task_20260206_162001_503043",
-      "frames": 18
+      "app": "xiaohongshu",
+      "task": "task_20260114_143047_610471",
+      "frames": 8
     },
     {
-      "app": "youdao_dictionary",
-      "task": "task_20260209_105055_656813",
-      "frames": 17
-    },
-    {
-      "app": "58tc",
-      "task": "task_20260202_145519_002639",
-      "frames": 9
-    },
-    {
-      "app": "didi",
-      "task": "task_20260130_102102_061868",
+      "app": "xiaohongshu",
+      "task": "task_20260116_134446_346602",
       "frames": 7
     },
     {
-      "app": "dewu",
-      "task": "task_20260119_160020_571141",
-      "frames": 17
-    },
-    {
-      "app": "bilibili",
-      "task": "bili_aug_029_dance_comprehensive_share_draft",
-      "frames": 18
-    },
-    {
-      "app": "kugou",
-      "task": "task_20260206_142203_761694",
-      "frames": 5
-    },
-    {
-      "app": "dongchedi",
-      "task": "task_20260119_145642_622175",
-      "frames": 11
-    },
-    {
-      "app": "dingdongmaicai",
-      "task": "task_20260204_101811_827542",
+      "app": "xiaohongshu",
+      "task": "task_20260116_172620_377809",
       "frames": 6
     },
     {
       "app": "ximalaya",
-      "task": "task_aug_ximalaya_020",
-      "frames": 15
+      "task": "task_20260123_110950_624138",
+      "frames": 8
+    },
+    {
+      "app": "ximalaya",
+      "task": "task_20260123_172126_869192",
+      "frames": 8
+    },
+    {
+      "app": "ximalaya",
+      "task": "task_20260129_150913_137132",
+      "frames": 12
+    },
+    {
+      "app": "ximalaya",
+      "task": "task_20260129_164557_661875",
+      "frames": 7
+    },
+    {
+      "app": "ximalaya",
+      "task": "task_20260130_114637_230961",
+      "frames": 8
+    },
+    {
+      "app": "youdao_dictionary",
+      "task": "task_20260209_100335_969786",
+      "frames": 8
+    },
+    {
+      "app": "youdao_dictionary",
+      "task": "task_20260209_112359_179312",
+      "frames": 8
+    },
+    {
+      "app": "youdao_dictionary",
+      "task": "task_20260209_140336_533840",
+      "frames": 8
+    },
+    {
+      "app": "youdao_dictionary",
+      "task": "task_20260209_155219_912059",
+      "frames": 8
+    },
+    {
+      "app": "youdao_dictionary",
+      "task": "task_20260209_173913_364078",
+      "frames": 8
     }
   ],
   "artifacts": {
     "montage.mp4": {
-      "bytes": 7129962,
-      "sha256": "e58e4f1b388d003dda7d32d3da6f5e956c4ce20b3b00e662d719ebea5e72c983"
+      "bytes": 9505008,
+      "sha256": "46b11386e29bd31d54543b7dc1ef50cbd6586273bf6ce636c344e3ee2562de78"
     },
     "montage.webm": {
-      "bytes": 6590945,
-      "sha256": "e2c4813cf9e4a8db4c31dddd250e2b893c839501b1f276548999d3d3aa8a86df"
+      "bytes": 7320120,
+      "sha256": "1e3726a8561962a858facf449e4d3680340b95a907be39747dfebd990f2ca651"
     },
     "poster.jpg": {
-      "bytes": 224119,
-      "sha256": "2e35b6aa2944c2a5b12c3cf516ce23dd65d53afb849a0c388e6a50a995295a9a"
+      "bytes": 212259,
+      "sha256": "7ec9a3409a3fdd318ebc07b271faea6088218e25d5a55e28ae04f364890bb06a"
     }
   },
   "anchor": {
-    "tile_index": 50,
+    "tile_index": 52,
     "app": "meituan",
-    "task": "show_02",
-    "task_label": "Talk-show tickets · compare 3 venues",
-    "source": "evaluation raw observations",
-    "trajectory_sha256": "a13b5c78278cc575ef6d461f0ecf37abb06f73a046e98e0e5d3ea080c0617abe",
-    "source_terminal_success": true,
-    "source_reward": 1.0,
+    "task": "task_20260113_141225_912198",
     "steps": 20,
+    "source": "released reference trace, raw screenshots",
     "frame_sha256": [
-      "1e294c3d2c1dc920250668ef108ac88c85c48c06e5cc87307d0d9fccd8742807",
-      "f26bb49ffe7ca8358f349b178fcb05f8ba4bcdcafda09d1ab85faec24800c123",
-      "452bf9798ef6810d8b27b588074ad5fb19d4951cf67c951a979c4f69030e6d3f",
-      "a86a899b0e610d8a4d97035beb6484ffec2b1dfc59bab7ef9cd0b293379e30ed",
-      "a86a899b0e610d8a4d97035beb6484ffec2b1dfc59bab7ef9cd0b293379e30ed",
-      "6f79efd8f7612760280ad5cd4529840e5f5a3b39722a6efd0d6a08e2c4cb5d66",
-      "b915ec70dbf8e0f5be4531f861bb8bce1665eb6ccdd071fdccecec913f59c8e0",
-      "76425fd9a71fc2c01569e82defa5b36c27fcdbe533c3d1927767f2f4c1ba780d",
-      "904caff0a8fb502d051ddb7967e23e06ea140b37d7f053100e900e8763816d52",
-      "6f79efd8f7612760280ad5cd4529840e5f5a3b39722a6efd0d6a08e2c4cb5d66",
-      "91839a8c81ce62ca19a85cf87567f80559086c390593b3b5384fd7ff12d40ab9",
-      "6f79efd8f7612760280ad5cd4529840e5f5a3b39722a6efd0d6a08e2c4cb5d66",
-      "8d667705c722efbf5cee6e1fa06ddf50f9e5cb8f9f9c50c750f25f104474cee2",
-      "6f79efd8f7612760280ad5cd4529840e5f5a3b39722a6efd0d6a08e2c4cb5d66",
-      "91839a8c81ce62ca19a85cf87567f80559086c390593b3b5384fd7ff12d40ab9",
-      "2c853bf4860bc5ab39a737b00f25380fdffbf42a5b306236a2c84647c54900a5",
-      "621e98cddec25ec079dec75bce8a9cb6fdba0de8bc3425fbc29a1a0a262dad66",
-      "85a1310851d5c098a3c90261e84d37b51df8ce0bfb3a43c5d246bbc8d05ee051",
-      "ab6349cc121594e1cd138f249465c06d839d07a0e074fbbafb688e2852c102b0",
-      "ac83f94140c4fccfcab44bf03f08c63114601dfd6a50ce5fa51722f45453f06e"
-    ],
-    "playback_seconds_per_step": 1.06
+      "ebf2568658755b99825b2c07d8070b8821c6f7e37436fb43fb8355f67f59e16c",
+      "ab7d7bbb2c5f5ca5fc275e6bd5216079bcc26c194f97793335b51d984ea34afd",
+      "3d1cef572cfd32838f0fe99fc75a49d0828ec8a664cc11ee1044e2c59f9a2c91",
+      "edf12be7b88a1f49652e694e0eea5b50a4601488192c8f64c3f47910add10d24",
+      "55a6546d43ff2856f294ea08da4ba5f897363d0841d17b422adbc81d8e304bba",
+      "efe2a8bf6ba3e1c07fa0091333f0051dc56e310a4d0fb55577005168ba0b308e",
+      "a873cb13fe40d4374205667f8c263f10a8b92acb3c2123065be67e8b65bef008",
+      "18ed46bf111156698fe41a03d201f248014a4532e03fd6ecbc950345f416c43f",
+      "4635f280d0441763da096fbfa5935539f83704bd2f2a659643ef069d48754f53",
+      "c6c7aed4f357da0909f33c9db1815d2133a7db0c004be52a6ca11c17aef7ebc7",
+      "075a2624a35299ef0824f9c3608e500bf6b89bc61183372e4b969bc70ae7c976",
+      "dc47189c92fda881d942b86f374b0c852af2dac0a716c7ecbf15d0cddd04a896",
+      "cbd7ffcb8354c14fe66b8fccc8a94a08c4f4a7ed436329814aad0ac04f561e18",
+      "21e777d60409a030a76232d52af39cce66e785838710e8655534f46c9d68f9a0",
+      "5b6c475a7fab27c4e67bce628572dfca6a72356d0596544b27bb6f6c5c45fdce",
+      "9589dff55fee37b6df898cf0fdc3f074f691f8af7fd1f80e52e66402c08d93e5",
+      "67003cc666745a7228267e45385426621dd6c5180eff1df82af36fce6f4f9286",
+      "f7692adf699278b4713a5e794fd948c36c5b28a0efda99c72e4b7857a4946a1d",
+      "3263b3a22e587a351140138bb564d3c44c9d8e7f50e31b667b1998998ed36a3d",
+      "07aecfa0eed6cbe87e74ab3f610db29ed122837a52a94b6c362db509cba65c3d"
+    ]
+  },
+  "build": {
+    "generated_at": "2026-11-07",
+    "manifest": "/tmp/montage_sel_new.json",
+    "script": "scripts/build_project_montage.py",
+    "font": "Noto Sans CJK (regular/bold, index 2)",
+    "note": "rebuild; the pre-2026-11-07 render annotated a rollout count in the caption band; the caption now reads only the app and trace totals"
   }
 }
