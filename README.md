@@ -263,7 +263,7 @@ states, concurrency) are documented in [`trace2world_env/README.md`](trace2world
 traces of one app and runs the paper's construction path end to end: global behavior reconstruction
 (Algorithm 1: *Restore / Reconcile / Factorize / Supported* — trace-local evidence → canonical page,
 entity and state identity → Structure/State/Data factorization → source-supported behavior only),
-page realization and task composition, then source acceptance (Algorithm 2: bounded *Execute / Review /
+page realization and task composition, then source acceptance (Algorithm 4: bounded *Execute / Review /
 Probe* with *Repair / Invalidate*, `K = 3`) that replays the original workflows against the built
 environment and repairs the package while the app model stays frozen.
 
@@ -280,6 +280,12 @@ The stage-by-stage mapping to the paper's algorithms, the external services it c
 parameters used for the release are in [`trace2world_pipeline/README.md`](trace2world_pipeline/README.md)
 and [`trace2world_pipeline/WORKFLOW.md`](trace2world_pipeline/WORKFLOW.md). The constructor runs on any
 trace set recorded in the same format; the source traces of the released environments are not distributed.
+
+The agentic stages are specified as agent skills in
+[`trace2world_pipeline/skills/`](trace2world_pipeline/skills/README.md): one `SKILL.md` per operator of
+Algorithm 4 (environment validation and repair) and of Algorithm 5 (learner-guided task selection:
+implementing task candidates, screening them with the learner and a fixed solver, and freezing the next
+batch), each with the scripts that check what it produces.
 
 ## Repository layout
 
@@ -300,6 +306,7 @@ trace2app/
     ├── README.md                    stage layout and paper-algorithm mapping
     ├── WORKFLOW.md                  end-to-end construction order with real parameters
     ├── pyproject.toml               t2w-construct, t2w-verify, t2w-close, t2w-export-environment, ...
+    ├── skills/                      agent skills for Algorithm 4 and Algorithm 5 operators
     └── src/trace2world_pipeline/
 ```
 

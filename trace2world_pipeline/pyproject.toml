@@ -35,7 +35,7 @@ semantic = [
 [project.scripts]
 # Automatic construction path: Restore -> Reconcile -> Factorize -> Supported -> page realization.
 t2w-construct = "trace2world_pipeline.orchestrator:main"
-# Verify (Alg. 2 Probe): instrumentation, evaluator compilation, negative probes.
+# Verify (Alg. 4 Probe): instrumentation, evaluator compilation, negative probes.
 t2w-verify = "trace2world_pipeline.verification.run_verification:main"
 # Project_p: state-dependent action effects and action hosts.
 t2w-compile-action-hosts = "trace2world_pipeline.page_realizer.drivers.materialize_action_hosts:main"
@@ -44,7 +44,7 @@ t2w-export-environment = "trace2world_pipeline.compiler.export.environment_packa
 # Runtime state ownership.
 t2w-state-kernel = "trace2world_pipeline.state_kernel.drivers.materialize_kernel:main"
 t2w-state-runtime = "trace2world_pipeline.state_kernel.drivers.materialize_runtime:main"
-# Alg. 2 environment validation and repair: bounded closure over one result's slices.
+# Alg. 4 environment validation and repair: bounded closure over one result's slices.
 t2w-close = "trace2world_pipeline.closure.drivers.run_closure:main"
 
 

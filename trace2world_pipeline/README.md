@@ -97,8 +97,8 @@ The later paper stages are separate console scripts:
 | `t2w-compile-action-hosts` | `Project_p` state-dependent action effects |
 | `t2w-state-kernel`, `t2w-state-runtime` | runtime state ownership |
 | `t2w-export-environment` | compiled page specifications and environment export — the stage that produced the released environments |
-| `t2w-verify` | Alg. 2 `Probe`: verification contract and probe matrix |
-| `t2w-close` | Alg. 2: bounded `Execute`/`Review`/`Probe` with `Repair`/`Invalidate` |
+| `t2w-verify` | Alg. 4 `Probe`: verification contract and probe matrix |
+| `t2w-close` | Alg. 4: bounded `Execute`/`Review`/`Probe` with `Repair`/`Invalidate` |
 
 [`WORKFLOW.md`](WORKFLOW.md) gives the end-to-end order with real flags.
 
@@ -113,17 +113,21 @@ The later paper stages are separate console scripts:
 | `state_kernel/` | Runtime state ownership, separate from the compiled page |
 | `verification/` | `Probe`: instrumentation, action/reward authority, negative probes |
 | `validation/` | `Execute` and `Review`: replay against obligations, independent review |
-| `closure/` | Alg. 2: the bounded `Repair`/`Invalidate` loop, the repair ledger, and the three terminal outcomes |
+| `closure/` | Alg. 4: the bounded `Repair`/`Invalidate` loop, the repair ledger, and the three terminal outcomes |
 | `task_generation/` | `Compose`: tasks derived from the app specification |
 | `runtime_backend/` | Generated app SDK and runtime contract |
 
-## Algorithm 2
+## Algorithm 4
 
 `closure/` implements the environment validation and repair loop. The control
 structure is owned here: the repair budget, the per-slice ledger, the evidence
 invalidation, and the terminal outcomes. The labour of `Execute`, `Review`,
 `Probe` and `Repair` is supplied through `closure.ClosureOperators` by the
-implementation agents; `WORKFLOW.md` documents that contract.
+implementation agents; `WORKFLOW.md` documents that contract, and
+[`skills/`](skills/README.md) gives each operator's agent procedure
+(`build-obligations`, `execute-trace`, `review-trace`, `probe-contract`,
+`repair-package`, `repair-supervision`, and the `closure-loop` that runs them on
+the same ledger).
 
 ```bash
 .venv/bin/t2w-close --result-dir "$RESULT" --ledger "$LEDGER" --operators <module>:<factory>
@@ -136,6 +140,18 @@ resumes with the budget it had left rather than a fresh allowance.
 A run ends in exactly one of `Verified`, `UpstreamReferral`, or `DroppedSlice`.
 A dropped slice records its owner and its exit: `cap` when the budget ran out,
 `not_repairable` when the failure was never repairable.
+
+## Algorithm 5
+
+Learner-guided task selection runs after a package is validated. It is agentic
+and has no console script: [`skills/implement-task-slice`](skills/implement-task-slice/SKILL.md)
+instantiates supported task candidates bound to a read-only task-facing index and
+owns the work queue, and [`skills/diagnose-attempts`](skills/diagnose-attempts/SKILL.md)
+screens each candidate with four valid attempts from the preceding learner and
+from a fixed solver, attributes non-learner faults, and refines, holds, records,
+or selects it before the batch is frozen to one package revision. Environment
+defects found while screening go back through the Algorithm 4 loop with the
+slice's remaining budget from the same ledger.
 
 ## Frozen runtime contract
 

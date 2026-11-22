@@ -138,7 +138,7 @@ the rest differing only in the run's own paths and timestamps.
 
 ## 5. Verify
 
-**Paper stage:** Alg. 2 `Probe` — the verification contract and probe matrix.
+**Paper stage:** Alg. 4 `Probe` — the verification contract and probe matrix.
 
 ```bash
 .venv/bin/t2w-verify --config <instrumentation-config.json>
@@ -151,7 +151,7 @@ executes negative probes against the result directory named in the config.
 
 ## 6. Close the environment
 
-**Paper stage:** Alg. 2 — `BuildObligations` → `Execute` → `Review` → `Probe`,
+**Paper stage:** Alg. 4 — `BuildObligations` → `Execute` → `Review` → `Probe`,
 with `Repair`/`Invalidate` bounded by `K`.
 
 ```bash
@@ -191,6 +191,29 @@ specification; `model` and `provider` are not environment defects and drop.
 A dropped slice records its owner and which exit it took — `cap` when the budget
 ran out, `not_repairable` when the failure was never repairable. The two are
 different exits and must not be merged when reporting.
+
+Without an operators module, an agent runs the same loop with the skills in
+[`skills/`](skills/README.md): `closure-loop` drives `build-obligations`,
+`execute-trace`, `review-trace`, `probe-contract`, `repair-package`, and
+`repair-supervision`, and records waves, invalidation, and outcomes into the same
+ledger with `skills/closure-loop/scripts/closure_ledger.py`. Summarise that ledger
+with `t2w-close --result-dir "$RESULT" --ledger <ledger> --report --slice <task_id> ...`.
+
+---
+
+## 7. Select the next task batch
+
+**Paper stage:** Alg. 5 — `Implement` → `RequeueAffected` → `PassAtFour` →
+`Diagnose`, then `RefineOrHold` / `Record`, and `Freeze`.
+
+Agentic; there is no console script. Over a validated package, the agent follows
+[`skills/implement-task-slice`](skills/implement-task-slice/SKILL.md) (task-facing
+index, candidate binding, the work queue, slice implementation and seed
+regression) and [`skills/diagnose-attempts`](skills/diagnose-attempts/SKILL.md)
+(four valid attempts each from the preceding learner and a fixed solver through
+`t2w-serve` and `t2w-rollout`, attribution, refinement or hold, freeze). Outputs
+go under `$RESULT/task_supply/`; the frozen batch is `$RESULT/task_supply/batch.json`.
+Screening attempts never enter training, reward, or formal evaluation.
 
 ---
 

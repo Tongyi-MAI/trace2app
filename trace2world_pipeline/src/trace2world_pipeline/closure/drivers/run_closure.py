@@ -32,7 +32,7 @@ def _slice_ids(result_dir: Path, explicit: list[str]) -> list[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run Algorithm 2 closure over a result directory")
+    parser = argparse.ArgumentParser(description="Run Algorithm 4 closure over a result directory")
     parser.add_argument("--result-dir", type=Path, required=True)
     parser.add_argument("--ledger", type=Path, required=True, help="persistent per-slice repair ledger")
     parser.add_argument("--repair-budget", type=int, default=DEFAULT_REPAIR_BUDGET)
