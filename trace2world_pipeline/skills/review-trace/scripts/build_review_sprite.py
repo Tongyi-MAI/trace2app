@@ -2,7 +2,7 @@
 """Compose the single review sprite: the complete source sequence first, then the complete execution.
 
 Inputs are the per-trace sprite manifest written by build-obligations
-(`<checklists>/traces/<trace_id>/reference_sprites/manifest.json`, which lists the marked source
+(`<checklists>/traces/<trace_id>/source_sprites/manifest.json`, which lists the marked source
 screenshots) and one execution packet written by execute-trace. Output:
 
     <output-dir>/sprites/<trace_id>__<round>__source_then_execution.jpg
@@ -25,7 +25,7 @@ from typing import Any
 from PIL import Image, ImageDraw, ImageFont
 
 SCHEMA = "trace2world.sequence_sprite_review.v1"
-SOURCE_SCHEMA = "trace2world.reference_trace_sprites.v1"
+SOURCE_SCHEMA = "trace2world.source_trace_sprites.v1"
 EXECUTION_SCHEMA = "trace2world.gui_execution.packet.v1"
 BACKGROUND = (12, 12, 16)
 INK = (255, 255, 255)

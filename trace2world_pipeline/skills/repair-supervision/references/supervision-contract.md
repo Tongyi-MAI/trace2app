@@ -83,7 +83,7 @@ Ability dimensions: `route`, `entity_selection`, `constraint_satisfaction`, `sta
 
 Read state in this order: app-owned canonical state, the state kernel or session store, the
 runtime store, a machine-readable DOM projection, a task-scoped committed event payload. An event
-is a carrier, not the reward authority.
+reports state; it is not the reward authority.
 
 Positive assertions: correct entity and value, satisfied dependencies, commit after the action,
 preserved state, current episode, task scope, absence of forbidden state.

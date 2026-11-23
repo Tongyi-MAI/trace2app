@@ -6,7 +6,7 @@ Review starts after execution has ended or stopped. Execution and review are sep
 
 - the current execution packet (`trace2world.gui_execution.packet.v1`) and its screenshots;
 - the source sprite manifest of the same trace from `build-obligations`
-  (`trace2world.reference_trace_sprites.v1`), which lists the marked source screenshots;
+  (`trace2world.source_trace_sprites.v1`), which lists the marked source screenshots;
 - a review output directory under `$RESULT/run_management/review/traces/<trace_id>/<round>/`;
 - the package revision the execution ran on.
 
@@ -17,7 +17,7 @@ as `evidence_blocked`.
 
 ```bash
 python "$T2W_SKILLS/review-trace/scripts/build_review_sprite.py" \
-  --source-manifest <checklists>/traces/<trace_id>/reference_sprites/manifest.json \
+  --source-manifest <checklists>/traces/<trace_id>/source_sprites/manifest.json \
   --execution-packet <round>/gui_execution_packet.json \
   --output-dir <review_dir>
 ```

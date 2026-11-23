@@ -34,15 +34,15 @@ GATES = {
 }
 SEMANTIC = {"valid", "invalid", "uncertain"}
 MATERIALIZATION = {"materialized", "partial", "missing", "not_probed"}
-EVALUATOR = {"covered", "reference_overfit", "missing", "not_inspected"}
-REPLACEMENT_FIELDS = ("replaced_reference_steps", "replaced_reference_operations", "shortcut_surface", "rejoin_state")
+EVALUATOR = {"covered", "source_overfit", "missing", "not_inspected"}
+REPLACEMENT_FIELDS = ("replaced_source_steps", "replaced_source_operations", "shortcut_surface", "rejoin_state")
 
 
 def validate(packet: dict[str, Any], supported_ops: set[str] | None, require_closure: bool) -> list[str]:
     errors: list[str] = []
     if packet.get("schema") != SCHEMA:
         errors.append(f"schema must be {SCHEMA}")
-    for field in ("task_id", "source_trace", "terminal_semantics", "reference_path"):
+    for field in ("task_id", "source_trace", "terminal_semantics", "source_path"):
         if not packet.get(field):
             errors.append(f"{field} is required")
 
@@ -72,10 +72,10 @@ def validate(packet: dict[str, Any], supported_ops: set[str] | None, require_clo
     primary = {str(x if isinstance(x, str) else x.get("candidate_id")) for x in packet.get("primary_semantic_findings") or []}
     for candidate in accepted:
         cid = candidate.get("candidate_id")
-        replacement = candidate.get("reference_replacement") or {}
+        replacement = candidate.get("source_replacement") or {}
         for field in REPLACEMENT_FIELDS:
             if not replacement.get(field):
-                errors.append(f"{cid}: reference_replacement.{field} is required")
+                errors.append(f"{cid}: source_replacement.{field} is required")
         if candidate.get("primary_semantic_finding") and cid not in primary:
             errors.append(f"{cid}: primary candidate missing from primary_semantic_findings")
         if candidate.get("implement"):

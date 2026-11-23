@@ -144,8 +144,8 @@ def check(candidate: dict[str, Any], index: dict[str, Any], index_digest: str) -
     for field in SIGNATURE:
         if not signature.get(field):
             errors.append(f"diversity_signature.{field} is required")
-    if signature.get("authority_class") not in {None, "reference_exact", "schema_backed_generated"}:
-        errors.append("authority_class must be reference_exact or schema_backed_generated")
+    if signature.get("authority_class") not in {None, "source_exact", "schema_backed_generated"}:
+        errors.append("authority_class must be source_exact or schema_backed_generated")
     if signature.get("authority_class") == "schema_backed_generated":
         generated = candidate.get("generated_instance") or {}
         for field in ("parameter_domain", "producer", "reset_preflight", "holdout"):

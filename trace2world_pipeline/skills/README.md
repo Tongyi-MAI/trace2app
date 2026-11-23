@@ -24,7 +24,7 @@ the relevant `SKILL.md` as its instructions.
 | 4 | `Execute` | [`execute-trace`](execute-trace/SKILL.md) | `validate_gui_execution_packet.py` |
 | 4 | `Review` | [`review-trace`](review-trace/SKILL.md) | `build_review_sprite.py` |
 | 4 | `Probe` | [`probe-contract`](probe-contract/SKILL.md) | `run_probe_plan.py` |
-| 4 | `Repair` (owner `implementation`) | [`repair-package`](repair-package/SKILL.md) | `package_delta.py`, `audit_state_carriers.py`, `validate_repair_report.py` |
+| 4 | `Repair` (owner `implementation`) | [`repair-package`](repair-package/SKILL.md) | `package_delta.py`, `audit_state_ownership.py`, `validate_repair_report.py` |
 | 4 | `Repair` (owner `supervision`) | [`repair-supervision`](repair-supervision/SKILL.md) | uses `repair-package` and `probe-contract` scripts |
 | 4 | main loop, `Invalidate`, ledger, outcomes | [`closure-loop`](closure-loop/SKILL.md) | `closure_ledger.py`, `t2w-close` |
 | 5 | `Implement`, `RequeueAffected`, queue, task index, candidate binding, alternative paths | [`implement-task-slice`](implement-task-slice/SKILL.md) | `task_queue.py`, `validate_task_candidate.py`, `validate_alternative_path_packet.py` |
@@ -94,7 +94,7 @@ $RESULT/
   package/                                  exported environment package under validation
   phase_consolidation/site_model/           frozen app specification (identifiers and support anchors)
   run_management/
-    reference_stepwise_checklists/          build-obligations
+    source_checklists/                      build-obligations
     execution/<trace_id>/round_<NNNN>/       execute-trace
     review/traces/<trace_id>/<round>/        review-trace
     probes/<slice_id>/wave_<k>/              probe-contract

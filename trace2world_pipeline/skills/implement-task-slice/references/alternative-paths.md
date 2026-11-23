@@ -26,7 +26,7 @@ Each candidate path gets three independent verdicts; never collapse them into on
 |---|---|---|
 | `semantic_verdict` | Does the visible path complete the same task under normal product semantics? | `valid`, `invalid`, `uncertain` |
 | `materialization_status` | Does the current package execute it end to end from reset? | `materialized`, `partial`, `missing`, `not_probed` |
-| `evaluator_status` | Would the evaluator recognize the equivalent completion? | `covered`, `reference_overfit`, `missing`, `not_inspected` |
+| `evaluator_status` | Would the evaluator recognize the equivalent completion? | `covered`, `source_overfit`, `missing`, `not_inspected` |
 
 A visible "payment method" row may be `valid + missing + not_inspected`. A clickable detour may be
 `invalid + materialized + covered`.
@@ -93,13 +93,13 @@ or the evaluator lacks a checkpoint: those are materialization and coverage find
 
 `materialized` requires, from reset: a host on the visible control, an effect on app-owned state,
 the selected value projected on return, the downstream commit consuming it, and state surviving
-natural navigation. `reference_overfit` means the reward requires source-only intermediates,
+natural navigation. `source_overfit` means the reward requires source-only intermediates,
 ordering, page visits, or process checkpoints although the terminal is equivalent; process
 checkpoints stay only when they encode required semantics or a safety boundary.
 
 Routing:
 
-- `valid + materialized + reference_overfit`: a supervision defect; `repair-supervision` fixes the
+- `valid + materialized + source_overfit`: a supervision defect; `repair-supervision` fixes the
   evaluator (in screening, `diagnose-attempts` attributes it as `EnvDefect`);
 - `valid + partial/missing` with every edge a supported operation: an implementation gap;
   `implement-task-slice` may instantiate it within the candidate's slice (`implement: true`);
@@ -117,7 +117,7 @@ Routing:
   "schema": "trace2world.alternative_path_packet.v1",
   "task_id": "...", "source_trace": "...", "package_revision": "sha256:...",
   "terminal_semantics": {"entity": "...", "payload": {}, "commit_boundary": "before submit"},
-  "reference_path": ["business state", "..."],
+  "source_path": ["business state", "..."],
   "candidate_ledger": [
     {
       "candidate_id": "alt_01",
@@ -126,7 +126,7 @@ Routing:
       "semantic_verdict": "valid",
       "materialization_status": "missing",
       "evaluator_status": "covered",
-      "reference_replacement": {"replaced_reference_steps": [], "replaced_reference_operations": [],
+      "source_replacement": {"replaced_source_steps": [], "replaced_source_operations": [],
                                 "shortcut_surface": "...", "rejoin_state": "..."},
       "primary_semantic_finding": true,
       "implement": true,

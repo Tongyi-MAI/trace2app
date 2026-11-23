@@ -65,10 +65,10 @@ modalities. Making the next row look right is not a repair.
 | `resource` | active media refs match the source-visible count, order, and identity before and after the action and on the consuming page. Resource order: matching extracted resource, audited clean source crop, provenance-backed semantic media, role-matching placeholder; never a full screenshot, a marked crop, or a known-wrong sibling entity. |
 | `content` | every visible row, card, option, badge, and count matches the source-visible surface; add every missing item in one pass and check the same pattern on every sibling page. |
 
-## 4. Carrier gate
+## 4. State-ownership gate
 
 Required for `initialization`, `state_handoff`, `parent_projection`, and `shared_page`. Record the
-carrier chain:
+ownership chain:
 
 ```text
 visible action -> writer -> state handle -> payload -> commit before navigation
@@ -77,7 +77,7 @@ visible action -> writer -> state handle -> payload -> commit before navigation
 
 Classify every input the chain reads as `app_owned`, `task_setup`, `diagnostic_context`, or
 `legacy_fallback`. Diagnostic context may locate a host but never choose a business value; remove
-legacy fallbacks from the business path. Then run `scripts/audit_state_carriers.py` and these six
+legacy fallbacks from the business path. Then run `scripts/audit_state_ownership.py` and these six
 browser cases, all in the raw assertion report:
 
 1. `empty_state_with_full_diagnostic_context`: diagnostic context alone leaves the neutral state;

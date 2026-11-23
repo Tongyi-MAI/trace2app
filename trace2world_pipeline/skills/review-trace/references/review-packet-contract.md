@@ -1,678 +1,256 @@
 # Review Packet Contract
 
-This reference belongs to `review-trace`. It defines the fine-grained gates of the source-trace review in Algorithm 4: what a faithful environment must show at each retained step of a source trace.
+The fine-grained gates of `Review(R, X, O)` in Algorithm 4 (paper Appendix B.2; condensed prompt in
+Appendix G, "Construction-time source-trace validation"). Review compares one frozen execution
+against its source trace and the trace's obligation checklist, and writes one packet.
 
-Review is read-only. It produces evidence and, for a non-pass, one defect packet naming the step, the expected and observed state, and the affected obligations. Every non-pass verdict carries an `owner` from the released `closure.Owner` values and `repairable` (`true` only for `implementation`: the packet can be closed by editing the package under the frozen page specifications). A mismatch whose closure would need a page identity, state or data relation, guard, or effect that no source evidence supports is `semantics` and not repairable. Never infer the owner from a missing recipe, a failed earlier repair, or elapsed budget; the budget belongs to the repair ledger of `t2w-close`, not to review.
+## Boundary
 
-## Sequence Identity And Visible Locator Provenance
+Review is independent and read-only. It reads the frozen evidence packet (the execution packet, its
+screenshots and recorded measurements, the marked source screenshots, and the checklist) and may
+read package files without running them. It never drives the browser, reloads a page, extends a
+stopped execution, or edits the trace, checklist, execution, or environment, and it never repairs.
+When a judgment needs evidence the packet does not hold, the verdict is `evidence_blocked` with the
+missing evidence named; `execute-trace` captures it in a new round.
 
-Use these join keys before judging a row:
+## Inputs and preflight
 
-| Artifact | Key | Indexing |
-| --- | --- | --- |
-| reference screenshot | `action_{step_index:04d}` or equivalent retained ref row | 0-indexed retained trajectory step |
-| materialized bindings | `{trace_id}:{step_index}` | 0-indexed canonical obs key |
-| generated DOM | visible role/name/text and owning-surface identity | selected during execution by `execute-trace`; action ids are diagnostic metadata only |
-| execution actions | execution `action_attempt_index` and observed-state ordinal | chronological execution identity; do not coerce it to the reference index |
-| review matrix | `trace_id`, `step_index` | normalized canonical step index |
+1. **Obligation baseline.** The per-trace checklist from `build-obligations`, status `ready`, with a
+   `trajectory_sha256` equal to the current trajectory. A missing or stale checklist is
+   `evidence_blocked`; rebuild it from the current trace. Rebuilding an oracle is not a pass.
+2. **Execution packet.** A current `trace2world.gui_execution.packet.v1` on the package revision
+   under validation, `pure_gui_execution=true`, and no shortcut flag. `execution_invalid`, missing
+   screenshots, or another revision is `evidence_blocked`. `stopped_at_first_blocker` is reviewed as
+   a prefix plus the blocker and cannot yield a full-trace pass.
+3. **Sprite.** One source-then-execution sprite built by `scripts/build_review_sprite.py`
+   (`sequence-sprite-review.md`). Two separate sprites or paginated pages are `evidence_blocked`.
+4. **Step 0.** If the trace retains step 0, the packet reviews it. A packet that skips it is
+   `evidence_blocked`.
 
-Locator priority is verified from the execution packet and raw action log:
+Element ids, action ids, and other generated attributes may be read as diagnostics after the
+fact. They must not have chosen or dispatched any action in the execution
+(`execute-trace/references/pure-gui-execution-contract.md`).
 
-1. visible role/name inside the expected reference-owning surface;
-2. exact visible text/label inside the expected reference-owning surface;
-3. visible placeholder/title/associated label inside that surface;
-4. visually verified natural coordinate on the same owning surface for an icon-only or gesture control.
+## Reading order
 
-`data-element-id`, `data-element-aliases`, `data-action-id`, generated action contracts, replay step/action context, and hidden materialized bindings may be inspected after the action as diagnostics. They must not have selected or dispatched the screenshot-producing action. The hard boundary is `execute-trace/references/pure-gui-execution-contract.md`.
+Read the complete source sequence before the execution. Compare causal states, not equal row
+indices: each source row is the state before its action, and the next row or the terminal evidence
+establishes the intended effect. Relate the sequences only through explicit range anchors
+(`sequence-sprite-review.md`); valid alternative paths and unequal lengths are allowed.
 
-If step 0 / `action_0000` is retained by the reference trace, the review packet must include it. A runner or matrix that silently drops step 0 is `evidence_blocked`.
+## Source step integrity
 
-## Obligation Baseline
+Before judging the execution, confirm that each kept source row can serve as the oracle. For every
+kept row, including step 0:
 
-Before judging source annotation integrity or the execution, consume the matching per-trace checklist produced by `build-obligations`.
+| Check | Passes when |
+|---|---|
+| `pre_action_source_host` | the checklist's source host is visible in the marked screenshot before the action |
+| `marked_target_alignment` | the mark sits on that host |
+| `source_host_not_destination` | the host is not a control that appears only after the action |
+| `next_state_leak_absent` | the row's state shows nothing that belongs to a later action |
+| `post_action_effect` | the next row or terminal evidence shows the recorded effect; on the terminal row, `commit_only` when the terminal contract says `committed_effect_unobserved` |
+| `instruction_trace_alignment` | the row serves the instruction's entity and values |
+| `terminal_dependency_explicit` | the terminal row names its outcome fields and success relation |
 
-Required packet field:
+A recorded `step_description_disagreement` is copied into the packet as information; the row is
+judged against the obligation written from the marked evidence. When the source evidence itself
+cannot serve as the oracle for a row (ambiguous host, target, value, or order), the verdict is
+`reference_oracle_blocker`.
+
+## Execution checks
+
+Check every judged anchor along these dimensions, scanning the whole viewport before narrowing to
+the tapped host. Quote the observed visible text, value, or state, or cite a recorded measurement.
+Notes such as "route reached", "option visible", or "terminal reached" are not evidence.
+
+### Whole viewport (`whole_viewport_scan`)
+
+- **Route and start data.** For the first kept row, the trace's own step-0 screenshot is the start
+  oracle; a page layout realized from a sibling trace is not enough when this trace's start
+  viewport differs.
+- **Chrome and tabs.** Header icons, search bars, selected tabs, bottom navigation.
+- **Overlays.** Open sheets, panels, dialogs, and stale overlays.
+- **List content.** Visible cards, rows, and their order and entities.
+- **Density, scale, anchor, and crop origin.** The first viewport reaches the same semantic depth as
+  the source (the same first card, filter bar, or section). Oversized headers, media, or spacing
+  that hide content the source shows are `layout_content_variant`. Large resource surfaces (maps,
+  banners, hero images) keep the source's vertical anchor and crop; a shifted, duplicated, or
+  wrongly anchored surface is a mismatch.
+
+Rendering a source screenshot, a mark, or a sprite as page content is a mismatch. The decorative
+device frame outside the app viewport is not part of the task surface and is never a mismatch by
+itself; app content clipped or overflowing the viewport still is.
+
+### Action host (`action_surface_parity_check`)
+
+- **Value and host scope.** The executed action targets the source host with the source value,
+  inside the same owning surface. The tapped control is not the surface: a matching button inside a
+  surface whose layout, sibling options, content, selected state, or density differs from the
+  source fails (for example a date button in a compact strip where the source shows a full
+  calendar panel). The same text elsewhere on the screen is not evidence.
+- **Reachability and enabled state.** The host was reached by visible operations and was enabled
+  when used.
+- **Containment.** From the execution packet's measurements: the host's center lies inside the app
+  viewport, and the element at that point is the host itself. Buttons, fixed or sticky CTAs,
+  overlay primary actions, tabs, and icon-only controls lie fully inside the viewport.
+
+### Lifecycle and projection
+
+- **Selected state.** For select, switch, check, filter, tab, picker, and date actions: the target
+  is not already selected before the action (unless the source shows it selected and the action
+  confirms), and is selected after it.
+- **Progressive surfaces** (`progressive_surface_lifecycle_check`). A later section, option group,
+  selected tier, result count, or footer mode does not appear before the action that reveals it.
+- **Overlay structure.** When the source shows a sheet, modal, calendar, picker, filter panel,
+  dropdown, or sort menu, the execution shows the same structure and controls, not just the tapped
+  option. Backdrop, active surface, and background are distinguished; a control inside the active
+  surface is used there.
+- **Parent projection** (`parent_projection_contamination_check`). After a confirm or apply, the
+  parent shows the chosen values and nothing from sibling or future steps (for example no price
+  tag before the price is chosen).
+- **Forbidden future state.** Every `pre_action_forbidden_future_state` of the checklist row is
+  absent.
+
+### Scroll region and autocomplete
+
+- The scroll or drag happens in the source's scroll region and reaches the same content.
+- After typing, the suggestion surface is present with the source's candidates in the source's
+  order and shape, on the same page. A static results page standing in for live suggestions, or a
+  missing or sparse suggestion list, is a mismatch even if the submitted route works.
+
+### Terminal obligations
+
+Judge the terminal row by its terminal contract:
+
+- `effect_observed`: the execution shows the same terminal effect with the outcome fields and
+  success relation of the contract, and none of its forbidden state.
+- `committed_effect_unobserved`: the execution reaches the same visible host and issues the same
+  action with the same target and value. The unrecorded effect is neither required nor credited.
+- `precommit`: the execution reaches the same pre-commit state and does not commit.
+
+## Mismatch subtypes
+
+A `generated_env_mismatch` names one subtype:
+
+| Subtype | Dimension |
+|---|---|
+| `layout_content_variant` | whole viewport: depth, density, scale, anchor, crop, chrome |
+| `content_entity_mismatch` | wrong or missing entity, card, text, or image |
+| `action_surface_mismatch` | the host's owning surface differs from the source |
+| `overlay_structural_mismatch` | overlay type, structure, or controls differ |
+| `source_host_mismatch` | wrong host, value, or surface scope |
+| `actionability_mismatch` | the host is unreachable, disabled, covered, or outside the viewport |
+| `selected_state_lifecycle_failure` | selection already present before its action, or absent after |
+| `future_state_contamination` | a later surface or value appears too early |
+| `premature_parent_projection` | the parent shows sibling or future values |
+| `autocomplete_surface_mismatch` | suggestions missing, reordered, or on the wrong page |
+| `scroll_region_mismatch` | the gesture acts on another region or reaches other content |
+| `terminal_mismatch` | the terminal contract is not met |
+| `execution_blocker` | the execution stopped at a blocker the source does not have |
+
+## Verdicts and owners
+
+| Verdict | Owner | Repairable |
+|---|---|---|
+| `review_pass_candidate` | none; `probe-contract` runs next on the same revision | n/a |
+| `generated_env_mismatch` | `implementation` when closing it edits the package under the frozen specification: rendering, route wiring, storage, bindings, projection, a missing implementation of a supported relation, or a supported state update or control behavior realized differently from the source | yes |
+| `generated_env_mismatch` | `semantics` when closing it would need a state or data relation, guard, or effect that no source evidence supports | no |
+| `page_boundary_blocker` | `semantics`: the source shows distinct pages where the specification has one, or the reverse; closing it needs a different page identity | no |
+| `reference_oracle_blocker` | `semantics`: the source trace cannot serve as the oracle for a row | no |
+| `evidence_blocked` | none; produce the missing evidence (a persistent infrastructure cause is `provider`) | n/a |
+
+Review never assigns `supervision`: checkpoint and evaluator defects are found by `probe-contract`.
+Do not infer the owner from a failed earlier repair or from remaining budget; the budget belongs to
+the repair ledger.
+
+## False passes
+
+Never:
+
+- pass a correct tap in a wrong viewport, or dismiss scale, anchor, or crop differences without
+  evidence;
+- pass from route reachability, a correct tapped host, actionability, or a terminal screen alone;
+- infer success from missing evidence or elapsed time;
+- accept a host that exists only in script templates, hidden duplicates, or id maps, but not in the
+  captured viewport;
+- reuse a pass from an earlier revision, or a suffix-only review after a repair touched the trace.
+
+Before returning `review_pass_candidate`, answer from the packet's evidence: does the first viewport
+reach the source's depth; is every tapped host inside the same owning surface as in the source;
+does any row show a later action's effect or a sibling's value; does the terminal meet its contract?
+Any answer that the packet cannot establish makes the verdict `evidence_blocked`.
+
+## Packet
+
+`$RESULT/run_management/review/traces/<trace_id>/<round>/review_packet.json`:
 
 ```json
 {
-  "reference_stepwise_baseline": {
-    "status": "pass | blocked",
-    "checklist_path": ".../traces/<trace_id>/stepwise_checklist.json",
-    "checklist_sha256": "...",
-    "source_trajectory_sha256": "...",
-    "checked_step_count": 0,
-    "kept_step_count": 0,
-    "step_zero_retained": true,
-    "step_zero_checked": true,
-    "stale": false,
-    "blockers": []
-  }
-}
-```
-
-The baseline must be one trace's checklist, not a package-wide step table. Verify its source digest and exact retained-step coverage. For each reviewed row, consume the matching baseline obligations before writing `reference_annotation_integrity` or environment lifecycle verdicts.
-
-If the baseline is missing or stale, return `evidence_blocked` and rebuild it with `build-obligations` from the current trace. Rebuilding an oracle is not a pass.
-
-## Execution And Sequence-Sprite Preflight
-
-Before review, consume a current `trace2world.gui_execution.packet.v1`. Review must not execute actions or extend an unexecuted suffix. Before `review_pass_candidate`, execution must be `execution_complete`.
-
-Required summary:
-
-```json
-{
-  "schema": "trace2world.gui_execution.packet.v1",
-  "status": "execution_complete",
-  "driver": "host_api | playwright",
-  "pure_gui_execution": true,
-  "intermediate_direct_navigation_used": false,
-  "action_id_locator_used": false,
-  "forced_or_dom_click_used": false,
-  "state_or_query_injection_used": false,
-  "inspection_endpoint_used_for_action_choice": false,
-  "review_performed": false,
-  "sprites_generated": false,
-  "pairwise_alignment_claimed": false,
-  "observed_states": [],
-  "action_attempts": []
-}
-```
-
-Each interactive/stateful row must record:
-
-- `reference_step_index`, `capture_step_index`, and visible row label;
-- expected visible value, observed host text/value, visible locator basis, owning surface, and source page;
-- `semantic_value_ok`, `visible_enabled_clickable`, `human_clickable`;
-- host and shell bounding boxes, center hit target, and `elementFromPoint` nearest action host;
-- `pre_action_projection=false`;
-- natural action method used (host API action or Playwright locator); hidden DOM APIs, forced fill/click, DOM/evaluate dispatch, action-id locator authority, intermediate navigation, and injected query/storage/business state invalidate the capture round.
-
-Then follow `sequence-sprite-review.md` and require the single physical composite sprite and its manifest. The review packet must set `display_order=[source_sequence, execution_sequence]`, `single_physical_sprite=true`, `composite_sprite_path`, and `pairwise_alignment_claimed=false`. Two separate sprites or paginated execution pages are `evidence_blocked`.
-
-If the execution packet is missing, stale, contradictory, or not reflected in the observed sequence, return `evidence_blocked`. If it says `stopped_at_first_blocker`, review the observed prefix and blocker but never return a full-trace pass.
-
-## Review Matrix Schema
-
-Write review artifacts under the result directory:
-
-```text
-run_management/review/
-  trace_step_review_index.json
-  traces/<trace_id>/<round>/review_packet.json
-  traces/<trace_id>/<round>/step_matrix.json
-  traces/<trace_id>/<round>/sprites/...
-```
-
-Records in `step_matrix.json` are sequence anchors, not screenshot pairs.
-
-Review does not schedule. Its verdict and owner feed `closure-loop`, which applies Algorithm 4 through `t2w-close`; a non-pass is either repaired (owner `implementation` or `supervision`), sent upstream (`semantics`), or dropped (`model`, `provider`, or an exhausted budget).
-
-Anchor statuses: `unchecked`, `pass`, `fail_first`, `fixed_pending_rerun`, `rerun_pass`, `blocked`, `skipped_after_first_fail`.
-
-Minimum anchor shape:
-
-```json
-{
+  "schema": "trace2world.review_packet.v1",
   "trace_id": "...",
-  "sequence_anchor_id": "anchor_0000",
-  "status": "fail_first",
-  "execution_packet_path": "...",
-  "reference_anchor": {"start_step": 0, "end_step": 0},
-  "execution_anchor": {"start_ordinal": 0, "end_ordinal": 2},
-  "anchor_kind": "visible_state | action_semantics | route | overlay_lifecycle | terminal_outcome",
-  "one_to_one": false,
+  "round": "round_0001",
+  "package_revision": "sha256:...",
+  "checklist": {"path": "...", "sha256": "...", "trajectory_sha256": "...", "kept_step_count": 0},
+  "execution_packet": {"path": "...", "sha256": "...", "status": "execution_complete"},
+  "sprite_manifest": "...",
+  "display_order": ["source_sequence", "execution_sequence"],
   "pairwise_alignment_claimed": false,
-  "reference_screenshot_paths": [],
-  "execution_screenshot_paths": [],
-  "reference_oracle_check": {},
-  "reference_stepwise_baseline": {},
-  "reference_annotation_integrity": {},
-  "start_viewport_check": {},
-  "whole_viewport_chrome_scan": {},
-  "whole_viewport_scale_density_scan": {},
-  "l0_related_surface_parity_check": {},
-  "overlay_structural_parity_check": {},
-  "progressive_surface_lifecycle_check": {},
-  "parent_projection_contamination_check": {},
-  "strict_human_equivalence": {},
-  "source_host_semantic_check": {},
-  "selected_state_lifecycle": {},
-  "source_surface_scope": {},
-  "autocomplete_surface_check": {},
-  "action_host_containment_check": {},
-  "page_action_overflow_scan": {},
-  "page_structural_audit": {},
-  "off_path_surface_audit": {},
-  "stateful_component_check": {},
-  "transition_projection": {},
-  "active_resource_binding_check": {},
-  "contamination_check": {},
-  "root_cause_classification": {},
-  "expected": "...",
-  "observed": "...",
-  "first_blocker": {}
-}
-```
-
-Generic notes such as `replay passed`, `route reached`, `selected visible`, `option visible`, `sprite ok`, or `terminal reached` are not evidence. Quote the actual generated visible text/value/state or attach DOM/runtime assertions.
-
-`review_pass_candidate` is invalid when `reference_stepwise_baseline.status!=pass`, the baseline is stale or trace-incomplete, `reference_annotation_integrity.status!=pass`, its checked count does not cover every kept step, a retained step 0 was not reviewed, marked-reference-only provenance is false, or any judged row contains a non-empty `whole_viewport_chrome_scan.mismatches`, non-empty `whole_viewport_scale_density_scan.mismatches`, `whole_viewport_scale_density_scan.scale_density_ok=false`, non-empty `l0_related_surface_parity_check.mismatches`, `l0_related_surface_parity_check.surface_layout_ok=false`, `l0_related_surface_parity_check.surface_visual_ok=false`, `l0_related_surface_parity_check.surface_content_ok=false`, non-empty `overlay_structural_parity_check.mismatches`, `overlay_structural_parity_check.same_overlay_semantics=false`, non-empty `progressive_surface_lifecycle_check.mismatches`, `progressive_surface_lifecycle_check.lifecycle_ok=false`, non-empty `parent_projection_contamination_check.mismatches`, `parent_projection_contamination_check.projection_ok=false`, `page_structural_audit.mismatches`, `active_resource_binding_check.binding_ok=false`, `source_surface_scope.surface_scope_ok=false`, or `root_cause_classification.class` outside a documented non-blocking same-page variant. Do not write row `status=pass` while preserving mismatch arrays for later interpretation. Either classify the mismatch as non-blocking with concrete evidence that it does not affect page identity, source hosts, action set, resources, layout, or task orientation, or return a blocker.
-
-## False-Pass Self-Audit Before Pass
-
-Before returning `review_pass_candidate`, answer these questions from current live artifacts, not old narrative:
-
-- Would a human fail the row because the visible first viewport is too large, too sparse, missing required app chrome/viewport containment, or reaches a much shallower section than SOURCE? If yes, block as `layout_content_variant`.
-- Is the clicked L0 node inside the same owning surface as SOURCE, with matching layout, content, sibling controls, selected/default state, density, and resource binding? If no, block as `l0_related_surface_mismatch`, even when the node is clickable.
-- Does the current row already show an effect that belongs to a later action, or does the parent page show a sibling/future chip, price, filter, ticket tier, selected state, result count, or CTA mode too early? If yes, block as lifecycle/projection contamination.
-- For pages with visible media, backgrounds, posters, cards, maps, avatars, or picker thumbnails, do active DOM resources come from the page's formal page-realization projection/input manifest plus a valid `resource_resolution` ledger, load successfully, and match the source-visible surface count/order? If no, block as `active_resource_binding_mismatch` or `pipeline_resource_boundary_gap` after ladder exhaustion.
-- Do static/formal DOM audit and runtime/browser evidence agree? A host that exists only in JS string templates, stale debug sidecars, replay-only context, hidden duplicates, or action-id maps is not enough.
-- Did the issue get reported after an earlier pass packet? Treat it as a false-pass correction: record the stale packet path, reframe acceptance as positive visible conditions, and require a fresh direct Playwright probe.
-
-If any answer is unknown, return `evidence_blocked`; do not pass from route reachability, terminal success, or actionability alone.
-
-## Mandatory Review Dimensions
-
-### source Annotation Integrity
-
-Source correctness is reviewed inside the per-trace review packet, not in a separate stage.
-
-Before comparing generated execution, read the pre-annotation checklist row and the complete marked source sequence. The checklist supplies independent expected/forbidden state obligations; the current source sequence verifies that admitted annotation and screenshots still satisfy them. Then fill:
-
-A `ready` checklist may record an `annotation_text_disagreement`: the action text of a step disagrees with the marked evidence, but the obligation was written from the visual evidence. Review judges against the obligation, not the action text, and copies the disagreement into the packet as information. Return `reference_oracle_blocker` only when the source evidence itself cannot serve as the oracle for a row.
-
-```json
-{
-  "reference_annotation_integrity": {
+  "complete_trace": true,
+  "source_step_integrity": {
     "status": "pass | fail | blocked",
-    "kept_step_count": 0,
     "checked_step_count": 0,
-    "step_zero_retained": true,
     "step_zero_checked": true,
-    "marked_reference_only": true,
-    "failed_step_indices": [],
-    "annotation_text_disagreements": [],
-    "rows": [
-      {
-        "step_index": 0,
-        "pre_action_source_host": "pass | fail | blocked",
-        "marked_target_alignment": "pass | fail | blocked",
-        "source_host_not_destination": "pass | fail | blocked",
-        "next_state_leak_absent": "pass | fail | blocked",
-        "post_action_effect": "pass | terminal_synthetic_projection_handoff | terminal_action_commit_handoff | fail | blocked",
-        "instruction_trace_alignment": "pass | fail | blocked",
-        "terminal_dependency_explicit": "pass | fail | blocked",
-        "baseline_step_index": 0,
-        "baseline_obligations_checked": [
-          "pre_action_expected_visible_state",
-          "pre_action_forbidden_future_state",
-          "progressive_lifecycle",
-          "input_or_autocomplete",
-          "overlay_or_parent_projection",
-          "viewport_containment",
-          "terminal_or_supervision"
-        ],
-        "evidence": {
-          "marked_reference_screenshot": "...",
-          "semantic_action": "...",
-          "current_visible_source_host": "...",
-          "next_reference_or_terminal_effect": "...",
-          "instruction_value": "..."
-        }
-      }
-    ]
-  }
-}
-```
-
-All row checks must pass for every kept step, except that the final row's `post_action_effect` may be `terminal_synthetic_projection_handoff` or `terminal_action_commit_handoff` when its eligibility object passes. Do not start at step 1; retained step 0 is mandatory. Use the marked screenshots rendered by `build-obligations` from the recorded actions; a raw screenshot without the mark is not the oracle. If current action text names a destination control, borrows next-row text/state, omits an Agent-visible terminal value, or points away from the marked current source host, return `reference_oracle_blocker` before environment parity can pass.
-
-### Terminal Synthetic Projection Handoff
-
-A missing, stale, non-settled, or visibly unchanged post-action source observation for the final kept action is not by itself a source blocker. A captured terminal frame that merely remains in the unambiguous pre-action state after the marked terminal click is `reference_terminal_action_no_effect`, not a contradictory oracle: the exported package must realize and verify the intended delta. The review packet may keep `reference_annotation_integrity.status=pass` with one `post_action_effect=terminal_synthetic_projection_handoff` row only when all of these are true:
-
-- the instruction-named entity/value, visible pre-action source host, marked target, operation, and before-state are unambiguous;
-- the expected effect is a small local deterministic delta such as favorite/collect, like, follow, subscribe, switch/check selection, a local count increment, or a visible success toast/label;
-- no later source action depends on an observed post-state; an unchanged terminal frame is allowed only as `reference_terminal_action_no_effect`, while a changed wrong entity/value, conflicting instruction, or different committed outcome remains a contradiction;
-- the action is not payment/order placement, destructive/irreversible behavior, real-account privacy/security mutation, ambiguous entity/value selection, or hidden business-data invention. A reversible display-visibility selector inside an offline exported mock package is eligible when it has no external account/network side effect;
-- current pure-GUI execution actually performs the final action and shows the generated visible delta; a hidden evaluator-only write cannot satisfy the handoff.
-
-Required packet object:
-
-```json
-{
-  "terminal_synthetic_projection_handoffs": [
-    {
-      "step_index": 8,
-      "eligibility": "eligible",
-      "pre_action_visible_state": "unselected 收藏 control on the instruction-named video",
-      "expected_terminal_delta": "收藏 becomes visibly selected and app-owned favorite state contains the same entity",
-      "forbidden_terminal_outcomes": ["wrong video favored", "state already selected before click", "hidden evaluator-only success"],
-      "source_host_and_target_unambiguous": true,
-      "local_deterministic_delta": true,
-      "no_later_reference_dependency": true,
-      "reference_terminal_observation_class": "missing_or_non_settled | reference_terminal_action_no_effect",
-      "no_reference_semantic_contradiction": true,
-      "safe_reversible_or_low_risk": true,
-      "generated_visible_projection_verified": true,
-      "app_owned_state_write_observed": true,
-      "evaluator_probe_required": true,
-      "reference_visual_effect_claimed": false,
-      "execution_evidence": "..."
-    }
-  ]
-}
-```
-
-`evaluator_probe_required` is always `true`: review verifies the visible delta and the app-owned state write, and the evaluator-visible consequence is checked by `probe-contract` on the same environment digest.
-
-### Terminal Action Commit Handoff
-
-Use `terminal_action_commit_handoff` for a non-micro final action whose marked visible source host, instruction-named target/value, and issued click/commit/gesture are unambiguous when source does not settle the later effect. This includes navigation/open, tab/scroll gestures, and instruction-defined submit/publish actions. source and environment terminal review prove only natural reachability and actual action issuance. Set `reference_post_action_effect_claimed=false` and `post_action_effect_out_of_scope=true`; do not require the unrecorded destination, UI transition, or business result.
-
-This handoff never turns an unobserved effect into source or environment closure evidence and does not authorize real external side effects. Ambiguous host/target/action remains a source blocker.
-
-This classification says the terminal verdict is action-commit-only. Never copy the unchanged/failed source terminal state into the package merely because it is captured, but also never require or invent its missing effect. If the generated visible host/action is missing, return `generated_env_mismatch`; if host, target, value, or issued action is ambiguous, return `reference_oracle_blocker` or `evidence_blocked`.
-
-After any repair that intersects this trace, the prior execution and review are stale even if the visible UI did not change: restart execution at step 0 in a new round and review the complete trace again. A suffix-only review cannot become `review_pass_candidate`.
-
-### Pure-GUI Execution Evidence
-
-Consume the chronological evidence produced by `execute-trace` from the reset entry of the same package revision, task, viewport, and shell. Do not drive the browser from review, load a later state, or extend execution after a blocker.
-
-`execution_complete` only proves a human-aligned browser lifecycle reached the end. It does not prove visual fidelity, source-host identity, selected-state lifecycle, overlay parity, or instrumentation correctness. `stopped_at_first_blocker` preserves a reviewable prefix but cannot support full closure.
-
-### Page Structural Audit
-
-For every page identity touched by the active trace, record:
-
-- back/close/up-level controls are clickable or explicitly noninteractive with a reason;
-- no visible action host overflows the generated shell;
-- page reload after clearing state still renders the expected chrome;
-- page errors are captured and either absent or listed as blockers;
-- visible fixed/FAB/CTA/overlay controls are within the shell.
-
-### Off-Path Surface Audit
-
-Enumerate visible interactive-looking controls, including `a[href]`, `button`, `[role=button]`, `[tabindex]`, `[onclick]`, `[data-element-id]`, `[data-action-id]`, list/card rows, suggestion rows, and natural card hit areas.
-
-Classify each as:
-
-- `reference_path_action`;
-- `semantic_navigation`;
-- `semantic_inline_state`;
-- `semantic_state_mutation`;
-- `non_task_static`.
-
-If a visible control is interactive, its behavior must match visible semantics and page contracts. If correct behavior cannot be proven, make or report it as explicitly noninteractive; do not leave an arbitrary fallback route, silent no-op, or sibling trace target.
-
-### Stateful Component Check
-
-For stateful controls, record the component class and expected invariant:
-
-- `single_select`: switching clears the previous selection;
-- `multi_select`: toggles are independent unless reference/contract shows select-all;
-- `collection`: CRUD preserves unrelated records and re-open reflects saved state;
-- `query_projection`: typing changes the visible suggestions/results without a wrong route split;
-- `draft_commit`: draft input does not mutate collection before save, save commits intended record, cancel/back preserves previous state;
-- `mutation_projection`: add/remove/favorite/submit/save projects into visible DOM, not only storage or SDK return.
-
-### Visual Fidelity And Whole Viewport
-
-Read the complete reference sprite sequence first, then the complete observed execution sprite sequence. Use explicit semantic/range anchors when relating them. Do not alternate cards or treat numeric indices as a one-to-one mapping. If an effect appears too early in the execution lifecycle relative to the reference sequence, mark `fail_first` at the earliest defensible execution anchor.
-
-Scan the full viewport before narrowing to the clicked host: header icons, search bars, tabs, bottom nav, page chrome, open sheets/panels, visible list/feed/card content, fixed CTAs, and stale overlays.
-
-### Phone Frame Non-Mismatch Rule
-
-Do not classify the outer decorative phone frame, bezel, notch shape, border thickness, or background outside the app viewport as a environment mismatch by itself. These are review context, not the task surface. Keep reviewing the app inside the retained shell: source hosts, overlays, bottom bars, CTAs, scroll containers, and visible content must remain contained, unclipped, and semantically equivalent. If a button, footer, sheet, modal, or task content overflows or is clipped by the app shell, that remains `page_action_component_overflow`, `layout_content_variant`, or the relevant surface mismatch. Do not remove the phone shell as a fix for visual differences.
-
-Record first-viewport scale/density before narrowing to the clicked host. For scrollable/listing/channel/feed pages, fill `whole_viewport_scale_density_scan`:
-
-```json
-{
-  "required": true,
-  "reference_deepest_visible_content": "SOURCE first viewport reaches 热映电影 first card / filter bar / list row / equivalent later section",
-  "generated_deepest_visible_content": "Generated first viewport reaches the same semantic depth",
-  "reference_key_rects": {"action_card": {"top": 0, "bottom": 0}, "next_section": {"top": 0, "bottom": 0}},
-  "generated_key_rects": {"action_card": {"top": 0, "bottom": 0}, "next_section": {"top": 0, "bottom": 0}},
-  "reference_anchor_surfaces": [{"name": "carbon banner / hero / map / card", "top": 0, "bottom": 0, "crop_origin": "top|center|bottom|unknown"}],
-  "generated_anchor_surfaces": [{"name": "carbon banner / hero / map / card", "top": 0, "bottom": 0, "crop_origin": "top|center|bottom|unknown"}],
-  "anchor_crop_ok": true,
-  "scale_density_ok": true,
-  "mismatches": [],
-  "rationale": "..."
-}
-```
-
-If the reference first viewport exposes a later task-orientation section, first row, filter bar, hot movie card, or comparable downstream content while the generated viewport only reaches an earlier banner/category/module because header, hero, cards, media, or spacing are oversized, classify it as `layout_content_variant`. A correct route, correct action host, and natural clickability do not override this failure. Do not call it a harmless visual difference unless the packet proves the hidden/truncated content is not part of page identity, task orientation, available actions, resource surfaces, or reference-visible layout.
-
-For image-backed maps, route previews, hero backgrounds, banners, and other large resource surfaces, compare vertical anchor/crop parity explicitly. A generated viewport fails when the same banner/card/text is shifted into the wrong region, duplicated by a full-screen resource crop plus a generated component, or anchored from the wrong part of a tall resource. Example: a SOURCE row shows the carbon banner centered between the map and order card, while generated crops that banner into the top map area and renders a second banner below. This is `layout_content_variant` or `active_resource_binding_mismatch`, not a pass. Fixers should repair resource crop/position or component duplication, but reviewers must first record the mismatch in `whole_viewport_scale_density_scan.mismatches`.
-
-For the first kept row, the active trace's own `action_0000` reference screenshot is the start-viewport oracle. A canonical page layout realized from a sibling trace is not sufficient when the active trace's start viewport differs. Extra or missing top banners, shifted/cropped category grids, biased carousel positions, missing required app chrome/viewport containment, wrong bottom/header state, or visible feed/card differences are blocking `layout_content_variant` issues unless a packet proves they are background-only and not consumed by any action, resource surface, or task orientation. Outer phone-frame/bezel cosmetic variance alone is not a blocker.
-
-For route rows whose target filename is shared by multiple source actions, compare the source action label and the post-action reference viewport (`obs_{i+1}`) against all same-target siblings used by the generated page. If a category-grid action such as `演唱会` and a content-module action such as `必看演出 / 全部 >` both target the same generated filename but their reference post-route pages differ in header, hero/banner, selected tab, filter/action set, visible cards, or resources, return `page_boundary_blocker` or `generated_env_mismatch`; do not pass from route reachability or a correct clicked host.
-
-If `whole_viewport_chrome_scan` or `whole_viewport_scale_density_scan` records mismatches in visible banners, channel tabs, list/card content, card order, resource thumbnails, section reach, spacing, card/media scale, resource crop/anchor, duplicated visual bands, or off-path controls, those mismatches must become the row's `first_blocker` unless the row also records why each mismatch is a non-L0 same-page variant. A blanket statement such as `final sprites show action hosts inside the generated phone shell` or `route reached and target clickable` is not a whole-viewport review.
-
-### L0 Related Component Surface Parity
-
-For every current-step L0/action host or L0-related component, review the owning surface before accepting the child host. Fill `l0_related_surface_parity_check`:
-
-```json
-{
-  "required": true,
-  "reference_surface_kind": "card_row | list_section | carousel | filter_panel | calendar_picker | modal | sheet | dropdown | header_search | footer_cta_group | other",
-  "generated_surface_kind": "card_row | list_section | carousel | filter_panel | calendar_picker | modal | sheet | dropdown | header_search | footer_cta_group | other",
-  "reference_surface_role": "surface that contains and contextualizes the clicked L0 component",
-  "generated_surface_role": "surface that contains and contextualizes the clicked L0 component",
-  "reference_surface_rect": {"top": 0, "bottom": 0, "height": 0},
-  "generated_surface_rect": {"top": 0, "bottom": 0, "height": 0},
-  "reference_visible_content": ["section title", "sibling controls", "option group", "card/list neighbors", "media/resource labels"],
-  "generated_visible_content": ["..."],
-  "surface_layout_ok": true,
-  "surface_visual_ok": true,
-  "surface_content_ok": true,
-  "surface_resource_binding_ok": true,
-  "clicked_host_inside_matching_surface": true,
-  "mismatches": [],
-  "rationale": "..."
-}
-```
-
-The clicked node is not the surface. A visible, enabled, naturally hittable child button/option/card is insufficient when its owning surface differs from SOURCE in layout, visual form, content, sibling options, media/resources, selected/default state, or density. Examples: a `24` date button in a compact bottom date strip does not pass a SOURCE full calendar panel; a card CTA in the wrong list section does not pass a SOURCE card row; a carousel item in a shifted/cropped category surface does not pass the SOURCE category grid. Return `generated_env_mismatch` with `l0_related_surface_mismatch` before source-host/actionability acceptance.
-
-### Overlay, Sheet, Modal, Calendar, Filter, And Sort Parity
-
-When the reference current row shows a visible popup/sheet/modal/calendar/picker/filter panel/dropdown/sort menu, fill `overlay_structural_parity_check` before source-host acceptance:
-
-```json
-{
-  "required": true,
-  "reference_overlay_type": "full_calendar_panel | bottom_sheet | modal | dropdown | filter_panel | sort_menu | picker",
-  "generated_overlay_type": "full_calendar_panel | bottom_sheet | modal | dropdown | filter_panel | sort_menu | picker",
-  "reference_coverage": {"top": 0, "bottom": 0, "height": 0},
-  "generated_coverage": {"top": 0, "bottom": 0, "height": 0},
-  "reference_visible_controls": ["全部时间", "一周内", "一月内", "本周末", "2026/01", "重置", "确定"],
-  "generated_visible_controls": ["..."],
-  "reference_default_or_selected_state": "...",
-  "generated_default_or_selected_state": "...",
-  "same_overlay_semantics": true,
-  "mismatches": [],
-  "rationale": "..."
-}
-```
-
-A matching clicked option is not enough. If SOURCE shows a full calendar panel with month grid, range chips, reset/confirm controls, and page backdrop, but the generated page shows only a compact bottom date strip or otherwise lacks the same panel structure, return `generated_env_mismatch` with `overlay_structural_mismatch` or `calendar_surface_mismatch`. Do not accept because the `24` date button is visible, enabled, and routes/updates correctly.
-
-### Parent Projection Contamination
-
-For any stateful confirm/apply action that closes a sheet, modal, calendar, picker, filter panel, dropdown, or sort menu and projects values back to the parent page, fill `parent_projection_contamination_check`:
-
-```json
-{
-  "required": true,
-  "trigger_step": 4,
-  "parent_surface": "category-channel-concerts.html filter bar / applied tag row",
-  "expected_parent_projection": ["1月24日 date tag after date confirm"],
-  "forbidden_parent_projection": ["300-500 price tag before price selection/confirm"],
-  "observed_parent_projection": ["1月24日"],
-  "projection_ok": true,
-  "mismatches": [],
-  "rationale": "..."
-}
-```
-
-Positive projection is not enough. The review must also assert the absence of sibling or future-step state that has not been produced yet. Examples that block pass: after confirming a date picker, the parent page already shows a price tag; after choosing one filter group, another unselected group appears selected; after submitting a draft, unrelated saved items or result counts change. Return `generated_env_mismatch` with `premature_parent_projection` or `sibling_state_contamination` even when the current clicked host, selected option, and route/replay are otherwise correct.
-
-### Progressive Surface Lifecycle
-
-For any same-page multi-stage selection or progressive reveal flow, fill `progressive_surface_lifecycle_check`:
-
-```json
-{
-  "required": true,
-  "trigger_step": 4,
-  "source_surface": "ticket-selection page / showtime section",
-  "expected_current_surfaces": ["showtime section only before selecting a session"],
-  "forbidden_future_surfaces": ["ticket tier section", "100.0元 selected state", "full-width 去选座 footer before the reveal action"],
-  "observed_current_surfaces": ["showtime section only"],
-  "lifecycle_ok": true,
-  "mismatches": [],
-  "rationale": "..."
-}
-```
-
-Actionability and route success are insufficient here. If a later-step section, option group, selected card/tier, result count, footer CTA mode, or sibling filter surface appears in the current row before the action that should reveal/select it, return `generated_env_mismatch` with `premature_progressive_surface` or `future_state_contamination`.
-
-## Active Resource Binding
-
-For any visible image/media grid, picker, carousel, album, product/media card, thumbnail strip, avatar/feed image, or other resource-backed surface, fill:
-
-```json
-{
-  "required": true,
-  "surface": "publish-media-picker.html",
-  "resource_projection_path": ".../phase_pagegen/projections/pagegen_resources/<page>.json",
-  "actual_pagegen_input_manifest_path": ".../phase_pagegen/page_inputs/<page>/actual_pagegen_input_manifest.json",
-  "resource_visualization_path": null,
-  "active_dom_resource_count": 0,
-  "expected_visible_media_count": 0,
-  "dom_resource_refs": [],
-  "allowed_active_resource_refs": [],
-  "forbidden_resource_refs": [],
-  "oracle_only_resource_refs": [],
-  "auxiliary_sprite_refs": [],
-  "css_or_placeholder_tile_count": 0,
-  "broken_image_count": 0,
-  "legitimate_trace_extracted_resource_present": true,
-  "pipeline_resource_gap": false,
-  "resource_resolution": {
-    "resolution_class": "matching_extracted_resource | reference_derived_fallback | external_semantic_resource_fallback | semantic_placeholder_fallback",
-    "semantic_identity": "...",
-    "visual_role": "...",
-    "identity_bearing": false,
-    "extraction_attempts": [],
-    "rejected_candidates": [],
-    "selected_source": {},
-    "reference_crop_provenance": {},
-    "identity_claimed": false,
-    "task_identity_dependency": false,
-    "unauthorized_reference_asset_reuse_absent": true,
-    "active_resource_binding_satisfied": true,
-    "degraded_nonblocking": false,
-    "strict_visual_fidelity_satisfied": true
+    "description_disagreements": [],
+    "rows": [{"step_index": 0, "pre_action_source_host": "pass", "marked_target_alignment": "pass",
+              "source_host_not_destination": "pass", "next_state_leak_absent": "pass",
+              "post_action_effect": "pass | commit_only | fail | blocked",
+              "instruction_trace_alignment": "pass", "terminal_dependency_explicit": "pass"}]
   },
-  "binding_ok": true,
-  "rationale": "..."
-}
-```
-
-This check is separate from contamination. A fully audited minimal clean source crop is allowed only after matching extraction fails; full pages, sprites, marked/unclean/context-leaking/unprovenanced crops remain contamination. Active resource binding also requires a legitimate semantic resource for the visible surface.
-
-Acceptance rules:
-
-- Apply `matching_extracted_resource -> reference_derived_fallback -> external_semantic_resource_fallback -> semantic_placeholder_fallback`; require extraction/candidate rejection evidence before accepting a fallback.
-- An audited minimal clean source crop may pass with source trace/step/path/hash, output hash, bbox, semantic identity, and all crop-integrity assertions. Full pages, sprites, marked/unclean crops, unrelated UI/chrome, and future-state leakage remain forbidden.
-- If no faithful crop exists, use a provenance-backed official/open-license/provider-generated external semantic resource, then a role-matching Lucide/Iconify/CSS/neutral placeholder. Materialize and record origin/usage/path/hash/semantic role.
-- An identity-bearing same-category substitute may be `degraded_nonblocking=true` only when exact pixels/identity are not a task value, source-host discriminator, checkpoint/evaluator input, or page/route identity dependency. It must set `identity_claimed=false`; otherwise it remains `active_resource_binding_mismatch`.
-- A known wrong sibling/entity extraction always fails binding. Prefer a neutral semantic placeholder to a false product/person/video/poster/map identity.
-- Return `pipeline_resource_boundary_gap` only after all four classes are exhausted or when exact identity is task-critical and no exact legitimate resource exists. Do not return it solely because a non-task-critical surface uses a declared degraded semantic substitute.
-- The review packet should include or request a resource visualization for any disputed resource issue: active DOM resources, oracle-only extracted resources, sprite sheets, and omitted resources must be visually separated.
-- A negative contamination check is not a positive resource binding check. The packet must compare active DOM resource refs, visible card/media count, rough order, alt/text association, resolution class/provenance, and the allowed active resource set for the current page/trace. If generated cards use legitimate-looking resources from a sibling page or sibling trace but not the active source surface, return `active_resource_binding_mismatch` or `page_boundary_gap`.
-- When a generated page is shared by multiple route sources, resource binding must be evaluated per source context. The fact that one trace's resources fit the shared page does not pass a different trace whose reference viewport shows a distinct banner, card set, artist strip, theater/play poster set, or event list.
-
-## Step-State Oracle Consistency
-
-Before accepting a row, compare the canonical `action_id`/`operation_intent` with the row's derived `expected_state_diff`, state-delta signatures, runtime binding payload, and DOM action host. If the visible action says one thing but the derived state/effect belongs to another step or later surface, return `generated_env_mismatch` with `stale_derived_oracle_sync_required` or `reference_oracle_blocker` when the source evidence itself is wrong.
-
-Examples that must block pass:
-
-- `step0` visible source host is `必看演出 / 全部 >`, but a formal consumer attaches `listing_header_city_selector/ui_expansion/重庆` to the same `action_id`;
-- a category entry click is reviewed as if it were a module `全部 >` click because both currently target the same filename;
-- an opened modal/sheet option is accepted from a same-text header or parent-page label.
-
-## Root Cause Classification
-
-Before sending a blocker to a fixer, classify the first mismatch:
-
-```json
-{
-  "root_cause_classification": {
-    "required": true,
-    "class": "layout_content_variant | component_conflict | page_boundary_gap | source_host_mismatch | lifecycle_mismatch | actionability_mismatch | active_resource_binding_mismatch | pipeline_resource_boundary_gap | autocomplete_projection_gap | panel_data_source_gap | instrumentation_backedge | reference_oracle_blocker",
-    "owner": "implementation | supervision | semantics",
-    "repairable": true,
-    "rationale": "..."
-  }
-}
-```
-
-Map classes to owners: `page_boundary_gap`, `reference_oracle_blocker`, and `pipeline_resource_boundary_gap` are `semantics` (not repairable inside the loop); `instrumentation_backedge` is `supervision`; every other class is `implementation`. Do not turn ordinary background content variance into a component conflict. Do not patch visible text to hide an action-host identity conflict. If the mismatch changes page identity, source-host availability, lifecycle, action set, or runtime projection, record it as `semantics` instead of sending it to package repair.
-
-## Selected-State Lifecycle
-
-For every select/switch/check/uncheck/filter/tab/channel/picker/sheet/date/passenger/station action, fill:
-
-```json
-{
-  "required": true,
-  "before_step_selected": false,
-  "action_target_value": "...",
-  "selected_state_source": "aria-selected | aria-checked | checked | selected class | computed style | check mark | underline",
-  "after_step_selected": true,
-  "parent_projection": "...",
-  "premature_effect_absent": true,
-  "rationale": "..."
-}
-```
-
-The row fails if the generated current row already shows the target as selected while the displayed action is to select it, unless the reference current row proves it was already selected and the action is a confirm/no-op/back/close.
-
-## Source Surface Scope
-
-For every interactive/stateful row, fill:
-
-```json
-{
-  "required": true,
-  "source_surface_expected": "header_or_tab_bar | opened_overlay_option | sheet_option | modal_control | picker_row | list_row | card | input | footer_cta",
-  "source_surface_observed": "...",
-  "target_value_elsewhere_current_row": false,
-  "surface_scope_ok": true,
-  "rationale": "..."
-}
-```
-
-The same text/value on the wrong surface is not evidence. A target value rendered as a header chip or parent-page label before the action is a lifecycle/surface failure when the reference expects it inside an opened panel, sheet, modal, picker, list row, or card.
-
-## Autocomplete And Same-Page Query Projection
-
-When the reference shows suggestions after focus/input, fill:
-
-```json
-{
-  "required": true,
-  "query_value": "...",
-  "same_page_projection": true,
-  "state_carrier": "url_query | runtime_store | input_value | session_state | other",
-  "suggestion_surface_visible": true,
-  "candidate_count_expected": 0,
-  "candidate_count_observed": 0,
-  "candidate_text_order_match": true,
-  "candidate_shape_match": true,
-  "source_surface_for_click": "search_entry_suggestion_surface",
-  "mis_split_static_results_page": false,
-  "default_or_background_content_visibility_ok": true,
-  "direct_render_checked": true,
-  "natural_click_or_submit_target_verified": true,
-  "rationale": "..."
-}
-```
-
-Do not pass from `fill`, submitted-route success, or terminal reachability when the reference-visible suggestion surface is missing, empty, stale, visibly sparse, or materialized as a wrong static results/suggestions page.
-
-If the same generated page or runtime contract serves more than one query/focus value, the review packet must include `cross_trace_runtime_projection_audit` before returning `review_pass_candidate` for a fix touching that shared surface:
-
-```json
-{
-  "required": true,
-  "surface_page": "search-landing.html",
-  "enumeration_sources": ["query_state_contract", "action_effect_contracts", "route_execution_contracts", "runtime_binding_manifest", "materialized_observation_bindings", "run_management/review"],
-  "checked_traces": [
+  "anchors": [
     {
-      "trace_id": "...",
-      "step_index": 0,
-      "query_or_value": "...",
-      "expected_candidates": ["..."],
-      "target_action": "...",
-      "default_content_hidden_or_visible_as_ref": true,
-      "direct_screenshot": "...",
-      "panel_screenshot": "...",
-      "natural_click_or_submit_verified": true,
-      "verdict": "pass | fail"
+      "anchor_id": "anchor_0000",
+      "status": "unchecked | pass | fail_first | blocked",
+      "source_range": {"start_step": 0, "end_step": 0},
+      "execution_range": {"start_ordinal": 0, "end_ordinal": 1},
+      "anchor_kind": "visible_state | action_semantics | route | overlay_lifecycle | terminal_outcome",
+      "obligation_ids": ["<trace_id>:0"],
+      "checks": {"whole_viewport_scan": {}, "action_surface_parity_check": {}, "selected_state": {},
+                 "progressive_surface_lifecycle_check": {}, "overlay_structure": {},
+                 "parent_projection_contamination_check": {}, "scroll_or_autocomplete": {},
+                 "terminal_contract": {}},
+      "expected": "...",
+      "observed": "..."
     }
   ],
-  "rationale": "..."
+  "status": "review_pass_candidate | generated_env_mismatch | page_boundary_blocker | reference_oracle_blocker | evidence_blocked",
+  "first_mismatch": {
+    "stage": "review",
+    "code": "<subtype or verdict>",
+    "trace_id": "...",
+    "step_index": 0,
+    "anchor_id": "anchor_0000",
+    "expected_state": "...",
+    "observed_state": "...",
+    "obligation_ids": ["<trace_id>:0"],
+    "source_evidence": ["..."],
+    "execution_evidence": ["..."],
+    "owner": "implementation | semantics",
+    "repairable": true
+  },
+  "supersedes": []
 }
 ```
 
-The packet is `evidence_blocked` if it only checks the originally reported trace while other traces share the same page/contract surface.
+Each `checks` entry records what was compared (`required`, the source and execution observations,
+`mismatches`, `rationale`); a check that does not apply to the anchor is `{"required": false}`.
+`first_mismatch` is `null` for a pass candidate; for a non-pass it carries the fields
+`repair-package` reads as its defect.
 
-## Action Host Containment
+## Pass conditions
 
-For each current-step action host:
-
-- measure canonical host and shell/body/app wrapper bounding boxes;
-- assert `center_inside_shell=true`;
-- assert `elementFromPoint(center)` resolves to the same nearest action host;
-- for buttons, FABs, fixed/sticky CTAs, overlay primary actions, tabs, and icon-only controls, assert `full_bbox_inside_shell=true`;
-- record `overflow_edges=[]` and masking/cover checks.
-
-Visible fixed/FAB/CTA/overlay actions that protrude past the generated phone shell fail the page even if the current trace does not click them.
-
-## Overlay And Backdrop Actionability
-
-Classify layers before accepting sheet/modal/filter/picker interactions:
-
-- `backdrop`: blocks background or closes surface; it is not the active source surface.
-- `active_surface`: visible sheet/modal/dialog/popover containing task controls.
-- `background`: page content behind backdrop.
-
-Do not whitelist task ids through `masked_by_active_layer`. Fix layer classification, action-host authority, and event timing. A task control inside the active surface must be naturally clickable and must not leave a visible noninteractive notice after click.
-
-## Contamination Check
-
-Generated UI must not paste a full source page, mount a sprite, render marks/annotations, include unrelated page/system chrome or future-state pixels, or use an unprovenanced source-derived asset. A source-root path/hash match is not automatic failure for a compliant `reference_derived_fallback`; validate its hashes, bbox, semantic identity, extraction evidence, and clean-crop assertions.
-
-## False-Pass Pressure Cases
-
-The review packet must block these cases:
-
-- missing app viewport containment or clipped task affordance -> `page_action_component_overflow`; outer phone bezel/notch/border cosmetic variance alone is not a blocker;
-- autocomplete surface mismatch after typing query -> `autocomplete_surface_mismatch`;
-- visible Sanya search results mismatch -> `content_entity_mismatch` or `page_boundary_blocker`;
-- click host is left-top `全部` while reference expects top-right `问一问` -> `source_host_semantic_mismatch`;
-- filter panel starts with the target selected before the selecting action -> `selected_state_lifecycle_failure`;
-- route reaches search results but source query/suggestion state is wrong -> `autocomplete_surface_mismatch` or `page_boundary_blocker`;
-- required Xiaohongshu note `这哪是魔王啊，这是天使！` missing -> `content_entity_mismatch`.
-- Xiaohongshu `publish-media-picker.html` shows a media grid but active DOM uses known wrong sibling/entity assets, lacks a valid resolution ledger, pastes a full/marked/unclean source asset, or makes a false exact-identity claim for a generic placeholder -> `active_resource_binding_mismatch`, `resource_contamination_or_wrong_boundary`, or `pipeline_resource_boundary_gap` after ladder exhaustion.
-- Damai category/home/channel pages whose reference first viewport is compact enough to reveal later sections/cards, while generated only reaches a banner/category/module because of oversized layout -> `layout_content_variant`.
-- Damai date/filter/ticket/calendar rows where the clicked button exists but the surrounding calendar, filter sheet, ticket section, or card/list surface differs materially from SOURCE -> `l0_related_surface_mismatch` / `overlay_structural_mismatch`.
-- Damai parent pages where selecting one filter/date/session leaks a later price tier, ticket tier, result count, or selected state before that later action -> `premature_parent_projection` / `future_state_contamination`.
-- Damai generated pages that mount omitted page-realization resources, wrong sibling/entity resources, full/marked/unclean or unprovenanced source assets, or unprovenanced/role-mismatched online assets as active DOM media -> `active_resource_binding_mismatch` / `resource_contamination_or_wrong_boundary`.
-- Damai action hosts that are browser-visible only after JS template insertion but absent from static/formal DOM contract, or whose stale debug sidecars still report missing required ids -> `evidence_blocked` until formal audit and live DOM agree.
-
-## Packet Status
-
-Return one status:
-
-- `reference_oracle_blocker`;
-- `page_boundary_blocker`;
-- `generated_env_mismatch`;
-- `evidence_blocked`;
-- `review_pass_candidate`.
-
-`review_pass_candidate` is allowed only when `execution_status=execution_complete`, both ordered sequence manifests are present, `pairwise_alignment_claimed=false`, and all required evidence fields are concrete, current, and non-contradictory. It is not validation: `probe-contract` runs next on the same environment digest.
-It additionally requires `reference_annotation_integrity.status=pass`, complete kept-step coverage, retained step-0 coverage, and marked screenshots rendered from the recorded actions.
+`review_pass_candidate` requires `execution_complete`, `complete_trace=true`, a current checklist,
+`source_step_integrity.status=pass` with every kept step checked (step 0 included), every anchor
+`pass`, and the terminal contract met. It is not validation: the slice is validated only after
+`probe-contract` passes on the same package revision. After any repair that touches this trace, the
+earlier execution and review are stale; the trace runs again from step 0 and is reviewed whole.

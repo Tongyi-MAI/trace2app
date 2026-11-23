@@ -17,8 +17,8 @@ Read both references before writing a packet:
 
 - `references/sequence-sprite-review.md`: the single source-then-execution sprite and the
   reading order;
-- `references/review-packet-contract.md`: every review dimension, the false-pass gates, the
-  terminal handoffs, and the packet fields.
+- `references/review-packet-contract.md`: every review dimension, the mismatch subtypes and
+  owners, the false-pass rules, the terminal contract, and the packet fields.
 
 ## Inputs
 
@@ -38,7 +38,7 @@ Read both references before writing a packet:
 
    ```bash
    python "$T2W_SKILLS/review-trace/scripts/build_review_sprite.py" \
-     --source-manifest "$CHECKLISTS/traces/<trace_id>/reference_sprites/manifest.json" \
+     --source-manifest "$CHECKLISTS/traces/<trace_id>/source_sprites/manifest.json" \
      --execution-packet "$ROUND/gui_execution_packet.json" \
      --output-dir "$RESULT/run_management/review/traces/<trace_id>/<round>"
    ```
@@ -49,8 +49,8 @@ Read both references before writing a packet:
 5. For each judged row, check the whole viewport before the tapped host: route and start data,
    chrome, selected tabs, overlays, list content, density, scale, anchor, and crop; then action
    value, exact host scope, reachability, enabled state, lifecycle, parent projection, scroll
-   region, typeahead order, forbidden future state, and terminal obligations. Use visible text
-   and read-only DOM/runtime measurements, never route reachability alone.
+   region, typeahead order, forbidden future state, and the terminal contract. Use visible text
+   and the measurements recorded in the execution packet, never route reachability alone.
 6. Stop at the first material mismatch unless full enumeration was requested, and write the
    packet.
 
@@ -60,7 +60,8 @@ Read both references before writing a packet:
 |---|---|---|---|
 | `review_pass_candidate` | every dimension passes for the complete trace | none; `probe-contract` runs next | n/a |
 | `generated_env_mismatch` (with subtype) | the package renders, routes, stores, binds, or projects a supported behavior differently from the source, including an execution blocker | `implementation` | yes |
-| `page_boundary_blocker` | closing the mismatch would need a different page identity, materialized state, or runtime projection than the frozen specification has | `semantics` | no, leaves upstream |
+| `generated_env_mismatch` (with subtype) | closing it would need a state or data relation, guard, or effect that no source evidence supports | `semantics` | no, leaves upstream |
+| `page_boundary_blocker` | the source shows distinct pages where the specification has one, or the reverse: closing it needs a different page identity | `semantics` | no, leaves upstream |
 | `reference_oracle_blocker` | the source evidence cannot serve as the oracle for this row (ambiguous host, target, value, or order) | `semantics` | no, leaves upstream |
 | `evidence_blocked` | the execution or checklist evidence is missing, stale, or contradictory | none: re-execute or rebuild; a persistent infrastructure cause is `provider` | n/a |
 

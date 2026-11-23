@@ -12,7 +12,7 @@ invalidates every slice that consumed it.
 ```text
 $RESULT/run_management/
   repair_ledger.json                     ledger shared with t2w-close
-  reference_stepwise_checklists/         build-obligations
+  source_checklists/                     build-obligations
   host_state/                            t2w-serve state root
   execution/<trace_id>/round_<NNNN>/     execute-trace
   review/traces/<trace_id>/round_<NNNN>/ review-trace (named after the execution round)

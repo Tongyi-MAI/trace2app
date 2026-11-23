@@ -6,8 +6,8 @@ coordinates (`coordinate`, or `start_coordinate`/`end_coordinate` for a drag). T
 the marked screenshots that the obligation checklist and the source-trace review read:
 
     <output-dir>/marked/step_XXXX.jpg                    one per retained step
-    <output-dir>/sprites/<trace_id>_reference_sprite.jpg  chronological grid of the retained steps
-    <output-dir>/manifest.json                            schema trace2world.reference_trace_sprites.v1
+    <output-dir>/sprites/<trace_id>_source_sprite.jpg     chronological grid of the retained steps
+    <output-dir>/manifest.json                            schema trace2world.source_trace_sprites.v1
 
 Only retained steps (disposition `keep`) are drawn. The mark is the recorded action on the
 screen the user saw before acting; the next retained screenshot shows its effect.
@@ -24,7 +24,7 @@ from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont
 
-SPRITE_SCHEMA = "trace2world.reference_trace_sprites.v1"
+SPRITE_SCHEMA = "trace2world.source_trace_sprites.v1"
 POINT_ACTIONS = {"click", "double_click", "long_press"}
 MARK = (255, 64, 160)
 INK = (255, 255, 255)
@@ -152,7 +152,7 @@ def render_trace(trace_dir: Path, output_dir: Path, columns: int, cell_width: in
         sprite.paste(cell, (col * cell_width + (cell_width - cell.width) // 2, row * cell_height + (cell_height - cell.height) // 2))
     sprite_dir = output_dir / "sprites"
     sprite_dir.mkdir(parents=True, exist_ok=True)
-    sprite_path = sprite_dir / f"{trace_dir.name}_reference_sprite.jpg"
+    sprite_path = sprite_dir / f"{trace_dir.name}_source_sprite.jpg"
     sprite.save(sprite_path, quality=90)
     return {
         "trace_id": trace_dir.name,
@@ -169,7 +169,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--trace-root", required=True, type=Path, help="directory holding <trace_id>/trajectory.json")
     parser.add_argument("--traces", required=True, help="exactly one trace id; sprites are built per trace")
-    parser.add_argument("--output-dir", required=True, type=Path, help="<checklist_dir>/traces/<trace_id>/reference_sprites")
+    parser.add_argument("--output-dir", required=True, type=Path, help="<checklist_dir>/traces/<trace_id>/source_sprites")
     parser.add_argument("--columns", type=int, default=5)
     parser.add_argument("--cell-width", type=int, default=360)
     parser.add_argument("--cell-height", type=int, default=720)

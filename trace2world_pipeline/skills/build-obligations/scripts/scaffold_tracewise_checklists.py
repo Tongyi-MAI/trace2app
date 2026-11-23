@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold one pending Trace2World reference stepwise checklist per trace."""
+"""Scaffold one pending Trace2World source checklist per trace (BuildObligations of Algorithm 4)."""
 
 from __future__ import annotations
 
@@ -12,10 +12,11 @@ from pathlib import Path
 from typing import Any
 
 
-SET_SCHEMA = "trace2world.reference_stepwise_checklist_set.v1"
-INDEX_SCHEMA = "trace2world.reference_stepwise_checklist_index.v1"
-CHECKLIST_SCHEMA = "trace2world.reference_stepwise_checklist.v1"
-EVIDENCE_SCHEMA = "trace2world.reference_stepwise_checklist_evidence.v1"
+SET_SCHEMA = "trace2world.source_checklist_set.v1"
+INDEX_SCHEMA = "trace2world.source_checklist_index.v1"
+CHECKLIST_SCHEMA = "trace2world.source_checklist.v1"
+EVIDENCE_SCHEMA = "trace2world.source_checklist_evidence.v1"
+PENDING = "pending_visual_review"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -77,8 +78,8 @@ def pending_row(index: int, step: dict[str, Any], marked_dir: Path) -> dict[str,
     return {
         "step_index": index,
         "disposition": disposition(step),
-        "raw_action_snapshot": str(step.get("action") or ""),
-        "semantic_action_snapshot": parse_prediction(step.get("prediction")),
+        "raw_action": str(step.get("action") or ""),
+        "step_description": parse_prediction(step.get("prediction")),
         "current_observation": str(step.get("screenshot") or ""),
         "marked_screenshot": str(step.get("marked_screenshot") or (marked_dir / f"step_{index:04d}.jpg")),
         "pre_action_expected_visible_state": [],
@@ -111,48 +112,18 @@ def pending_row(index: int, step: dict[str, Any], marked_dir: Path) -> dict[str,
             "must_be_inside_shell": [],
             "allowed_outside_shell": [],
         },
-        "terminal_or_supervision": {
+        "terminal_contract": {
             "applies": False,
-            "required_values": [],
+            "commit_status": "",
+            "observed_boundary": "",
+            "outcome_fields": [],
+            "required_state": [],
+            "forbidden_state": [],
             "success_relation": "",
-            "must_not_pass_without": [],
+            "remaining_uncertainty": [],
         },
-        "terminal_synthetic_projection_handoff": {
-            "applies": False,
-            "eligibility": "not_applicable",
-            "pre_action_visible_state": "",
-            "expected_terminal_delta": "",
-            "forbidden_terminal_outcomes": [],
-            "source_host_and_target_unambiguous": None,
-            "local_deterministic_delta": None,
-            "no_later_reference_dependency": None,
-            "no_reference_contradiction": None,
-            "safe_reversible_or_low_risk": None,
-            "requires_generated_visible_projection": None,
-            "requires_app_owned_state_and_evaluator_probe": None,
-            "rationale": "",
-        },
-        "terminal_action_commit_handoff": {
-            "applies": False,
-            "eligibility": "not_applicable",
-            "visible_source_host": "",
-            "marked_target": "",
-            "committed_action": "",
-            "success_boundary": "",
-            "destination_content_claimed": False,
-            "reference_post_action_effect_claimed": False,
-            "effect_class": "",
-            "post_action_effect_out_of_scope": None,
-            "required_gui_evidence": [],
-            "forbidden_success_inference": [],
-            "source_host_and_target_unambiguous": None,
-            "action_target_and_commit_unambiguous": None,
-            "no_later_reference_dependency": None,
-            "reference_proves_action_was_issued": None,
-            "rationale": "",
-        },
-        "annotation_text_disagreement": "",
-        "reference_annotation_checks": [
+        "step_description_disagreement": "",
+        "source_step_checks": [
             "pre_action_source_host",
             "marked_target_alignment",
             "source_host_not_destination",
@@ -161,16 +132,35 @@ def pending_row(index: int, step: dict[str, Any], marked_dir: Path) -> dict[str,
             "instruction_trace_alignment",
             "terminal_dependency_explicit",
         ],
-        "env_execution_checks": [
-            "whole_viewport_chrome_scan",
-            "l0_related_surface_parity_check",
+        "execution_checks": [
+            "whole_viewport_scan",
+            "action_surface_parity_check",
             "progressive_surface_lifecycle_check",
             "parent_projection_contamination_check",
             "viewport_containment",
         ],
         "evidence": [],
-        "blockers": ["pending_visual_oracle_annotation"],
+        "blockers": [PENDING],
     }
+
+
+def mark_terminal_row(rows: list[dict[str, Any]], source_contract: dict[str, Any]) -> None:
+    """Pre-mark the last task-relevant kept row as the terminal row and copy candidate values.
+
+    The trace's own terminal contract names the last task-relevant step; when that step is not
+    retained, the last kept row is used. ``commit_status`` is left for the author to decide from the
+    marked sequence.
+    """
+    if not rows:
+        return
+    last = source_contract.get("last_task_relevant_step")
+    row = next((r for r in rows if r["step_index"] == last), rows[-1])
+    terminal = row["terminal_contract"]
+    terminal["applies"] = True
+    terminal["observed_boundary"] = str(source_contract.get("terminal_boundary_description") or "")
+    terminal["outcome_fields"] = list(source_contract.get("outcome_fields") or [])
+    terminal["forbidden_state"] = [str(x) for x in source_contract.get("forbidden_terminal_events") or []]
+    terminal["remaining_uncertainty"] = [str(x) for x in source_contract.get("uncertainties") or []]
 
 
 def main() -> int:
@@ -194,12 +184,15 @@ def main() -> int:
         if not isinstance(steps, list):
             raise ValueError(f"{trajectory_path}: trajectory/steps must be a list")
         trace_output = args.checklist_dir / "traces" / trace_id
-        marked_dir = trace_output / "reference_sprites" / "marked"
+        marked_dir = trace_output / "source_sprites" / "marked"
         kept_rows = [
             pending_row(index, step, marked_dir)
             for index, step in enumerate(steps)
             if isinstance(step, dict) and disposition(step) == "keep"
         ]
+        source_contract = trajectory.get("terminal_contract")
+        source_contract = source_contract if isinstance(source_contract, dict) else {}
+        mark_terminal_row(kept_rows, source_contract)
         digest = sha256(trajectory_path)
         checklist_path = trace_output / "stepwise_checklist.json"
         evidence_path = trace_output / "evidence.json"
@@ -210,14 +203,15 @@ def main() -> int:
             "trajectory_path": str(trajectory_path),
             "trajectory_sha256": digest,
             "construction_stage": "source_evidence",
-            "annotation_text_is_candidate_only": True,
+            "step_descriptions_are_candidates": True,
             "instruction": str(trajectory.get("instruction") or ""),
-            "sprite_manifest_path": str(trace_output / "reference_sprites" / "manifest.json"),
-            "sprite_path": str(trace_output / "reference_sprites" / "sprites" / f"{trace_id}_reference_sprite.jpg"),
+            "source_terminal_contract": source_contract,
+            "sprite_manifest_path": str(trace_output / "source_sprites" / "manifest.json"),
+            "sprite_path": str(trace_output / "source_sprites" / "sprites" / f"{trace_id}_source_sprite.jpg"),
             "sprite_opened_and_read": False,
             "rows": kept_rows,
             "status": "pending",
-            "blockers": ["pending_visual_oracle_annotation"],
+            "blockers": [PENDING],
         }
         evidence = {
             "schema": EVIDENCE_SCHEMA,
@@ -230,7 +224,7 @@ def main() -> int:
             "sprite_path": checklist["sprite_path"],
             "sprite_opened_and_read": False,
             "checklist_path": str(checklist_path),
-            "blockers": ["pending_visual_oracle_annotation"],
+            "blockers": [PENDING],
         }
         write_json(checklist_path, checklist, args.overwrite)
         write_json(evidence_path, evidence, args.overwrite)
@@ -244,7 +238,7 @@ def main() -> int:
                 "checklist_path": str(checklist_path),
                 "evidence_path": str(evidence_path),
                 "status": "pending",
-                "blockers": ["pending_visual_oracle_annotation"],
+                "blockers": [PENDING],
             }
         )
 

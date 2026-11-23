@@ -13,7 +13,7 @@ review, and probes then run again from reset on the new revision; this skill doe
 whether the fix worked.
 
 Read `references/repair-ladder.md` before the first edit: the state-model questions, the issue
-map, the carrier gate, the acceptance expansion, and the required assertions.
+map, the state-ownership gate, the acceptance expansion, and the required assertions.
 
 ## Scope
 
@@ -62,11 +62,11 @@ infrastructure cause). `closure-loop` then drops the slice or refers it upstream
 4. Edit the earliest stale consumer, and every active copy of the same behavior in the package
    (shared pages, action-host maps, route tables, runtime helpers). Fix the whole class of the
    defect on that surface, not the one reported pixel.
-5. Run the carrier audit over the package and resolve every finding:
+5. Run the state-ownership audit over the package and resolve every finding:
 
    ```bash
-   python "$T2W_SKILLS/repair-package/scripts/audit_state_carriers.py" \
-     --root "$RESULT/package" --output "$REPAIR/carrier_audit.json"
+   python "$T2W_SKILLS/repair-package/scripts/audit_state_ownership.py" \
+     --root "$RESULT/package" --output "$REPAIR/state_ownership_audit.json"
    ```
 
 6. Run the focused browser assertions of `references/repair-ladder.md` against the served package
@@ -99,7 +99,7 @@ infrastructure cause). `closure-loop` then drops the slice or refers it upstream
 | `package_revision_before`, `package_revision_after` | copied from `delta.json` |
 | `assertions` | `raw_report_path` and `raw_report_sha256` of the unedited browser report |
 | `acceptance_expansion` | the reported surface and every adjacent check with `pass` or a reason |
-| `carrier_audit_path` | the audit output |
+| `state_ownership_audit_path` | the audit output |
 | `referral` | only for `not_repairable`: `owner` and `unsupported_behavior` |
 
 ## Never

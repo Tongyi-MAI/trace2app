@@ -34,7 +34,7 @@ mechanical part of this contract; the semantic part below is the author's and th
   "verification_and_repair": {"terminal_assertions": [], "recheck_evidence": [], "correction_path": []},
   "diversity_signature": {
     "archetype_id": "", "goal_family": "", "decision_graph": "", "dependency_signature": "",
-    "terminal_value_type": "", "reasoning_family": "", "authority_class": "reference_exact"
+    "terminal_value_type": "", "reasoning_family": "", "authority_class": "source_exact"
   },
   "generated_instance": null
 }
@@ -102,7 +102,7 @@ submit without checking the resulting business state earns no verification credi
 
 ## Instances and diversity
 
-`authority_class` is `reference_exact` when every value comes from source rows, and
+`authority_class` is `source_exact` when every value comes from source rows, and
 `schema_backed_generated` when the task combines schema-backed values no single trace shows
 together. The latter requires `generated_instance` with `parameter_domain`, `producer`,
 `reset_preflight`, and `holdout`; such values are never presented as observed facts. Instance

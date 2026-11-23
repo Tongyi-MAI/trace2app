@@ -14,7 +14,7 @@ Checks:
   named by ``delta_path``, that output passed (frozen inputs unchanged, non-empty Delta), and the
   issue class belongs to the owner;
 - the raw assertion report exists, its SHA-256 matches, ``all_cases_pass`` is true, and every case
-  passes; stateful implementation classes must include the six state-carrier cases;
+  passes; stateful implementation classes must include the six state-ownership cases;
 - every adjacent acceptance check either passed or carries a reason;
 - for ``status=not_repairable``: the package revision did not move and a referral names the owner
   (``semantics`` or ``provider``) and the unsupported behavior;
@@ -60,7 +60,7 @@ ISSUE_CLASSES = {
     },
 }
 STATEFUL_CLASSES = {"initialization", "state_handoff", "parent_projection", "shared_page"}
-STATE_CARRIER_CASES = (
+STATE_OWNERSHIP_CASES = (
     "empty_state_with_full_diagnostic_context",
     "legacy_trace_key_only",
     "dirty_sibling_state",
@@ -119,9 +119,9 @@ def check_raw_report(report: dict[str, Any], base: Path, stateful: bool, errors:
         if not case_passed(row):
             errors.append(f"raw assertion case did not pass: {name}")
     if stateful:
-        for name in STATE_CARRIER_CASES:
+        for name in STATE_OWNERSHIP_CASES:
             if name not in cases:
-                errors.append(f"stateful repair is missing state-carrier case: {name}")
+                errors.append(f"stateful repair is missing state-ownership case: {name}")
 
 
 def validate(report: Any, report_path: Path) -> list[str]:

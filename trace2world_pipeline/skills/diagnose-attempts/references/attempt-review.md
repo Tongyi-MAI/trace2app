@@ -99,7 +99,7 @@ policy never reached a reasonable path is not an environment failure.
 | `runner_or_parser_defect`, `external_provider_failure` | `provider` |
 
 Environment checks: visible host and hit region, truthful feedback, scroll and gesture owner, picker
-ownership, input focus, route transition, canonical state write, cross-surface carrier, result
+ownership, input focus, route transition, canonical state write, cross-surface state projection, result
 projection, dynamic row binding, terminal action, reset of a new episode. Repeated actions on an
 unchanged screen are environment evidence only when the action targets a reasonable visible host
 and the feedback or state shows the host failed; when the host works and the policy keeps choosing
@@ -136,11 +136,11 @@ the environment-versus-checkpoint boundary, and what proof is missing.
 For every partial or full-looking attempt, audit the supervision chain:
 
 ```text
-visible operation -> app-owned state -> checkpoint producer -> runtime carrier or event
+visible operation -> app-owned state -> checkpoint producer -> runtime state field or event
 -> evaluator read and aggregation -> reported reward
 ```
 
-Each `checkpoint_audit.rows` entry names the predicate (progress or terminal), producer, carrier,
+Each `checkpoint_audit.rows` entry names the predicate (progress or terminal), producer, state field,
 evaluator read, dependencies, weight, acceptable outcomes, positive, negative, repeated, and reset
 evidence, and a status (`confirmed_ok`, `confirmed_defect`, `risk_only`,
 `requires_live_reproduction`, `not_applicable`). With only a scalar reward, set
@@ -148,7 +148,7 @@ evidence, and a status (`confirmed_ok`, `confirmed_defect`, `risk_only`,
 
 ## Clusters
 
-Group findings by observable mechanism, not score: the same host, route, carrier, or producer; the
+Group findings by observable mechanism, not score: the same host, route, state field, or producer; the
 same unchanged-screen and feedback signature; the same malformed runner action; the same reset; the
 same acceptable-outcome mismatch. Each cluster lists every member, whether members are exact or
 semantic equivalents, its representative and why, and whether every member was read in full. Every
