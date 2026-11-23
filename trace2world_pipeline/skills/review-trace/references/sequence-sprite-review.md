@@ -28,7 +28,8 @@ The script writes exactly one JPEG,
 `layout=source_sequence_then_execution_sequence`, and `pairwise_alignment_claimed=false`.
 
 - The complete instruction is printed above both sections. If the manifest's `instruction_font`
-  cannot render the instruction's script, pass `--font` with one that can.
+  cannot render the instruction's script, pass `--font` with one that can. An ellipsized or
+  clipped instruction makes the sprite invalid.
 - Every screenshot is drawn at the same height (720 px by default) without cropping.
 - Source cells are the marked screenshots rendered from the recorded actions; execution cells are
   labelled from the execution packet's own action records, never copied from source labels.
@@ -46,11 +47,18 @@ The packet declares:
 }
 ```
 
-Read the source section in chronological order first, then the execution section. Never
-alternate cards or build a pairwise grid. The two counts may differ: execution can stop at the
+Read the composite at native scale, not shrunk by a viewer. Read the source section in
+chronological order first, then the execution section. Never alternate cards or build a
+pairwise grid. The two counts may differ: execution can stop at the
 first blocker, add stabilization states, or produce no screenshot for a textual response. Never
 duplicate, drop, or relabel images to equalize counts. An execution without an evaluator reward is
 `unscored`; a sprite is not a reward producer.
+
+Review covers source traces only. A task composed by `implement-task-slice` has no single source
+execution, so it does not take this path: its acceptance is `implement-task-slice` step 5 (a fresh
+GUI execution reviewed against the candidate's bindings, and the probe matrix), followed by
+`diagnose-attempts` screening. Never fabricate a source trace,
+borrow another trace's manifest, or pair frames by index to fit a composed task into a sprite.
 
 ## Permitted Alignment
 

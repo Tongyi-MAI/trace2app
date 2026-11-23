@@ -13,11 +13,14 @@ Checks:
 - for ``status=repaired``: ``delta`` and both revisions equal the ``package_delta.py diff`` output
   named by ``delta_path``, that output passed (frozen inputs unchanged, non-empty Delta), and the
   issue class belongs to the owner;
-- the raw assertion report exists, its SHA-256 matches, ``all_cases_pass`` is true, and every case
-  passes; stateful implementation classes must include the six state-ownership cases;
+- the raw assertion report exists, its SHA-256 matches, ``all_cases_pass`` is true, every case
+  passes, and its ``trace_id`` matches ``defect.trace_id``; stateful implementation classes must
+  include the six state-ownership cases;
 - every adjacent acceptance check either passed or carries a reason;
 - for ``status=not_repairable``: the package revision did not move and a referral names the owner
-  (``semantics`` or ``provider``) and the unsupported behavior;
+  (``semantics`` or ``provider``), the unsupported behavior, ``why_package_fix_impossible``,
+  ``attempted_legal_repairs``, ``missing_or_conflicting_authority``, and
+  ``user_or_external_change_required``;
 - the report never claims closure (``verified``, ``review_pass``, ``probe_pass`` are rejected).
 
 Exit 0 when the report is valid, 1 otherwise.
@@ -47,6 +50,8 @@ ISSUE_CLASSES = {
         "visual_layout",
         "resource",
         "content",
+        "structural",
+        "runtime_projection",
     },
     "supervision": {
         "missing_checkpoint",
@@ -69,7 +74,14 @@ STATE_OWNERSHIP_CASES = (
     "parent_reload_or_reset",
 )
 CLOSURE_CLAIMS = ("verified", "review_pass", "probe_pass", "closure_status")
-DEFECT_FIELDS = ("stage", "code", "expected_state", "observed_state", "obligation_ids", "packet_path")
+DEFECT_FIELDS = ("stage", "code", "trace_id", "expected_state", "observed_state", "obligation_ids", "packet_path")
+REFERRAL_FIELDS = (
+    "unsupported_behavior",
+    "why_package_fix_impossible",
+    "attempted_legal_repairs",
+    "missing_or_conflicting_authority",
+    "user_or_external_change_required",
+)
 
 
 def load(path: Path) -> tuple[Any, bytes]:
@@ -90,7 +102,13 @@ def case_passed(row: Any) -> bool:
     )
 
 
-def check_raw_report(report: dict[str, Any], base: Path, stateful: bool, errors: list[str]) -> None:
+def check_raw_report(
+    report: dict[str, Any],
+    base: Path,
+    stateful: bool,
+    errors: list[str],
+    defect_trace_id: Any = None,
+) -> None:
     assertions = report.get("assertions")
     if not isinstance(assertions, dict):
         errors.append("assertions must name the raw assertion report")
@@ -111,6 +129,13 @@ def check_raw_report(report: dict[str, Any], base: Path, stateful: bool, errors:
         return
     if raw_report.get("all_cases_pass") is not True:
         errors.append("raw assertion report all_cases_pass must be true")
+    raw_trace_id = raw_report.get("trace_id")
+    if not raw_trace_id:
+        errors.append("raw assertion report trace_id is required: it binds the assertions to the defect's trace")
+    elif not defect_trace_id:
+        errors.append("defect.trace_id is required to bind the raw assertion report")
+    elif raw_trace_id != defect_trace_id:
+        errors.append("raw assertion report trace_id does not match defect.trace_id")
     cases = raw_report.get("cases")
     if not isinstance(cases, dict) or not cases:
         errors.append("raw assertion report cases must be a non-empty object")
@@ -149,6 +174,7 @@ def validate(report: Any, report_path: Path) -> list[str]:
                 errors.append(f"defect.{field} is required")
         if defect.get("stage") not in {"review", "probe"}:
             errors.append("defect.stage must be 'review' or 'probe'")
+    defect_trace_id = defect.get("trace_id") if isinstance(defect, dict) else None
 
     status = report.get("status")
     if status not in {"repaired", "not_repairable"}:
@@ -187,7 +213,13 @@ def validate(report: Any, report_path: Path) -> list[str]:
             for field in ("package_revision_before", "package_revision_after"):
                 if report.get(field) != delta_record.get(field):
                     errors.append(f"{field} differs from the measured delta")
-        check_raw_report(report, base, owner == "implementation" and issue_class in STATEFUL_CLASSES, errors)
+        check_raw_report(
+            report,
+            base,
+            owner == "implementation" and issue_class in STATEFUL_CLASSES,
+            errors,
+            defect_trace_id,
+        )
         expansion = report.get("acceptance_expansion")
         checks = expansion.get("adjacent_checks") if isinstance(expansion, dict) else None
         if not isinstance(checks, list) or not checks:
@@ -208,8 +240,10 @@ def validate(report: Any, report_path: Path) -> list[str]:
         referral = report.get("referral")
         if not isinstance(referral, dict) or referral.get("owner") not in {"semantics", "provider"}:
             errors.append("referral.owner must be 'semantics' or 'provider'")
-        elif not referral.get("unsupported_behavior"):
-            errors.append("referral.unsupported_behavior must name what closure would need")
+        else:
+            for field in REFERRAL_FIELDS:
+                if not referral.get(field):
+                    errors.append(f"referral.{field} is required for a not_repairable report")
     return errors
 
 

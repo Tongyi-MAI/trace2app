@@ -14,6 +14,7 @@ Plan schema (``trace2world.probe_plan.v1``)::
     {
       "schema": "trace2world.probe_plan.v1",
       "package_revision": "<digest of the package under validation>",
+      "trace_id": "<source trace the probes run on>",
       "state_source": "state" | "runtime",
       "business_paths": ["tables.orders", "state.cart"],
       "probes": [
@@ -37,8 +38,10 @@ second, back-to-back one.
 ``expect`` keys, all optional: ``success`` (bool), ``reward_min``, ``reward_max``,
 ``business_state_unchanged`` (bool), ``same_final_state_as`` / ``same_reward_as`` (another probe
 id), ``reached_checkpoints`` / ``unreached_checkpoints`` (checkpoint ids read from
-``details.checkpoint_reward_vector``). ``fresh_reset`` additionally checks that the second episode
-starts from the first episode's initial business state.
+``details.checkpoint_reward_vector``), ``step_pages`` (an object from a 0-based action index to the
+page filename the host must report after that action, so a back/close sequence can assert each
+destination and a two-page cycle fails). ``fresh_reset`` additionally checks that the second
+episode starts from the first episode's initial business state.
 
 ``business_paths`` are dotted paths into the state snapshot that make up the business projection.
 Without them the whole snapshot is compared and the report says so, because route, overlay, focus,
@@ -47,6 +50,24 @@ or scroll changes may then count as business effects.
 The runner writes ``probe_report.json`` (every episode, snapshot digest, and evaluator output) and
 ``raw_assertions.json`` (one case per probe with its verdict), the raw assertion report that the
 repair report validator reads. Neither file is edited by hand.
+
+``trace_id`` is optional in the plan. When it is present it is copied to the top level of both
+output files, so the probe packet can name its trace and ``closure_ledger.py index --kind probe``
+accepts it without ``--trace-id``. When it is absent the report is unchanged. Set it only for a plan that runs on
+one trace; a plan covering several traces omits it, and each trace gets its own probe packet.
+
+A probe that could not run records ``host_error_kind``, ``host_error_path``, and, when the host
+sent a structured error, ``host_error_code``:
+
+- ``transport``: the host was unreachable, timed out, or answered with something other than a JSON
+  object. A blocked probe.
+- ``request_rejected``: an HTTP 4xx such as ``unknown_task``, ``unknown_episode``,
+  ``invalid_request``, or ``state_kernel_not_configured``. The plan, the catalog, or the host
+  configuration is wrong; a blocked probe.
+- ``server_error``: an HTTP 5xx. The host turns every exception into ``internal_error``, so the code
+  alone does not name the cause. Read the message: an error raised by the package's own page or
+  state handling of a legal visible action is an implementation gap; a host-side failure is a
+  blocked probe.
 
 Exit status: 0 when every probe passes, 1 when any probe fails, 2 when a probe could not run.
 """
@@ -80,7 +101,18 @@ MISSING = object()
 
 
 class HostError(RuntimeError):
-    pass
+    """A host call that did not return a usable response.
+
+    ``kind`` is ``transport`` (unreachable host, timeout, or a response that is not a JSON object),
+    ``request_rejected`` (HTTP 4xx), or ``server_error`` (HTTP 5xx); ``code`` is the host's
+    structured error code when it sent one.
+    """
+
+    def __init__(self, message: str, kind: str = "transport", path: str = "", code: str = "") -> None:
+        super().__init__(message)
+        self.kind = kind
+        self.path = path
+        self.code = code
 
 
 class Host:
@@ -101,15 +133,20 @@ class Host:
                 payload = response.read()
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", "replace")[:500]
-            raise HostError(f"{method} {path} -> HTTP {exc.code}: {detail}") from exc
+            try:
+                code = str((json.loads(detail).get("error") or {}).get("code") or "")
+            except (json.JSONDecodeError, AttributeError):
+                code = ""
+            kind = "server_error" if exc.code >= 500 else "request_rejected"
+            raise HostError(f"{method} {path} -> HTTP {exc.code}: {detail}", kind, path, code) from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            raise HostError(f"{method} {path} -> {exc}") from exc
+            raise HostError(f"{method} {path} -> {exc}", "transport", path) from exc
         try:
             value = json.loads(payload or b"{}")
         except json.JSONDecodeError as exc:
-            raise HostError(f"{method} {path} -> non-JSON response") from exc
+            raise HostError(f"{method} {path} -> non-JSON response", "transport", path) from exc
         if not isinstance(value, dict):
-            raise HostError(f"{method} {path} -> response is not an object")
+            raise HostError(f"{method} {path} -> response is not an object", "transport", path)
         return value
 
 
@@ -224,6 +261,14 @@ def judge(probe: dict[str, Any], episodes: list[dict[str, Any]], done: dict[str,
         if reached.get(str(key)):
             failures.append(f"checkpoint {key} reached although it must not be")
 
+    steps = judged.get("steps") or []
+    for key, page in sorted((expect.get("step_pages") or {}).items(), key=lambda kv: int(kv[0])):
+        index = int(key)
+        if index >= len(steps):
+            failures.append(f"step {index} did not run; expected page {page!r}")
+        elif steps[index].get("page") != page:
+            failures.append(f"step {index} landed on {steps[index].get('page')!r}, expected {page!r}")
+
     for field, label in (("same_final_state_as", "final business state"), ("same_reward_as", "reward")):
         other_id = expect.get(field)
         if not other_id:
@@ -288,6 +333,17 @@ def validate_plan(plan: Any) -> list[str]:
             ref = (expect or {}).get(field)
             if ref and ref not in seen:
                 errors.append(f"probes[{index}].expect.{field} names unknown probe {ref}")
+        step_pages = (expect or {}).get("step_pages")
+        if step_pages is not None:
+            actions = probe.get("actions") or [] if isinstance(probe, dict) else []
+            if not isinstance(step_pages, dict) or not step_pages:
+                errors.append(f"probes[{index}].expect.step_pages must be a non-empty object")
+            else:
+                for key, page in step_pages.items():
+                    if not str(key).isdigit() or int(key) >= len(actions):
+                        errors.append(f"probes[{index}].expect.step_pages key {key!r} is not an action index")
+                    if not isinstance(page, str) or not page:
+                        errors.append(f"probes[{index}].expect.step_pages[{key!r}] must be a page filename")
     return errors
 
 
@@ -332,6 +388,12 @@ def main() -> int:
         except HostError as exc:
             record["verdict"] = "error"
             record["error"] = str(exc)
+            # transport and request_rejected are blocked probes; a server_error is attributed from
+            # its message (package handling of a legal action -> implementation_gap).
+            record["host_error_kind"] = exc.kind
+            record["host_error_path"] = exc.path
+            if exc.code:
+                record["host_error_code"] = exc.code
         done[probe["probe_id"]] = record
 
     records = [done[p["probe_id"]] for p in plan["probes"]]
@@ -339,6 +401,9 @@ def main() -> int:
     report = {
         "schema": REPORT_SCHEMA,
         "package_revision": plan["package_revision"],
+        # The probe packet must name its trace: carry the plan's trace_id to the top level so the
+        # report indexes without --trace-id. A plan without one leaves the report unchanged.
+        **({"trace_id": plan["trace_id"]} if plan.get("trace_id") else {}),
         "host": args.host,
         "state_source": source,
         "business_projection": paths or "full_snapshot",

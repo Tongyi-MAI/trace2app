@@ -60,7 +60,10 @@ the wave record, and the invalidation rules.
    (`python "$T2W_SKILLS/repair-package/scripts/package_delta.py" revision --package "$RESULT/package"`):
    execute every trace of the slice whose evidence is not retained, review each execution, and
    probe only when every review is a pass candidate. Index each packet as it is written
-   (`closure_ledger.py index --kind execution|review|probe`).
+   (`closure_ledger.py index --kind execution|review|probe`). `index` reads the packet's top-level
+   `trace_id`, takes `--trace-id` only for a packet that names none, and refuses a `--trace-id` that
+   disagrees with the packet; each record is bound to one trace, so a slice whose probes cover
+   several traces writes one probe packet per trace and indexes each.
 4. On pass, record `verified` with the revision. Otherwise take the first failure and route it by
    owner:
 

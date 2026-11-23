@@ -41,7 +41,8 @@ t2w-rollout --server http://127.0.0.1:<port> --task-id <task_id> \
 ```
 
 - Every launched attempt is kept and listed in the screen packet with its `launch_index`, including
-  timeouts, crashes (bind the error log), and attempts later found invalid.
+  timeouts, crashes (bind the error log), and attempts later found invalid, and counted in the
+  packet's `coverage` block against what the launch log says was launched.
 - An attempt is invalid when an infrastructure, harness, provider, reset, package, or evaluator
   fault decided its outcome (`references/attempt-review.md`). Invalid attempts are retained and
   count for nothing; launch another attempt of the same policy to fill the cell.
@@ -51,6 +52,9 @@ t2w-rollout --server http://127.0.0.1:<port> --task-id <task_id> \
   `early_failure` in the packet with its owner instead of launching more.
 - All attempts run on revision `R`. If the package changes during screening, the packet is stale:
   start a new one on the new revision.
+- A packet from an earlier round is immutable historical review evidence: never rewrite it, and never
+  reopen it to add a later round's attempts. When its attempts are still relevant, write a new packet
+  for the new round that references the same immutable trajectory hashes.
 
 Screening attempts never enter training, reward, or formal evaluation credit.
 
@@ -81,6 +85,20 @@ paper's order (non-learner faults first):
 The learner mean is over the four valid learner attempts' final rewards (checkpoint credit);
 solver success is terminal success. Model failures of either policy are learner or solver
 evidence, not faults.
+
+The mean is this candidate's own four valid learner attempts, never a batch or portfolio average and
+never a scalar-only partial score: difficulty is not inferred from how other tasks scored. A
+four-zero learner vector is not auto-admission either. It additionally needs current local
+solvability evidence (the solver's successful attempt, read in full) and evaluator-meaningfulness
+evidence (the checkpoint chain audited); without both, the zeros are a limitation on the packet and
+the candidate is not selected on them alone. `diagnose.py verdict` enforces the second half: with
+four zero learner rewards it returns `Selectable` only when `checkpoint_audit.rows` is non-empty,
+every row is `confirmed_ok` or `not_applicable`, and at least one is `confirmed_ok`; otherwise it
+returns `Incomplete` with `four_zero_evaluator_unaudited`.
+
+A leaked shortcut is a fault, not a difficulty signal: when a reward arrived because the visible flow
+skipped a business constraint, the candidate is `EnvDefect`, never `Selectable` or `Refinable`,
+whatever the learner mean says (`references/attempt-review.md`, checkpoint rules).
 
 ## Routing
 
@@ -152,4 +170,8 @@ pass (`references/learner-gaps.md`).
   revision;
 - infer a fault from a score, or a learner gap from an environment, provider, or solver failure;
 - simplify a held or hard lineage, or refine past the second round;
+- read a host that reports ready as the requested package loaded: confirm the root `t2w-serve` serves
+  is the package at revision `R` before reading any attempt from it;
+- read a target-model score as environment path correctness: a score says what that policy did, not
+  that the path the task requires is correct;
 - let a screening attempt into training data, reward, or formal evaluation.

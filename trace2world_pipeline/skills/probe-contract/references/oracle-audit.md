@@ -17,11 +17,42 @@ It answers four questions per trace:
 A green aggregate (all checkpoints closed, all replays reached their route) answers none of these
 by itself: it shows that the current oracle closes, not that it is complete or strong.
 
+## Audit rows
+
+Write one audit row per supported obligation of the trace, keyed by the stable key the released
+checkpoint matrix declares:
+
+```text
+stable_key = trace_id|checkpoint_id|checkpoint_kind|expected_state_id
+```
+
+Read the row's fields from the released matrix instead of restating them: `source_steps`,
+`supervision` (`process` or `outcome`), `blocking`, `reward_weight`,
+`global_runtime_state.state_refs`, `global_runtime_state.source_action_ids`, `event`,
+`payload_fields`, `projection_assertions`, `negative_probes`, and `depends_on` on the rows that
+declare it (the outcome row lists the blocking process checkpoints it requires). The evaluator side
+comes from `evaluators.json`: `reward_contract.canonical_state_assertions`,
+`reward_contract.projection_assertions`, the `reward_contract.requires` set, and the
+`clean_contract.failure_codes` a failed check can emit.
+
+One row per obligation, in this shape:
+
+```text
+trace_id | checkpoint_id | checkpoint_kind | expected_state_id | expected_state | source_steps | role | state_refs | event | payload_fields | evaluator_field | gap
+```
+
+The first four columns are the stable key: merge, compare, and report rows by it. `role` is read
+from the matrix (next section), `evaluator_field` is empty for a row that needs none, and `gap` is
+empty only when the row is covered.
+
 ## Evidence order
 
 1. Source screenshots and the obligation checklist rows (visible state, committed actions).
 2. The frozen page specifications `C`: states, data relations, guards, effects, projections.
-3. The package's instrumentation and evaluators.
+3. The package's instrumentation and evaluators, read in both their formal source under
+   `phase_post_processing/` and their packaged mirrors under `$RESULT/package/` (`evaluators/`,
+   `state_evaluator_plan.json`, `tasks.json`). The host runs the mirror, so a formal source that
+   disagrees with it is already a finding.
 4. Trace thoughts and labels. Never create a checkpoint from a thought alone.
 
 ## Commitment kinds
@@ -41,6 +72,31 @@ by itself: it shows that the current oracle closes, not that it is complete or s
 Loading states, phone system chrome, and the OS keyboard are not checkpoints; the app-owned input
 value behind the keyboard is.
 
+## Row roles
+
+Read the role from the released matrix fields `blocking`, `reward_weight`, and `supervision`
+(`process` or `outcome`) before demanding an evaluator consumer:
+
+| Role | Read from | What the audit demands |
+|---|---|---|
+| blocking reward | `blocking: true`, and the rows `reward_contract.requires` names, including the outcome row (`supervision: outcome`) | the checkpoint that represents it, the producer that writes it after the triggering action, the visible projection, and the evaluator field that consumes it |
+| progress-only | `blocking: false`, or a process row outside `reward_contract.requires` | checkpoint, producer, and visible projection; it earns progress, not terminal credit, and needs no evaluator field of its own |
+| diagnostic | a row whose commitment has no business effect: route, opening, or context | a producer and a replayable oracle only |
+
+Route-only rows may be covered by the executed action sequence when route correctness is already
+evaluated, and back/close route-stack rows do not always need a reward event. They must still be
+covered by a replayable oracle whenever they affect task continuation or generic exploration, and
+that oracle asserts the destination and asserts that repeated back/close does not bounce between
+the same two pages. Diagnostic events may be non-reward, but they must not be confused with final
+success.
+
+Demanding an evaluator field for every supported obligation fails correct dependency, projection,
+and diagnostic rows as `missing_checkpoint`. State that exists only so a later checkpoint can be
+read, a visible projection a probe must check, and route or opening context with no business effect
+are obligations of the slice, not reward checkpoints: they carry `repair-supervision`'s
+`dependency_state`, `projection_obligation`, and `diagnostic_only` dispositions, and the rule there
+is not to create one rewarded checkpoint per row.
+
 ## Coverage rules
 
 - Every outcome has an evaluator that asserts terminal business state.
@@ -53,6 +109,23 @@ value behind the keyboard is.
   the draft value.
 - Every projection a later step relies on is checked in the DOM or runtime state, not only in
   storage.
+- Where preservation matters the payload carries before and after state: for a collection mutation,
+  enough state to prove unrelated records remain; for a single-select, the selected id plus enough
+  state to prove the previous selection cleared.
+- Every row's `source_steps` points at the step that commits the state, not at an earlier
+  navigation, input focus, modal open, or stale generated action.
+- Every row's `checkpoint_kind` matches the commitment it claims: search text is `draft` or
+  `selection` before it becomes a committed route or result; add-cart, delete, save, payment
+  confirm, and submit are `mutation` or `outcome`.
+- Every row encodes its prerequisite state (`depends_on`, and the order the matrix implies): query
+  submitted before filter selection, product selected before cart mutation, modal open before
+  confirm, payment selected before the final transaction.
+- Every row's state is written after the real user action commits the change, not prefilled during
+  page load, route bootstrap, or modal render.
+- Every state field is closed in both directions: a field declared in `runtime_state_schema.json`
+  that no page writes is an orphan, and a field the page runtime writes that no evaluator consumes
+  is a dead emit. Check the same two directions in `instrumentation_state_bindings.json` and
+  `evaluator_state_bindings.json`.
 - One checkpoint never hides several commitments: if an earlier step alone can satisfy it, split
   it.
 - Partial progress and terminal success are separate checkpoints.
@@ -69,6 +142,74 @@ value behind the keyboard is.
 | `stale_test_flow` | a flow or action-authority row targets an old page, action, or step order | `supervision` |
 | `page_runtime_gap` | the package cannot express the state transition, selection, projection, or terminal state | `implementation` |
 | `unsupported_reference_evidence` | the commitment has no source support, or closing it needs a new state or effect | `semantics` |
+
+Three static checks settle `missing_emit` without running anything: the binding names a producer the
+visible path never invokes; its selector is not normalized to a real function or action name, or
+still carries an unresolved placeholder such as `"<id>"` or `"${query}"`; or the event is emitted
+before the state mutation commits rather than after it. A declared field that no page writes and a
+field the page writes that no evaluator consumes are the same gap seen from its two directions.
+
+`weak_evaluator` also covers an evaluator with nothing to reject. Count the `negative_probe_specs`
+compiled into the executable manifest, per guarded effect and per checkpoint: zero specifications
+for a guarded effect is `weak_evaluator` (`supervision`), never a fresh pass. The negative-probe
+executor runs only what the manifest compiled, so a manifest with zero or thin specifications
+produces a green, freshly written report that probed nothing.
+
+`stale_test_flow` also covers a shifted or missing step binding on the checkpoint row itself. The
+bindings key on `<trace_id>:step<N>`, so a row whose `source_steps` moved, or whose late-step
+binding was never written, makes the execution skip the real draft or outcome steps and leaves
+`checkpoint_runtime_validation.json` stale. `action_execution_contracts.json` already reports the
+missing side of this as `missing_source_action_ids`.
+
+`page_runtime_gap` also covers the package's own action handling: when the package rejects,
+swallows, or fails on a legal visible action, the state transition it admits cannot be observed at
+all. That is `implementation`, not a blocked probe, and it is the same class as a state that only
+holds while the runner injects step or action context.
+
+## Missing layers
+
+A missing instrumentation file is not a harmless skip. Name the layer that is missing instead of
+recording a skip:
+
+| Missing | Gap | Owner |
+|---|---|---|
+| no emitted event or state binding (`runtime_event_bindings.json`, `instrumentation_state_bindings.json`) | `missing_emit` | `supervision`, or `implementation` when the page state does not exist |
+| no test flow for the trace | `stale_test_flow` | `supervision` |
+| no evaluator, or no compiled manifest entry | `missing_checkpoint` when the commitment has no row; `weak_evaluator` when a row exists with nothing consuming it | `supervision` |
+| no runner reward binding, so the host cannot evaluate the episode at all | `probe_blocked` | rerun; a persistent cause is `provider` |
+
+## Drift checks
+
+Two copies of the same contract ship in the package and no released checker compares them, so the
+audit compares them directly:
+
+- `evaluators.json` and `executable_evaluator_manifest.json` must agree on the canonical state
+  assertions and on the dependencies between checkpoints. When `evaluators.json` changes, keep
+  `reward_contract.canonical_state_assertions` aligned with the executable manifest; when the
+  manifest changes, the collection that produced `checkpoint_runtime_validation.json` is stale
+  relative to the new contract and must be rerun.
+- Both copies of the outcome block must agree: a manifest whose outcome checkpoint and top-level
+  `outcome` block say different things is invisible to every released verifier.
+- `terminal_policy_verified.json` must not claim the outcome is verified while the terminal boundary
+  asserts only route or page reachability.
+
+Verifiers may not catch this drift.
+
+## Freshness
+
+A trace-local focused log is not closure when the packet cites a canonical output that the final
+verifier reads; rerun the producer instead of treating focused logs as final. The runtime collector
+merges a `--trace-id` run into `checkpoint_runtime_validation.json`
+(`collection_mode.mode = trace_scoped_merge`) unless `--replace-output` is given, so read
+`collection_mode` before trusting that file, and report unrelated residual pending rows separately
+from the trace being probed, never merged into its verdict. Report broader package-level results
+separately from slice-level closure: a package can remain partially audited while the probed slice
+passes.
+
+A static validation pass with a non-browser or not-applicable checkpoint profile is not runtime
+closure either. The environment manifest carries `runtime_profile` (`browser_checkpoint_events` or
+`state_kernel_sqlite`), so a package can validate while the checkpoint profile the probes need is
+inapplicable.
 
 ## False-pass patterns
 

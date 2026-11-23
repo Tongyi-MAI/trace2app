@@ -8,20 +8,33 @@
 learner and the solver, their review, and the findings), re-reads every trajectory by path and
 SHA-256, and returns Diagnose's status:
 
-    Incomplete   an attempt is unreviewed or unresolved, a finding lacks evidence, or a policy has
-                 fewer than four valid attempts: review or PassAtFour continues
+    Incomplete   an attempt is unreviewed or unresolved, a finding lacks evidence, coverage does not
+                 claim a fully indexed, reviewed, and read round, or a policy has fewer than four
+                 valid attempts: review or PassAtFour continues
     Failed       the task needs behavior the frozen model does not support (owner semantics), or
                  PassAtFour ended early on a provider fault: Record
     EnvDefect    an implementation or supervision fault: requeue as EnvDefect
     TaskIssue    an actionable task issue (owner task): RefineOrHold
     Held         complete and fault-free, and the solver never succeeds: RefineOrHold holds it
     Refinable    complete and fault-free, solver succeeds, learner mean reward > 0.8: RefineOrHold
-    Selectable   otherwise
+    Selectable   otherwise; a four-zero learner vector is Selectable only when the evaluator is
+                 shown meaningful (below), and stays Incomplete until then
 
 Rewards and terminal success come from the trajectory files (``trace2world.trajectory.v1``:
 ``reward`` and ``evaluation.success``), never from the packet. Invalid attempts stay in the packet
-and count for nothing. Exit 0 when a status is decided, 2 for ``Incomplete``, 1 for a malformed
-packet.
+and count for nothing.
+
+The packet's ``coverage`` block is checked against the attempts it lists: ``attempts_indexed`` must
+equal the number of attempt rows, ``attempts_reviewed`` must equal ``attempts_expected``, and
+``score_only_claims`` must be false, so a packet that silently drops a launched attempt is malformed.
+Every finding carries a non-empty ``environment_checkpoint_boundary``, and
+``exact_missing_checkpoint_ids_claimed`` is refused without a reward vector or checkpoint event
+timeline.
+
+Four learner rewards of zero are not admission on their own. The evaluator is meaningful when
+``checkpoint_audit.rows`` is non-empty, every row is ``confirmed_ok`` or ``not_applicable``, and at
+least one row is ``confirmed_ok``; otherwise the status is ``Incomplete`` with
+``four_zero_evaluator_unaudited`` set, and the solver's success alone does not select it. Exit 0 when a status is decided, 2 for ``Incomplete``, 1 for a malformed packet.
 
 ``check-refinement`` checks that a refined candidate keeps every obligation of its parent (every
 bound index item, every required phenomenon, the long-horizon class) and, in ``harden`` mode, adds
@@ -78,6 +91,8 @@ CATEGORY_OWNERS = {
     "external_provider_failure": {"provider"},
 }
 INVALIDATING_OWNERS = {"implementation", "supervision", "provider"}
+COVERAGE_COUNTS = ("attempts_expected", "attempts_indexed", "attempts_reviewed")
+COVERAGE_FLAGS = ("all_attempts_indexed", "all_attempts_reviewed", "all_steps_read")
 SATURATION = 0.8
 BINDINGS = (
     "goal", "terminal_value", "launch_state", "subtasks", "decisions", "cross_state_dependencies",
@@ -149,9 +164,48 @@ def read_attempts(packet: dict[str, Any], base: Path, errors: list[str]) -> list
     return rows
 
 
+def read_coverage(packet: dict[str, Any], indexed: int, errors: list[str]) -> dict[str, Any]:
+    """Check the packet's own count of the attempts the launch log says exist."""
+    coverage = packet.get("coverage")
+    if not isinstance(coverage, dict):
+        errors.append("coverage is required: attempts_expected, attempts_indexed, attempts_reviewed, "
+                      "score_only_claims, cluster_method")
+        return {}
+    counts: dict[str, int] = {}
+    for field in COVERAGE_COUNTS:
+        value = coverage.get(field)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            errors.append(f"coverage.{field} must be a non-negative integer")
+        else:
+            counts[field] = value
+    if coverage.get("score_only_claims") is not False:
+        errors.append("coverage.score_only_claims must be false: no finding rests on a score alone")
+    method = coverage.get("cluster_method")
+    if not isinstance(method, str):
+        errors.append("coverage.cluster_method is a string naming how clusters were grouped")
+    elif not method and (packet.get("clusters") or []):
+        errors.append("coverage.cluster_method names the grouping whenever clusters is non-empty")
+    if len(counts) == len(COVERAGE_COUNTS):
+        if counts["attempts_indexed"] != indexed:
+            errors.append(f"coverage.attempts_indexed is {counts['attempts_indexed']} but the packet "
+                          f"lists {indexed} attempt rows")
+        if counts["attempts_expected"] != counts["attempts_indexed"]:
+            errors.append("every expected attempt must be indexed and listed: attempts_expected="
+                          f"{counts['attempts_expected']}, attempts_indexed={counts['attempts_indexed']}")
+        if counts["attempts_reviewed"] != counts["attempts_expected"]:
+            errors.append("coverage.attempts_reviewed must equal coverage.attempts_expected: "
+                          f"{counts['attempts_reviewed']} != {counts['attempts_expected']}")
+    return coverage
+
+
 def read_findings(packet: dict[str, Any], attempts: dict[str, dict[str, Any]], errors: list[str]) -> list[dict[str, Any]]:
     findings = []
     seen: set[str] = set()
+    audit = packet.get("checkpoint_audit")
+    audit = audit if isinstance(audit, dict) else {}
+    if audit.get("scalar_only_inference_labeled") is not True:
+        errors.append("checkpoint_audit.scalar_only_inference_labeled must be true: scalar-only "
+                      "inference in this packet is labeled as such")
     for position, finding in enumerate(packet.get("findings") or []):
         fid = str(finding.get("finding_id") or "")
         if not fid or fid in seen:
@@ -180,6 +234,14 @@ def read_findings(packet: dict[str, Any], attempts: dict[str, dict[str, Any]], e
         if category == "checkpoint_false_negative" and state == "trace_confirmed" \
                 and not (packet.get("checkpoint_audit") or {}).get("reward_vector_available"):
             errors.append(f"{fid}: a confirmed false negative needs a reward vector or checkpoint events")
+        boundary = finding.get("environment_checkpoint_boundary")
+        if not isinstance(boundary, str) or not boundary.strip():
+            errors.append(f"{fid}: environment_checkpoint_boundary states which side of the "
+                          "environment/checkpoint chain the evidence puts the defect on")
+        if finding.get("exact_missing_checkpoint_ids_claimed") is True \
+                and not (audit.get("reward_vector_available") or audit.get("checkpoint_event_timeline_available")):
+            errors.append(f"{fid}: claims exact missing checkpoint ids without a reward vector or "
+                          "checkpoint event timeline")
         findings.append({"finding_id": fid, "owner": owner, "category": category, "evidence_state": state,
                          "attempt_ids": members})
     known = {f["finding_id"] for f in findings}
@@ -203,6 +265,7 @@ def verdict(packet_path: Path) -> tuple[dict[str, Any], int]:
             errors.append(f"policies.{policy}.model is required")
     rows = read_attempts(packet, packet_path.parent, errors)
     attempts = {row["attempt_id"]: row for row in rows}
+    coverage = read_coverage(packet, len(rows), errors)
     findings = read_findings(packet, attempts, errors)
     by_owner: dict[str, list[str]] = {}
     for finding in findings:
@@ -218,8 +281,10 @@ def verdict(packet_path: Path) -> tuple[dict[str, Any], int]:
                               "package_revision": packet["package_revision"], "findings_by_owner": by_owner}
     pending = [r["attempt_id"] for r in rows if not r["reviewed"] or r["validity"] == "unresolved"]
     unproven = [f["finding_id"] for f in findings if f["evidence_state"] == "insufficient_evidence"]
-    if pending or unproven:
-        result.update(status="Incomplete", unreviewed_or_unresolved=pending, findings_without_evidence=unproven)
+    unindexed = [name for name in COVERAGE_FLAGS if coverage.get(name) is not True]
+    if pending or unproven or unindexed:
+        result.update(status="Incomplete", unreviewed_or_unresolved=pending,
+                      findings_without_evidence=unproven, coverage_incomplete=unindexed)
         return result, 2
 
     early = packet.get("early_failure")
@@ -268,9 +333,22 @@ def verdict(packet_path: Path) -> tuple[dict[str, Any], int]:
         result.update(status="Held")
     elif result["learner_mean_reward"] > SATURATION:
         result.update(status="Refinable")
+    elif not any(learner_rewards) and not evaluator_meaningful(packet):
+        result.update(status="Incomplete", four_zero_evaluator_unaudited=True)
+        return result, 2
     else:
         result.update(status="Selectable")
     return result, 0
+
+
+def evaluator_meaningful(packet: dict[str, Any]) -> bool:
+    """A four-zero learner vector needs an audited checkpoint chain: rows exist, none is a defect,
+    a risk, or awaiting live reproduction, and at least one is confirmed."""
+    rows = (packet.get("checkpoint_audit") or {}).get("rows")
+    if not isinstance(rows, list) or not rows:
+        return False
+    statuses = [row.get("status") if isinstance(row, dict) else None for row in rows]
+    return all(s in {"confirmed_ok", "not_applicable"} for s in statuses) and "confirmed_ok" in statuses
 
 
 def items(entry: Any) -> set[str]:

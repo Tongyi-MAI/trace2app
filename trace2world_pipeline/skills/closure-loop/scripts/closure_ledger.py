@@ -178,7 +178,11 @@ def cmd_index(args: argparse.Namespace) -> int:
     files = package_files(package)
     index = load_index(args.evidence_index)
     packet = json.loads(args.packet.read_text(encoding="utf-8"))
-    trace_id = str(packet.get("trace_id") or args.trace_id or "")
+    packet_trace = str(packet.get("trace_id") or "")
+    if packet_trace and args.trace_id and args.trace_id != packet_trace:
+        return emit({"status": "refused", "reason": f"the packet names trace {packet_trace}; "
+                     f"--trace-id {args.trace_id} disagrees (write one packet per trace)"}, 1)
+    trace_id = packet_trace or str(args.trace_id or "")
     if not trace_id:
         return emit({"status": "refused", "reason": "the packet names no trace_id; pass --trace-id"}, 1)
     records = index["records"]

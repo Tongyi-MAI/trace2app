@@ -158,7 +158,7 @@ Minimum anchor shape:
 
 Generic notes such as `replay passed`, `route reached`, `selected visible`, `option visible`, `sprite ok`, or `terminal reached` are not evidence. Quote the actual generated visible text/value/state or attach DOM/runtime assertions.
 
-`review_pass_candidate` is invalid when `source_checklist_baseline.status!=pass`, the baseline is stale or trace-incomplete, `source_step_integrity.status!=pass`, its checked count does not cover every kept step, a retained step 0 was not reviewed, marked-source-only provenance is false, or any judged row contains a non-empty `whole_viewport_scan.mismatches`, non-empty `whole_viewport_scale_density_scan.mismatches`, `whole_viewport_scale_density_scan.scale_density_ok=false`, non-empty `action_surface_parity_check.mismatches`, `action_surface_parity_check.surface_layout_ok=false`, `action_surface_parity_check.surface_visual_ok=false`, `action_surface_parity_check.surface_content_ok=false`, non-empty `overlay_structural_parity_check.mismatches`, `overlay_structural_parity_check.same_overlay_semantics=false`, non-empty `progressive_surface_lifecycle_check.mismatches`, `progressive_surface_lifecycle_check.lifecycle_ok=false`, non-empty `parent_projection_contamination_check.mismatches`, `parent_projection_contamination_check.projection_ok=false`, `page_structural_audit.mismatches`, `active_resource_binding_check.binding_ok=false`, a failing `terminal_contract_check`, `source_surface_scope.surface_scope_ok=false`, or `root_cause_classification.class` outside a documented non-blocking same-page variant. Do not write row `status=pass` while preserving mismatch arrays for later interpretation. Either classify the mismatch as non-blocking with concrete evidence that it does not affect page identity, source hosts, action set, resources, layout, or task orientation, or return a blocker.
+`review_pass_candidate` is invalid when `source_checklist_baseline.status!=pass`, the baseline is stale or trace-incomplete, `source_step_integrity.status!=pass`, its checked count does not cover every kept step, a retained step 0 was not reviewed, marked-source-only provenance is false, or any judged row contains a non-empty `whole_viewport_scan.mismatches`, non-empty `whole_viewport_scale_density_scan.mismatches`, `whole_viewport_scale_density_scan.scale_density_ok=false`, non-empty `action_surface_parity_check.mismatches`, `action_surface_parity_check.surface_layout_ok=false`, `action_surface_parity_check.surface_visual_ok=false`, `action_surface_parity_check.surface_content_ok=false`, non-empty `overlay_structural_parity_check.mismatches`, `overlay_structural_parity_check.same_overlay_semantics=false`, non-empty `progressive_surface_lifecycle_check.mismatches`, `progressive_surface_lifecycle_check.lifecycle_ok=false`, non-empty `parent_projection_contamination_check.mismatches`, `parent_projection_contamination_check.projection_ok=false`, `page_structural_audit.mismatches`, non-empty `off_path_surface_audit.mismatches`, `active_resource_binding_check.binding_ok=false`, a failing `terminal_contract_check`, `source_surface_scope.surface_scope_ok=false`, or `root_cause_classification.class` outside a documented non-blocking same-page variant. Do not write row `status=pass` while preserving mismatch arrays for later interpretation. Either classify the mismatch as non-blocking with concrete evidence that it does not affect page identity, source hosts, action set, resources, layout, or task orientation, or return a blocker.
 
 ## False-Pass Self-Audit Before Pass
 
@@ -309,6 +309,8 @@ For stateful controls, record the component class and expected invariant:
 - `draft_commit`: draft input does not mutate collection before save, save commits intended record, cancel/back preserves previous state;
 - `mutation_projection`: add/remove/favorite/submit/save projects into visible DOM, not only storage or SDK return.
 
+Stateful controls cover the initial, selected, alternative/deselected, repeated, and reset states across every visible mirror of the same state (for example a header chip, the list row, a card badge, and a footer summary). One selected mirror updating while a sibling mirror stays stale fails lifecycle review.
+
 ### Visual Fidelity And Whole Viewport
 
 Read the complete source sprite sequence first, then the complete observed execution sprite sequence. Use explicit semantic/range anchors when relating them. Do not alternate cards or treat numeric indices as a one-to-one mapping. If an effect appears too early in the execution lifecycle relative to the source sequence, mark `fail_first` at the earliest defensible execution anchor.
@@ -318,6 +320,8 @@ Scan the full viewport before narrowing to the clicked host: header icons, searc
 ### Phone Frame Non-Mismatch Rule
 
 Do not classify the outer decorative phone frame, bezel, notch shape, border thickness, or background outside the app viewport as an environment mismatch by itself. These are review context, not the task surface. Keep reviewing the app inside the retained shell: source hosts, overlays, bottom bars, CTAs, scroll containers, and visible content must remain contained, unclipped, and semantically equivalent. If a button, footer, sheet, modal, or task content overflows or is clipped by the app shell, that remains `page_action_component_overflow`, `layout_content_variant`, or the relevant surface mismatch. Do not remove the phone shell as a fix for visual differences.
+
+In the released packages the browser viewport is 430x884 (`browser_viewport` in the package `resource_manifest.json`). Most pages render a fixed 390x844 app shell inside it, but some use a fluid container (for example an `.app-shell` with `max-width: 430px` and `min-height: 100vh`), so read the shell rectangle from the rendered page (the bounding box of the outermost app container) rather than assuming one size. Judge containment against that shell: footers, fixed CTAs, modals, and sheets must lie inside it, and a task surface clipped by it is a mismatch. Record `footer_or_cta_inside_shell` and `modal_or_sheet_inside_shell` in `action_host_containment_check`.
 
 Record first-viewport scale/density before narrowing to the clicked host. For scrollable/listing/channel/feed pages, fill `whole_viewport_scale_density_scan`:
 
@@ -636,6 +640,8 @@ A repair fixes layer classification, action-host authority, and event timing; it
 ## Contamination Check
 
 Generated UI must not paste a full source page, mount a sprite, render the action marks, include unrelated page/system chrome or future-state pixels, or use an unprovenanced source-derived asset. A source-root path/hash match is not automatic failure for a compliant `source_derived_fallback`; validate its hashes, bbox, semantic identity, extraction evidence, and clean-crop assertions.
+
+A new label that displays an evaluator or constraint verdict is answer leakage: fail the review even when the reward is correct.
 
 ## False-Pass Pressure Cases
 

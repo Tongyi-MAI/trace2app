@@ -41,11 +41,14 @@ and introduces no behavior.
   ],
   "dependencies": [
     {
+      "source_id": "store_detail.delivery_fee",
       "producer": "store_detail.delivery_fee",
       "consumer": "checkout.choose_store",
       "value_type": "currency",
       "entity_scope": "store",
       "freshness": "per visit",
+      "authority_rank": 1,
+      "conflicts": ["store_list.delivery_fee"],
       "discovery_path": ["store_list", "store_detail"],
       "evidence": ["trace:<trace_id>:<step>"]
     }
@@ -57,6 +60,13 @@ and introduces no behavior.
 ```
 
 `item_id` values are stable across refreshes: an unchanged item keeps its id.
+
+A `dependencies` row is one consumed information source, with the surface or state that owns it,
+its fields and entity scope, its freshness rule, its authority rank, the competing sources it
+conflicts with, and the legal path a user takes to discover it. Two panels or pages backed by one
+unchanged state are one source unless they contribute independent facts. A candidate projects the
+rows it consumes into its own `information_topology` (`candidate-binding.md`); the index never
+gains a source, an authority rank, or a conflict that the package does not already show.
 
 ## Refresh
 

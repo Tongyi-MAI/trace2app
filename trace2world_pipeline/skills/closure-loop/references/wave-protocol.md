@@ -60,6 +60,11 @@ next wave runs on the new one.
 - review: the files of the execution it judged;
 - probe: those files plus `evaluators/`, `state_evaluator_plan.json`, and `tasks.json`.
 
+`index` reads the packet's top-level `trace_id`, takes `--trace-id` only for a packet that names
+none, and refuses a `--trace-id` that disagrees with the packet. Each record is bound to one trace,
+so a slice whose probes cover several traces writes one probe packet per trace (each may cite the
+same `probe_report.json`) and indexes each; the trace's execution packet must already be indexed.
+
 `closure_ledger.py invalidate` applies the released `invalidate()`: every record whose consumed
 files intersect `Delta` is removed, and its trace restarts at step zero. Records that consumed
 nothing in `Delta` are retained, so an unchanged slice keeps its evidence. Shared regions are in
@@ -75,7 +80,9 @@ consumed by the host; their packaged mirrors are, and those carry the invalidati
 1. Execute every trace of the slice that has no retained execution on this revision, each from a
    fresh reset.
 2. Review each execution. The first non-pass review ends the wave.
-3. Probe once per slice, after all reviews pass.
+3. Probe once per slice, after all reviews pass. Each probe packet names its trace at the top
+   level; a slice whose probes cover several traces writes one packet per trace, each indexed for
+   its own trace.
 
 A trace stopped at its first blocker still gets reviewed: the review attributes the blocker.
 

@@ -7,6 +7,13 @@ materialization, evaluator coverage) and the seven equivalence gates. A discover
 implemented only when its edges are supported operations of the frozen model and its task
 semantics are equivalent; a semantically valid path whose edges are unsupported stays a finding.
 
+The packet also carries its discovery ``outcome`` (``complete_with_alternatives``,
+``complete_no_visible_alternative``, ``blocked_missing_evidence``, with ``blocked_reasons`` for the
+last one); these are discovery outcomes, not environment pass/fail verdicts. Every accepted
+candidate carries the semantic proof that makes its verdict reviewable: ``divergence_point``,
+``rejoin_point`` (the key, ``null`` when the path never rejoins), ``visible_evidence``, and
+``equivalence_reason``. A ``repair_handoff``, when present, declares its closure status.
+
     python validate_alternative_path_packet.py --packet alt.json [--index "$RESULT/task_supply/index.json"]
     python validate_alternative_path_packet.py --packet alt.json --require-materialization-closure
 
@@ -35,7 +42,10 @@ GATES = {
 SEMANTIC = {"valid", "invalid", "uncertain"}
 MATERIALIZATION = {"materialized", "partial", "missing", "not_probed"}
 EVALUATOR = {"covered", "source_overfit", "missing", "not_inspected"}
+OUTCOMES = {"complete_with_alternatives", "complete_no_visible_alternative", "blocked_missing_evidence"}
+HANDOFF_STATUS = {"already_materialized", "repair_required", "verified_after_repair"}
 REPLACEMENT_FIELDS = ("replaced_source_steps", "replaced_source_operations", "shortcut_surface", "rejoin_state")
+PROOF_FIELDS = ("divergence_point", "visible_evidence", "equivalence_reason")
 
 
 def validate(packet: dict[str, Any], supported_ops: set[str] | None, require_closure: bool) -> list[str]:
@@ -45,6 +55,11 @@ def validate(packet: dict[str, Any], supported_ops: set[str] | None, require_clo
     for field in ("task_id", "source_trace", "terminal_semantics", "source_path"):
         if not packet.get(field):
             errors.append(f"{field} is required")
+    outcome = packet.get("outcome")
+    if outcome not in OUTCOMES:
+        errors.append(f"outcome must be one of {sorted(OUTCOMES)}")
+    elif outcome == "blocked_missing_evidence" and not packet.get("blocked_reasons"):
+        errors.append("blocked_missing_evidence names its blocked_reasons")
 
     ledger = packet.get("candidate_ledger") or []
     by_id: dict[str, dict[str, Any]] = {}
@@ -70,12 +85,22 @@ def validate(packet: dict[str, Any], supported_ops: set[str] | None, require_clo
 
     accepted = [c for c in ledger if c.get("semantic_verdict") == "valid"]
     primary = {str(x if isinstance(x, str) else x.get("candidate_id")) for x in packet.get("primary_semantic_findings") or []}
+    for cid in sorted(primary):
+        if cid not in by_id:
+            errors.append(f"{cid}: primary_semantic_findings names a candidate the ledger does not list")
+        elif by_id[cid].get("semantic_verdict") != "valid":
+            errors.append(f"{cid}: primary_semantic_findings lists a candidate that is not semantically valid")
     for candidate in accepted:
         cid = candidate.get("candidate_id")
         replacement = candidate.get("source_replacement") or {}
         for field in REPLACEMENT_FIELDS:
             if not replacement.get(field):
                 errors.append(f"{cid}: source_replacement.{field} is required")
+        for field in PROOF_FIELDS:
+            if not candidate.get(field):
+                errors.append(f"{cid}: {field} is required on an accepted candidate")
+        if "rejoin_point" not in candidate:
+            errors.append(f"{cid}: rejoin_point is required on an accepted candidate (null when it never rejoins)")
         if candidate.get("primary_semantic_finding") and cid not in primary:
             errors.append(f"{cid}: primary candidate missing from primary_semantic_findings")
         if candidate.get("implement"):
@@ -89,6 +114,10 @@ def validate(packet: dict[str, Any], supported_ops: set[str] | None, require_clo
     for candidate in ledger:
         if candidate.get("implement") and candidate.get("semantic_verdict") != "valid":
             errors.append(f"{candidate.get('candidate_id')}: only a semantically valid path may be implemented")
+        handoff = candidate.get("repair_handoff")
+        if isinstance(handoff, dict) and handoff.get("status") not in HANDOFF_STATUS:
+            errors.append(f"{candidate.get('candidate_id')}: repair_handoff.status must be one of "
+                          f"{sorted(HANDOFF_STATUS)}")
 
     if require_closure:
         for candidate in accepted:
